@@ -2146,12 +2146,11 @@
             }
         } catch (e) { /* ignore */ }
 
-        // Requête Firestore
+        // Requête Firestore – on retire l'appel à .select()
         try {
             console.log('[IA] Récupération des épreuves depuis Firestore...');
             const snapshot = await db.collection('epreuves')
                 .where('status', '==', 'approved')
-                .select('nom_epreuve', 'matiere', 'classe', 'serie')
                 .get();
 
             let examsList = [];
@@ -2187,6 +2186,39 @@
             console.error('Erreur lors de la récupération des épreuves pour l\'IA:', error);
             return 'Impossible de récupérer la liste des épreuves actuellement.';
         }
+    }
+
+    // ============================================================
+    // CATALOGUE AVEC MISE À JOUR TOUS LES 5 JOURS
+    // ============================================================
+    const CATALOG_DAYS = 5;
+    const CATALOG_LOCAL_STORAGE_KEY = 'hosbac_exams_catalog';
+
+    async function getExamsCatalogForAI() {
+        // Vérifier si le catalogue est stocké dans localStorage
+        const stored = localStorage.getItem(CATALOG_LOCAL_STORAGE_KEY);
+        if (stored) {
+            try {
+                const data = JSON.parse(stored);
+                const lastUpdate = new Date(data.lastUpdate);
+                const now = new Date();
+                const diffDays = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+                if (diffDays < CATALOG_DAYS) {
+                    // Utiliser le cache
+                    return data.summary;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        // Sinon, récupérer via fetchExamsForAI
+        const summary = await fetchExamsForAI();
+        // Mettre à jour localStorage
+        try {
+            localStorage.setItem(CATALOG_LOCAL_STORAGE_KEY, JSON.stringify({
+                summary: summary,
+                lastUpdate: new Date().toISOString()
+            }));
+        } catch (e) { /* ignore */ }
+        return summary;
     }
 
     function injectGAScript(measurementId) {
@@ -2569,10 +2601,18 @@
     function displayWelcomeMessage() {
         const existingWelcome = chatMessages.querySelector('.chat-message.welcome');
         if (!existingWelcome) {
+            let message = WELCOME_MESSAGE;
+            if (currentUser && userData) {
+                const prenom = userData.prenom || '';
+                const nom = userData.nom || '';
+                if (prenom || nom) {
+                    message = `Bonjour ${prenom} ${nom}, bienvenue sur l'assistant HosBac. Je suis à votre disposition pour vous orienter dans vos révisions et répondre à vos questions sur notre catalogue d'épreuves. Comment puis-je vous assister aujourd'hui ?`;
+                }
+            }
             const msgDiv = document.createElement('div');
             msgDiv.className = 'chat-message bot welcome';
             msgDiv.dataset.messageId = 'welcome';
-            msgDiv.innerHTML = `${WELCOME_MESSAGE}<div class="message-time">--:--</div>`;
+            msgDiv.innerHTML = `${message}<div class="message-time">--:--</div>`;
             chatMessages.appendChild(msgDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -2608,6 +2648,66 @@
         if (loading) loading.remove();
     }
 
+    // ============================================================
+    // GESTION DU QUOTA QUOTIDIEN (30 messages / jour)
+    // ============================================================
+    async function getUserQuota() {
+        if (!currentUser) return null;
+        try {
+            const doc = await db.collection('users').doc(currentUser.uid).get();
+            if (doc.exists) {
+                const data = doc.data();
+                return {
+                    count: data.dailyMessageCount || 0,
+                    lastDate: data.lastResetDate || null
+                };
+            } else {
+                return { count: 0, lastDate: null };
+            }
+        } catch (error) {
+            console.error('Erreur récupération quota:', error);
+            return { count: 0, lastDate: null };
+        }
+    }
+
+    async function updateQuota(newCount, newDate) {
+        if (!currentUser) return;
+        try {
+            await db.collection('users').doc(currentUser.uid).update({
+                dailyMessageCount: newCount,
+                lastResetDate: newDate
+            });
+        } catch (error) {
+            console.error('Erreur mise à jour quota:', error);
+        }
+    }
+
+    async function checkAndResetQuota() {
+        const today = new Date().toISOString().split('T')[0];
+        const quota = await getUserQuota();
+        if (!quota) return { canSend: true, count: 0 };
+        if (quota.lastDate !== today) {
+            // Réinitialiser
+            await updateQuota(0, today);
+            return { canSend: true, count: 0 };
+        }
+        if (quota.count >= 30) {
+            return { canSend: false, count: quota.count };
+        }
+        return { canSend: true, count: quota.count };
+    }
+
+    async function incrementQuota() {
+        const today = new Date().toISOString().split('T')[0];
+        const quota = await getUserQuota();
+        let newCount = (quota && quota.lastDate === today) ? quota.count : 0;
+        newCount += 1;
+        await updateQuota(newCount, today);
+    }
+
+    // ============================================================
+    // ENVOI DU MESSAGE À GEMINI
+    // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null) {
         try {
             const key = await getGeminiKey();
@@ -2616,7 +2716,8 @@
                 return;
             }
 
-            const examsSummary = await fetchExamsForAI();
+            // Utiliser le catalogue mis à jour tous les 5 jours
+            const examsSummary = await getExamsCatalogForAI();
             console.log('[IA] Liste envoyée à l\'IA :', examsSummary);
 
             const systemInstruction = 
@@ -2728,6 +2829,9 @@
         }
     }
 
+    // ============================================================
+    // GESTION DE L'ENVOI DE MESSAGE AVEC QUOTA
+    // ============================================================
     function handleSendMessage() {
         if (isChatLoading) {
             showToast('Un message est déjà en cours d\'envoi, veuillez patienter.', 'warning');
@@ -2740,24 +2844,40 @@
             return;
         }
 
-        chatInput.disabled = true;
-        chatSendBtn.disabled = true;
-        isChatLoading = true;
+        // Vérification du quota
+        checkAndResetQuota().then(quotaResult => {
+            if (!quotaResult.canSend) {
+                // Afficher le message de blocage dans le chat
+                const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de votre quota de 30 questions pour aujourd'hui. Votre solde de questions sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
+                addChatMessage(blockMessage, 'bot');
+                return;
+            }
 
-        const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        addChatMessage(text || 'Fichier attaché', 'user', time);
+            // Incrémenter le quota après avoir vérifié
+            incrementQuota().then(() => {
+                // Ajouter le message utilisateur
+                const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                addChatMessage(text || 'Fichier attaché', 'user', time);
 
-        const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type } : null;
+                const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type } : null;
 
-        chatInput.value = '';
-        attachedFile = null;
-        chatFilePreview.style.display = 'none';
-        chatFileInput.value = '';
-        chatInput.style.height = 'auto';
-        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+                chatInput.value = '';
+                attachedFile = null;
+                chatFilePreview.style.display = 'none';
+                chatFileInput.value = '';
+                chatInput.style.height = 'auto';
+                chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 
-        showLoading();
-        sendMessageToGemini(text, fileData);
+                showLoading();
+                sendMessageToGemini(text, fileData);
+            }).catch(err => {
+                console.error('Erreur incrémentation quota:', err);
+                showToast('Erreur lors de l\'envoi du message', 'error');
+            });
+        }).catch(err => {
+            console.error('Erreur vérification quota:', err);
+            showToast('Erreur lors de la vérification du quota', 'error');
+        });
     }
 
     chatSendBtn?.addEventListener('click', handleSendMessage);
@@ -3003,6 +3123,8 @@
                     nom, prenom, ecole, email, classe: '', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'user',
                     likedAnnouncements: [], favorites: [],
+                    dailyMessageCount: 0,
+                    lastResetDate: null,
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
             })
@@ -3173,7 +3295,8 @@
         loadAndInjectGA();
         loadGeminiApiKey().then(key => { geminiApiKey = key; });
 
-        fetchExamsForAI().catch(err => console.error('Erreur préchargement épreuves IA:', err));
+        // Précharger le catalogue pour l'IA
+        getExamsCatalogForAI().catch(err => console.error('Erreur préchargement catalogue IA:', err));
     });
 
     // ============================================================
