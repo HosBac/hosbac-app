@@ -1,5 +1,5 @@
 // sw.js – Service Worker minimal pour HosBac
-const CACHE_NAME = 'hosbac-v1';
+const CACHE_NAME = 'hosbac-v2';
 const urlsToCache = [
   '/',
   '/index.html',
