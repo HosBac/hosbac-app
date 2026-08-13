@@ -20,6 +20,8 @@
     <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf pour le téléchargement PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
         /* ============================================================
@@ -2498,6 +2500,7 @@
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'message-actions';
 
+            // Bouton Répondre
             const replyBtn = document.createElement('button');
             replyBtn.innerHTML = '<i class="fas fa-reply"></i>';
             replyBtn.title = 'Répondre en citant';
@@ -2510,6 +2513,7 @@
             });
             actionsDiv.appendChild(replyBtn);
 
+            // Bouton Copier
             const copyBtn = document.createElement('button');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.title = 'Copier le texte';
@@ -2528,6 +2532,7 @@
             });
             actionsDiv.appendChild(copyBtn);
 
+            // Bouton Thumbs Up
             const thumbsUp = document.createElement('button');
             thumbsUp.innerHTML = '<i class="fas fa-thumbs-up"></i>';
             thumbsUp.title = 'Utile';
@@ -2541,6 +2546,7 @@
             });
             actionsDiv.appendChild(thumbsUp);
 
+            // Bouton Thumbs Down
             const thumbsDown = document.createElement('button');
             thumbsDown.innerHTML = '<i class="fas fa-thumbs-down"></i>';
             thumbsDown.title = 'Pas utile';
@@ -2554,6 +2560,7 @@
             });
             actionsDiv.appendChild(thumbsDown);
 
+            // Bouton Supprimer
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
             deleteBtn.title = 'Supprimer ce message';
@@ -2565,11 +2572,55 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
+            // ===== NOUVEAU : Bouton Télécharger en PDF =====
+            const pdfBtn = document.createElement('button');
+            pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
+            pdfBtn.title = 'Télécharger en PDF';
+            pdfBtn.addEventListener('click', () => {
+                generatePDF(text);
+            });
+            actionsDiv.appendChild(pdfBtn);
+
             msgDiv.appendChild(actionsDiv);
         }
 
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // ============================================================
+    // GÉNÉRATION DE PDF AVEC html2pdf.js
+    // ============================================================
+    function generatePDF(text) {
+        // Créer un conteneur temporaire
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.color = '#000';
+        element.style.background = '#fff';
+        element.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #1a2a4a; padding-bottom: 10px;">
+                <img src="favicon.png" style="height: 40px; margin-right: 10px;">
+                <h1 style="color: #1a2a4a; margin: 0; font-size: 24px;">HosBac</h1>
+            </div>
+            <h2 style="color: #1a2a4a;">Réponse de l'assistant HosBac</h2>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #1a2a4a; background: #f9f9f9; border-radius: 4px;">
+                ${text.replace(/\n/g, '<br>')}
+            </div>
+            <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 10px;">
+                Document généré par l'Assistant Officiel HosBac - https://hosbac-app.vercel.app/ - Tous droits réservés.
+            </div>
+        `;
+
+        // Utiliser html2pdf pour générer et télécharger
+        const opt = {
+            margin:       0.5,
+            filename:     'reponse_hosbac.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, letterRendering: true },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
     }
 
     function deleteMessageById(id) {
@@ -2649,7 +2700,7 @@
     }
 
     // ============================================================
-    // GESTION DU QUOTA QUOTIDIEN (30 messages / jour)
+    // GESTION DU QUOTA QUOTIDIEN (15 messages / jour)
     // ============================================================
     async function getUserQuota() {
         if (!currentUser) return null;
@@ -2691,7 +2742,7 @@
             await updateQuota(0, today);
             return { canSend: true, count: 0 };
         }
-        if (quota.count >= 30) {
+        if (quota.count >= 15) {
             return { canSend: false, count: quota.count };
         }
         return { canSend: true, count: quota.count };
@@ -2706,9 +2757,9 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI
+    // ENVOI DU MESSAGE À GEMINI AVEC RETRY SUR 429
     // ============================================================
-    async function sendMessageToGemini(userMessage, fileData = null) {
+    async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0) {
         try {
             const key = await getGeminiKey();
             if (!key || key.trim() === '') {
@@ -2787,10 +2838,15 @@
             });
 
             if (response.status === 429) {
-                const errorData = await response.json().catch(() => ({}));
-                console.warn('[IA] Erreur 429 (quota) détectée:', errorData);
-                addChatMessage('Oups, je reçois trop de questions en même temps ! 😅 Laisse-moi respirer une petite minute et repose ta question.', 'bot');
-                return;
+                console.warn('[IA] Erreur 429 (Rate Limit) détectée, tentative de retry...');
+                if (retryCount < 1) {
+                    // Attendre 3 secondes et réessayer
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    return sendMessageToGemini(userMessage, fileData, retryCount + 1);
+                } else {
+                    addChatMessage('Le service de l\'IA est momentanément saturé. Veuillez réessayer dans quelques instants.', 'bot');
+                    return;
+                }
             }
 
             if (!response.ok) {
@@ -2798,10 +2854,6 @@
                 console.error('[IA] Erreur Gemini (réponse non OK):', errorData);
                 let errorMsg = 'Erreur de l\'IA : ';
                 if (errorData.error && errorData.error.message) {
-                    if (errorData.error.message.toLowerCase().includes('quota')) {
-                        addChatMessage('Oups, je reçois trop de questions en même temps ! 😅 Laisse-moi respirer une petite minute et repose ta question.', 'bot');
-                        return;
-                    }
                     errorMsg += errorData.error.message;
                 } else {
                     errorMsg += 'Erreur inconnue';
@@ -2826,12 +2878,22 @@
             chatInput.disabled = false;
             chatSendBtn.disabled = false;
             isChatLoading = false;
+            // Réactiver le bouton et le champ après cooldown si nécessaire
+            if (cooldownTimeout) {
+                clearTimeout(cooldownTimeout);
+                cooldownTimeout = null;
+            }
+            chatSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            chatSendBtn.disabled = false;
+            chatInput.disabled = false;
         }
     }
 
     // ============================================================
-    // GESTION DE L'ENVOI DE MESSAGE AVEC QUOTA
+    // GESTION DE L'ENVOI DE MESSAGE AVEC QUOTA + COOLDOWN 5s
     // ============================================================
+    let cooldownTimeout = null;
+
     function handleSendMessage() {
         if (isChatLoading) {
             showToast('Un message est déjà en cours d\'envoi, veuillez patienter.', 'warning');
@@ -2848,7 +2910,7 @@
         checkAndResetQuota().then(quotaResult => {
             if (!quotaResult.canSend) {
                 // Afficher le message de blocage dans le chat
-                const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de votre quota de 30 questions pour aujourd'hui. Votre solde de questions sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
+                const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de vos 15 questions pour aujourd'hui. Votre quota sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
                 addChatMessage(blockMessage, 'bot');
                 return;
             }
@@ -2867,6 +2929,22 @@
                 chatFileInput.value = '';
                 chatInput.style.height = 'auto';
                 chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+
+                // --- COOLDOWN 5 secondes ---
+                chatInput.disabled = true;
+                chatSendBtn.disabled = true;
+                chatSendBtn.innerHTML = 'Patientez 5s...';
+                // Annuler un éventuel timeout précédent
+                if (cooldownTimeout) {
+                    clearTimeout(cooldownTimeout);
+                    cooldownTimeout = null;
+                }
+                cooldownTimeout = setTimeout(() => {
+                    chatSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    chatSendBtn.disabled = false;
+                    chatInput.disabled = false;
+                    cooldownTimeout = null;
+                }, 5000);
 
                 showLoading();
                 sendMessageToGemini(text, fileData);
