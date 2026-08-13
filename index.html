@@ -22,6 +22,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2pdf pour le téléchargement PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- marked.js pour le rendu Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         /* ============================================================
@@ -2459,56 +2461,107 @@
         return ++messageIdCounter + '-' + Date.now();
     }
 
-    // === FONCTION DE TÉLÉCHARGEMENT PDF ===
-    function downloadMessageAsPDF(btn) {
-        // Récupérer le message parent (le conteneur du message)
-        const msgBubble = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.closest('.message-content') || btn.parentElement.parentElement;
-        if (!msgBubble) {
+    // === FONCTION DE TÉLÉCHARGEMENT PDF AVEC CONVERSION MARKDOWN ===
+    function downloadPDFFromMessage(btn) {
+        // Récupérer le texte du message bot
+        const msgContainer = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.parentElement.parentElement;
+        if (!msgContainer) {
             showToast('Impossible de localiser le message.', 'error');
             return;
         }
-        // Cloner pour ne pas altérer l'affichage
-        const clone = msgBubble.cloneNode(true);
-        // Nettoyer les boutons d'action du clone
-        const actions = clone.querySelector('.message-actions') || clone.querySelector('.chat-actions');
-        if (actions) actions.remove();
         // Récupérer le texte brut (sans les actions)
-        const textContent = clone.innerText || '';
-        if (!textContent.trim()) {
-            showToast('Aucun contenu à télécharger.', 'warning');
-            return;
-        }
+        let rawText = msgContainer.innerText || '';
+        // Nettoyer les boutons ou textes parasites du bouton
+        rawText = rawText.replace(/📄 PDF|Copier|Supprimer|👍|👎/g, '').trim();
 
-        const pdfContainer = document.createElement('div');
-        pdfContainer.style.padding = '20px';
-        pdfContainer.style.fontFamily = 'Arial, sans-serif';
-        pdfContainer.style.background = '#ffffff';
-        pdfContainer.style.color = '#000000';
-        pdfContainer.innerHTML = `
-            <div style="display:flex;align-items:center;border-bottom:2px solid #1a2a4a;padding-bottom:10px;margin-bottom:20px;">
-                <img src="favicon.png" style="height:40px;margin-right:10px;" alt="HosBac">
-                <div>
-                    <h2 style="color:#1a2a4a;margin:0;font-size:22px;">HosBac - Corrigé & Assistance</h2>
-                    <p style="color:#666;font-size:11px;margin:2px 0 0 0;">Plateforme Éducative Collaborative</p>
+        // Convertir le Markdown en HTML propre si 'marked' est chargé
+        let formattedHTML = (typeof marked !== 'undefined') ? marked.parse(rawText) : rawText;
+
+        // Création du conteneur PDF
+        const pdfElement = document.createElement('div');
+        pdfElement.className = 'pdf-document-container';
+        pdfElement.innerHTML = `
+            <style>
+                .pdf-document-container {
+                    font-family: 'Helvetica Neue', Arial, sans-serif;
+                    padding: 25px 30px;
+                    color: #1a202c;
+                    background: #ffffff;
+                    font-size: 13px;
+                    line-height: 1.6;
+                }
+                .pdf-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 2px solid #0044ff;
+                    padding-bottom: 12px;
+                    margin-bottom: 25px;
+                }
+                .pdf-title-zone h1 {
+                    color: #0044ff;
+                    font-size: 20px;
+                    margin: 0 0 4px 0;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .pdf-title-zone p {
+                    color: #4a5568;
+                    font-size: 11px;
+                    margin: 0;
+                }
+                .pdf-content h1, .pdf-content h2, .pdf-content h3 {
+                    color: #0033aa;
+                    margin-top: 18px;
+                    margin-bottom: 8px;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding-bottom: 4px;
+                    page-break-after: avoid;
+                }
+                .pdf-content h1 { font-size: 16px; }
+                .pdf-content h2 { font-size: 14px; }
+                .pdf-content h3 { font-size: 13px; }
+                .pdf-content p { margin-bottom: 12px; text-align: justify; }
+                .pdf-content ul, .pdf-content ol { margin-bottom: 12px; padding-left: 20px; }
+                .pdf-content li { margin-bottom: 4px; }
+                .pdf-content strong { color: #000; }
+                .pdf-footer {
+                    margin-top: 35px;
+                    border-top: 1px dashed #cbd5e0;
+                    padding-top: 12px;
+                    text-align: center;
+                    font-size: 10px;
+                    color: #718096;
+                    page-break-inside: avoid;
+                }
+            </style>
+
+            <div class="pdf-header">
+                <div class="pdf-title-zone">
+                    <h1>HosBac — Corrigé Officiel</h1>
+                    <p>Plateforme Éducative & Documentaire</p>
                 </div>
             </div>
-            <div style="font-size:13px;line-height:1.7;color:#111;white-space:pre-wrap;padding:10px 0;">
-                ${textContent}
+
+            <div class="pdf-content">
+                ${formattedHTML}
             </div>
-            <div style="margin-top:30px;border-top:1px solid #ccc;padding-top:10px;text-align:center;font-size:9px;color:#999;">
-                Document généré par l'Assistant Officiel HosBac — Tous droits réservés.
+
+            <div class="pdf-footer">
+                <p>Document généré par l'Assistant Officiel HosBac (https://hosbac-app.vercel.app/) — Copie certifiée pour révision.</p>
             </div>
         `;
 
-        const opt = {
-            margin: 10,
-            filename: 'HosBac_Document.pdf',
+        const options = {
+            margin: [10, 10, 10, 10],
+            filename: 'HosBac_Corrige_Epreuve.pdf',
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        html2pdf().set(opt).from(pdfContainer).save().catch(err => {
+        html2pdf().set(options).from(pdfElement).save().catch(err => {
             console.error('Erreur génération PDF:', err);
             showToast('Erreur lors de la génération du PDF', 'error');
         });
@@ -2519,6 +2572,8 @@
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${sender}`;
         msgDiv.dataset.messageId = messageId;
+        // Stocker le texte brut pour le PDF
+        msgDiv.setAttribute('data-raw-text', text);
         let htmlText = text;
         htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
         htmlText = htmlText.replace(/\*(.*?)\*/g, '<i>$1</i>');
@@ -2607,7 +2662,7 @@
             pdfBtn.title = 'Télécharger en PDF';
             pdfBtn.className = 'pdf-btn';
             pdfBtn.addEventListener('click', function() {
-                downloadMessageAsPDF(this);
+                downloadPDFFromMessage(this);
             });
             actionsDiv.appendChild(pdfBtn);
 
@@ -2679,6 +2734,7 @@
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message bot welcome';
         msgDiv.dataset.messageId = 'welcome';
+        msgDiv.setAttribute('data-raw-text', welcomeText);
         msgDiv.innerHTML = `${welcomeText}<div class="message-time">--:--</div>`;
         chatContainer.appendChild(msgDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -2945,8 +3001,7 @@
                 chatInput.style.height = 'auto';
                 chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 
-                // --- COOLDOWN 5 secondes ---
-                chatInput.disabled = true;
+                // --- COOLDOWN 5 secondes ---                chatInput.disabled = true;
                 chatSendBtn.disabled = true;
                 chatSendBtn.innerHTML = 'Patientez 5s...';
                 // Annuler un éventuel timeout précédent
