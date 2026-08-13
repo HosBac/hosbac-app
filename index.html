@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- html2pdf pour le téléchargement PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         /* ============================================================
@@ -1038,6 +1038,13 @@
         }
         .message-actions .delete-msg:hover {
             color: #ff4444;
+        }
+        /* Bouton PDF */
+        .message-actions .pdf-btn {
+            color: var(--text-light);
+        }
+        .message-actions .pdf-btn:hover {
+            color: var(--accent-blue);
         }
 
         /* Zone de saisie avec textarea et bouton d'envoi */
@@ -2485,6 +2492,51 @@
         return ++messageIdCounter + '-' + Date.now();
     }
 
+    // === FONCTION DE TÉLÉCHARGEMENT PDF ===
+    function downloadAsPDF(btnElement) {
+        // Récupérer le message parent
+        const msgDiv = btnElement.closest('.chat-message');
+        if (!msgDiv) return;
+        // Récupérer le texte du message (sans les actions)
+        const textContent = msgDiv.childNodes[0]?.textContent || '';
+        if (!textContent.trim()) {
+            showToast('Aucun contenu à télécharger.', 'warning');
+            return;
+        }
+
+        // Créer un conteneur temporaire
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.color = '#000';
+        element.style.background = '#fff';
+        element.innerHTML = `
+            <div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #1a2a4a; padding-bottom: 10px;">
+                <img src="favicon.png" style="height: 40px; margin-right: 10px;">
+                <h1 style="color: #1a2a4a; margin: 0; font-size: 24px;">HosBac - Corrigé & Assistance</h1>
+            </div>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #1a2a4a; background: #f9f9f9; border-radius: 4px;">
+                ${textContent.replace(/\n/g, '<br>')}
+            </div>
+            <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 10px;">
+                Document généré par l'Assistant Officiel HosBac - https://hosbac-app.vercel.app/ - Tous droits réservés.
+            </div>
+        `;
+
+        // Utiliser html2pdf pour générer et télécharger
+        const opt = {
+            margin:       0.5,
+            filename:     'HosBac-Reponse.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, letterRendering: true },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save().catch(err => {
+            console.error('Erreur génération PDF:', err);
+            showToast('Erreur lors de la génération du PDF', 'error');
+        });
+    }
+
     function addChatMessageToDOM(text, sender, time, isBot = false, messageId = null) {
         if (!messageId) messageId = generateMessageId();
         const msgDiv = document.createElement('div');
@@ -2572,12 +2624,13 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
-            // ===== NOUVEAU : Bouton Télécharger en PDF =====
+            // === BOUTON PDF ===
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.title = 'Télécharger en PDF';
-            pdfBtn.addEventListener('click', () => {
-                generatePDF(text);
+            pdfBtn.className = 'pdf-btn';
+            pdfBtn.addEventListener('click', function() {
+                downloadAsPDF(this);
             });
             actionsDiv.appendChild(pdfBtn);
 
@@ -2586,41 +2639,6 @@
 
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // ============================================================
-    // GÉNÉRATION DE PDF AVEC html2pdf.js
-    // ============================================================
-    function generatePDF(text) {
-        // Créer un conteneur temporaire
-        const element = document.createElement('div');
-        element.style.padding = '20px';
-        element.style.fontFamily = 'Arial, sans-serif';
-        element.style.color = '#000';
-        element.style.background = '#fff';
-        element.innerHTML = `
-            <div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #1a2a4a; padding-bottom: 10px;">
-                <img src="favicon.png" style="height: 40px; margin-right: 10px;">
-                <h1 style="color: #1a2a4a; margin: 0; font-size: 24px;">HosBac</h1>
-            </div>
-            <h2 style="color: #1a2a4a;">Réponse de l'assistant HosBac</h2>
-            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #1a2a4a; background: #f9f9f9; border-radius: 4px;">
-                ${text.replace(/\n/g, '<br>')}
-            </div>
-            <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 10px;">
-                Document généré par l'Assistant Officiel HosBac - https://hosbac-app.vercel.app/ - Tous droits réservés.
-            </div>
-        `;
-
-        // Utiliser html2pdf pour générer et télécharger
-        const opt = {
-            margin:       0.5,
-            filename:     'reponse_hosbac.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, letterRendering: true },
-            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(element).save();
     }
 
     function deleteMessageById(id) {
@@ -2649,24 +2667,25 @@
         }
     }
 
-    function displayWelcomeMessage() {
+    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM ===
+    async function displayWelcomeMessage() {
         const existingWelcome = chatMessages.querySelector('.chat-message.welcome');
-        if (!existingWelcome) {
-            let message = WELCOME_MESSAGE;
-            if (currentUser && userData) {
-                const prenom = userData.prenom || '';
-                const nom = userData.nom || '';
-                if (prenom || nom) {
-                    message = `Bonjour ${prenom} ${nom}, bienvenue sur l'assistant HosBac. Je suis à votre disposition pour vous orienter dans vos révisions et répondre à vos questions sur notre catalogue d'épreuves. Comment puis-je vous assister aujourd'hui ?`;
-                }
+        if (existingWelcome) return;
+
+        let message = WELCOME_MESSAGE;
+        if (currentUser && userData) {
+            const prenom = userData.prenom || '';
+            const nom = userData.nom || '';
+            if (prenom || nom) {
+                message = `Bonjour ${prenom} ${nom} ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`;
             }
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message bot welcome';
-            msgDiv.dataset.messageId = 'welcome';
-            msgDiv.innerHTML = `${message}<div class="message-time">--:--</div>`;
-            chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message bot welcome';
+        msgDiv.dataset.messageId = 'welcome';
+        msgDiv.innerHTML = `${message}<div class="message-time">--:--</div>`;
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
     function addChatMessage(text, sender, time = null) {
