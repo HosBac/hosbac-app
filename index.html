@@ -2129,70 +2129,37 @@
     }
 
     // ============================================================
-    // NOUVELLE FONCTION : RÉCUPÉRATION DES ÉPREUVES POUR L'IA (avec cache)
+    // NOUVELLE FONCTION fetchExamsForAI() SANS .select()
     // ============================================================
-    const EXAMS_CACHE_KEY = 'hosbac_exams_for_ai';
-    const EXAMS_CACHE_EXPIRY = 3600000; // 1 heure
-
     async function fetchExamsForAI() {
-        // Vérifier le cache en mémoire
-        if (cachedExamsSummary !== null) {
-            console.log('[IA] Liste des épreuves chargée depuis le cache mémoire');
-            return cachedExamsSummary;
-        }
-
-        // Vérifier le cache sessionStorage
         try {
-            const cached = sessionStorage.getItem(EXAMS_CACHE_KEY);
-            if (cached) {
-                const data = JSON.parse(cached);
-                const now = Date.now();
-                if (now - data.timestamp < EXAMS_CACHE_EXPIRY) {
-                    console.log('[IA] Liste des épreuves chargée depuis le sessionStorage');
-                    cachedExamsSummary = data.examsSummary;
-                    return cachedExamsSummary;
-                }
-            }
-        } catch (e) { /* ignore */ }
-
-        // Requête Firestore – on retire l'appel à .select()
-        try {
-            console.log('[IA] Récupération des épreuves depuis Firestore...');
-            const snapshot = await db.collection('epreuves')
-                .where('status', '==', 'approved')
-                .get();
-
+            console.log("[IA] Récupération des épreuves depuis Firestore...");
+            const snapshot = await db.collection('epreuves').get();
             let examsList = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const name = data.nom_epreuve || 'Sans titre';
+                // Utilisation des champs réels de l'application
+                const name = data.nom_epreuve || 'Épreuve';
                 const subject = data.matiere || '';
-                const classLevel = data.classe || '';
-                const series = data.serie || '';
-                let line = `- ${name}`;
-                if (subject) line += ` (Matière: ${subject})`;
-                if (classLevel) line += `, Classe: ${classLevel}`;
-                if (series) line += `, Série: ${series}`;
-                examsList.push(line);
+                const classe = data.classe || '';
+                const serie = data.serie || '';
+                let entry = `${name}`;
+                if (subject) entry += ` - ${subject}`;
+                if (classe) entry += ` (${classe}`;
+                if (serie) entry += ` - Série ${serie}`;
+                if (classe) entry += `)`;
+                examsList.push(entry);
             });
-
-            const summary = examsList.length > 0 
-                ? `Voici la liste actuelle des épreuves disponibles sur le site (${examsList.length} épreuves) :\n\n${examsList.join('\n')}`
+            // Stocker dans une variable globale pour le cache
+            window.cachedExamsForAI = examsList.join(", ");
+            // Mettre à jour le cache mémoire
+            cachedExamsSummary = examsList.length > 0 
+                ? `Voici la liste actuelle des épreuves disponibles sur le site (${examsList.length} épreuves) :\n\n${examsList.map((e, i) => `- ${e}`).join('\n')}`
                 : 'Aucune épreuve n\'est actuellement disponible sur le site.';
-
-            // Mettre en cache
-            const cacheData = {
-                examsSummary: summary,
-                timestamp: Date.now()
-            };
-            try {
-                sessionStorage.setItem(EXAMS_CACHE_KEY, JSON.stringify(cacheData));
-            } catch (e) { /* ignore */ }
-            cachedExamsSummary = summary;
-            console.log('[IA] Liste des épreuves mise à jour dans le cache');
-            return summary;
+            console.log("[IA] Liste des épreuves récupérée avec succès, nombre:", examsList.length);
+            return cachedExamsSummary;
         } catch (error) {
-            console.error('Erreur lors de la récupération des épreuves pour l\'IA:', error);
+            console.error("Erreur lors de la récupération des épreuves pour l'IA:", error);
             return 'Impossible de récupérer la liste des épreuves actuellement.';
         }
     }
@@ -2493,45 +2460,55 @@
     }
 
     // === FONCTION DE TÉLÉCHARGEMENT PDF ===
-    function downloadAsPDF(btnElement) {
-        // Récupérer le message parent
-        const msgDiv = btnElement.closest('.chat-message');
-        if (!msgDiv) return;
-        // Récupérer le texte du message (sans les actions)
-        const textContent = msgDiv.childNodes[0]?.textContent || '';
+    function downloadMessageAsPDF(btn) {
+        // Récupérer le message parent (le conteneur du message)
+        const msgBubble = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.closest('.message-content') || btn.parentElement.parentElement;
+        if (!msgBubble) {
+            showToast('Impossible de localiser le message.', 'error');
+            return;
+        }
+        // Cloner pour ne pas altérer l'affichage
+        const clone = msgBubble.cloneNode(true);
+        // Nettoyer les boutons d'action du clone
+        const actions = clone.querySelector('.message-actions') || clone.querySelector('.chat-actions');
+        if (actions) actions.remove();
+        // Récupérer le texte brut (sans les actions)
+        const textContent = clone.innerText || '';
         if (!textContent.trim()) {
             showToast('Aucun contenu à télécharger.', 'warning');
             return;
         }
 
-        // Créer un conteneur temporaire
-        const element = document.createElement('div');
-        element.style.padding = '20px';
-        element.style.fontFamily = 'Arial, sans-serif';
-        element.style.color = '#000';
-        element.style.background = '#fff';
-        element.innerHTML = `
-            <div style="display: flex; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #1a2a4a; padding-bottom: 10px;">
-                <img src="favicon.png" style="height: 40px; margin-right: 10px;">
-                <h1 style="color: #1a2a4a; margin: 0; font-size: 24px;">HosBac - Corrigé & Assistance</h1>
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '20px';
+        pdfContainer.style.fontFamily = 'Arial, sans-serif';
+        pdfContainer.style.background = '#ffffff';
+        pdfContainer.style.color = '#000000';
+        pdfContainer.innerHTML = `
+            <div style="display:flex;align-items:center;border-bottom:2px solid #1a2a4a;padding-bottom:10px;margin-bottom:20px;">
+                <img src="favicon.png" style="height:40px;margin-right:10px;" alt="HosBac">
+                <div>
+                    <h2 style="color:#1a2a4a;margin:0;font-size:22px;">HosBac - Corrigé & Assistance</h2>
+                    <p style="color:#666;font-size:11px;margin:2px 0 0 0;">Plateforme Éducative Collaborative</p>
+                </div>
             </div>
-            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #1a2a4a; background: #f9f9f9; border-radius: 4px;">
-                ${textContent.replace(/\n/g, '<br>')}
+            <div style="font-size:13px;line-height:1.7;color:#111;white-space:pre-wrap;padding:10px 0;">
+                ${textContent}
             </div>
-            <div style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 10px;">
-                Document généré par l'Assistant Officiel HosBac - https://hosbac-app.vercel.app/ - Tous droits réservés.
+            <div style="margin-top:30px;border-top:1px solid #ccc;padding-top:10px;text-align:center;font-size:9px;color:#999;">
+                Document généré par l'Assistant Officiel HosBac — Tous droits réservés.
             </div>
         `;
 
-        // Utiliser html2pdf pour générer et télécharger
         const opt = {
-            margin:       0.5,
-            filename:     'HosBac-Reponse.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, letterRendering: true },
-            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            margin: 10,
+            filename: 'HosBac_Document.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        html2pdf().set(opt).from(element).save().catch(err => {
+
+        html2pdf().set(opt).from(pdfContainer).save().catch(err => {
             console.error('Erreur génération PDF:', err);
             showToast('Erreur lors de la génération du PDF', 'error');
         });
@@ -2624,13 +2601,13 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
-            // === BOUTON PDF ===
+            // === BOUTON PDF (AJOUTÉ) ===
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.title = 'Télécharger en PDF';
             pdfBtn.className = 'pdf-btn';
             pdfBtn.addEventListener('click', function() {
-                downloadAsPDF(this);
+                downloadMessageAsPDF(this);
             });
             actionsDiv.appendChild(pdfBtn);
 
@@ -2667,25 +2644,44 @@
         }
     }
 
-    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM ===
+    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM (VERSION ASYNC) ===
     async function displayWelcomeMessage() {
-        const existingWelcome = chatMessages.querySelector('.chat-message.welcome');
+        const chatContainer = document.getElementById('chat-messages');
+        if (!chatContainer) return;
+        // Vérifier si un message d'accueil existe déjà
+        const existingWelcome = chatContainer.querySelector('.chat-message.welcome');
         if (existingWelcome) return;
 
-        let message = WELCOME_MESSAGE;
-        if (currentUser && userData) {
-            const prenom = userData.prenom || '';
-            const nom = userData.nom || '';
-            if (prenom || nom) {
-                message = `Bonjour ${prenom} ${nom} ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`;
+        let userName = "";
+        const user = auth.currentUser;
+
+        if (user) {
+            try {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    if (data.prenom || data.nom) {
+                        userName = `${data.prenom || ''} ${data.nom || ''}`.trim();
+                    }
+                }
+                if (!userName && user.displayName) {
+                    userName = user.displayName;
+                }
+            } catch (e) {
+                console.error("Erreur récupération nom d'utilisateur:", e);
             }
         }
+
+        const welcomeText = userName 
+            ? `Bonjour ${userName} ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`
+            : `Bonjour ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`;
+
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message bot welcome';
         msgDiv.dataset.messageId = 'welcome';
-        msgDiv.innerHTML = `${message}<div class="message-time">--:--</div>`;
-        chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        msgDiv.innerHTML = `${welcomeText}<div class="message-time">--:--</div>`;
+        chatContainer.appendChild(msgDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
     function addChatMessage(text, sender, time = null) {
@@ -3112,6 +3108,14 @@
                 loadAndInjectGA();
                 if (isAdmin) loadAdminLogs();
                 chatFab.style.display = 'flex';
+                // Charger l'historique du chat et afficher le message d'accueil
+                setTimeout(() => {
+                    loadChatHistoryFromFirestore().then(() => {
+                        if (chatMessages.children.length === 0) {
+                            displayWelcomeMessage();
+                        }
+                    });
+                }, 500);
             } else {
                 currentUser = null;
                 userData = null;
