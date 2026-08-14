@@ -1819,7 +1819,12 @@
     const chatRemoveFile = document.getElementById('chat-remove-file');
     let attachedFile = null;
     let isChatLoading = false;
-    let cachedExamsSummary = null;
+
+    // ============================================================
+    // IMPORTANT: Le catalogue est maintenant chargé uniquement
+    // lors de l'envoi d'un message, pas en arrière-plan.
+    // La fonction getExamsCatalogForAI est appelée dans sendMessageToGemini
+    // ============================================================
 
     // PWA
     const installBanner = document.getElementById('install-banner');
@@ -2120,9 +2125,6 @@
         try {
             const key = await loadGeminiApiKey();
             geminiApiKey = key;
-            if (!key || key.trim() === '') {
-                // Aucune clé, retourne une chaîne vide
-            }
             return key;
         } catch (error) {
             console.error('Erreur lors du chargement de la clé Gemini:', error);
@@ -2131,7 +2133,7 @@
     }
 
     // ============================================================
-    // NOUVELLE FONCTION fetchExamsForAI() SANS .select()
+    // RÉCUPÉRATION DES ÉPREUVES POUR L'IA (appelé uniquement lors de l'envoi d'un message)
     // ============================================================
     async function fetchExamsForAI() {
         try {
@@ -2140,7 +2142,6 @@
             let examsList = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Utilisation des champs réels de l'application
                 const name = data.nom_epreuve || 'Épreuve';
                 const subject = data.matiere || '';
                 const classe = data.classe || '';
@@ -2152,9 +2153,7 @@
                 if (classe) entry += `)`;
                 examsList.push(entry);
             });
-            // Stocker dans une variable globale pour le cache
             window.cachedExamsForAI = examsList.join(", ");
-            // Mettre à jour le cache mémoire
             cachedExamsSummary = examsList.length > 0 
                 ? `Voici la liste actuelle des épreuves disponibles sur le site (${examsList.length} épreuves) :\n\n${examsList.map((e, i) => `- ${e}`).join('\n')}`
                 : 'Aucune épreuve n\'est actuellement disponible sur le site.';
@@ -2166,292 +2165,13 @@
         }
     }
 
-    // ============================================================
-    // CATALOGUE AVEC MISE À JOUR TOUS LES 5 JOURS
-    // ============================================================
-    const CATALOG_DAYS = 5;
-    const CATALOG_LOCAL_STORAGE_KEY = 'hosbac_exams_catalog';
-
-    async function getExamsCatalogForAI() {
-        // Vérifier si le catalogue est stocké dans localStorage
-        const stored = localStorage.getItem(CATALOG_LOCAL_STORAGE_KEY);
-        if (stored) {
-            try {
-                const data = JSON.parse(stored);
-                const lastUpdate = new Date(data.lastUpdate);
-                const now = new Date();
-                const diffDays = (now - lastUpdate) / (1000 * 60 * 60 * 24);
-                if (diffDays < CATALOG_DAYS) {
-                    // Utiliser le cache
-                    return data.summary;
-                }
-            } catch (e) { /* ignore */ }
-        }
-        // Sinon, récupérer via fetchExamsForAI
-        const summary = await fetchExamsForAI();
-        // Mettre à jour localStorage
-        try {
-            localStorage.setItem(CATALOG_LOCAL_STORAGE_KEY, JSON.stringify({
-                summary: summary,
-                lastUpdate: new Date().toISOString()
-            }));
-        } catch (e) { /* ignore */ }
-        return summary;
-    }
-
-    function injectGAScript(measurementId) {
-        const existingScript = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]');
-        if (existingScript) existingScript.remove();
-        const existingInline = document.getElementById('ga-inline-script');
-        if (existingInline) existingInline.remove();
-
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-        document.head.appendChild(script);
-
-        const inlineScript = document.createElement('script');
-        inlineScript.id = 'ga-inline-script';
-        inlineScript.innerHTML = `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${measurementId}');
-        `;
-        document.head.appendChild(inlineScript);
-    }
-
-    contactsForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!checkAuthRequired('mettre à jour les paramètres')) return;
-        if (!isAdmin) {
-            showToast('Action non autorisée', 'error');
-            return;
-        }
-        const whatsapp = contactWhatsapp?.value || '';
-        const facebook = contactFacebook?.value || '';
-        const email = contactEmail?.value || '';
-        const gaId = gaMeasurementId?.value || '';
-        const geminiKey = geminiApiKeyInput?.value || '';
-        saveContactsToFirestore(whatsapp, facebook, email, gaId, geminiKey)
-        .then(() => {
-            showToast('Paramètres mis à jour avec succès', 'success');
-            updateFooterContacts({ whatsapp, facebook, email });
-            if (gaId && gaId.trim().length > 0) {
-                injectGAScript(gaId.trim());
-            } else {
-                const script = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]');
-                if (script) script.remove();
-                const inline = document.getElementById('ga-inline-script');
-                if (inline) inline.remove();
-            }
-            if (geminiKey) {
-                geminiApiKey = geminiKey;
-            } else {
-                geminiApiKey = '';
-            }
-        })
-        .catch(err => {
-            console.error('[FIRESTORE] Erreur sauvegarde paramètres:', err);
-            showToast('Erreur lors de la mise à jour', 'error');
-        });
-    });
-
-    // ============================================================
-    // GESTION DES PAGES LÉGALES (FIRESTORE)
-    // ============================================================
-    const LEGAL_DOC_PATH = 'settings/legal';
-
-    function loadLegalPages() {
-        db.doc(LEGAL_DOC_PATH).get()
-        .then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                if (legalCgu) legalCgu.value = data.cgu || '';
-                if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
-            } else {
-                const defaults = {
-                    cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...",
-                    confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..."
-                };
-                db.doc(LEGAL_DOC_PATH).set(defaults)
-                .then(() => {
-                    if (legalCgu) legalCgu.value = defaults.cgu;
-                    if (legalPrivacy) legalPrivacy.value = defaults.confidentialite;
-                })
-                .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
-            }
-        })
-        .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
-    }
-
-    function saveLegalPages(cgu, confidentialite) {
-        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite }, { merge: true });
-    }
-
-    legalForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!checkAuthRequired('modifier les pages légales')) return;
-        if (!isAdmin) {
-            showToast('Action non autorisée', 'error');
-            return;
-        }
-        const cgu = legalCgu?.value || '';
-        const confidentialite = legalPrivacy?.value || '';
-        saveLegalPages(cgu, confidentialite)
-        .then(() => {
-            showToast('Textes légaux enregistrés avec succès', 'success');
-        })
-        .catch(err => {
-            console.error('[FIRESTORE] Erreur sauvegarde legal:', err);
-            showToast('Erreur lors de l\'enregistrement', 'error');
-        });
-    });
-
-    function showLegalPopup(type) {
-        db.doc(LEGAL_DOC_PATH).get()
-        .then(doc => {
-            let content = '';
-            if (doc.exists) {
-                const data = doc.data();
-                if (type === 'cgu') {
-                    content = data.cgu || 'Textes en cours de rédaction...';
-                    if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>');
-                    if (termsPopup) termsPopup.style.display = 'flex';
-                } else if (type === 'privacy') {
-                    content = data.confidentialite || 'Textes en cours de rédaction...';
-                    if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>');
-                    if (privacyPopup) privacyPopup.style.display = 'flex';
-                }
-            } else {
-                const defaultMsg = 'Textes en cours de rédaction...';
-                if (type === 'cgu') {
-                    if (termsContent) termsContent.innerHTML = defaultMsg;
-                    if (termsPopup) termsPopup.style.display = 'flex';
-                } else {
-                    if (privacyContent) privacyContent.innerHTML = defaultMsg;
-                    if (privacyPopup) privacyPopup.style.display = 'flex';
-                }
-            }
-        })
-        .catch(err => {
-            console.error('[FIRESTORE] Erreur chargement legal:', err);
-            showToast('Erreur lors du chargement des textes', 'error');
-        });
-    }
-
-    termsLink?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showLegalPopup('cgu');
-    });
-    privacyLink?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showLegalPopup('privacy');
-    });
-    document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const popup = this.closest('.popup-overlay');
-            if (popup) popup.style.display = 'none';
-        });
-    });
-    document.querySelectorAll('#terms-popup, #privacy-popup').forEach(popup => {
-        popup.addEventListener('click', function(e) {
-            if (e.target === this) this.style.display = 'none';
-        });
-    });
-
-    // ============================================================
-    // SUIVI COMPORTEMENTAL (LOGS) - FIRESTORE
-    // ============================================================
-    function logSearch(keyword) {
-        if (!keyword || keyword.trim().length < 3) return;
-        const userType = currentUser ? 'connecté' : 'anonyme';
-        db.collection('search_logs').add({
-            keyword: keyword.trim(),
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            userType: userType
-        }).catch(err => console.error('[FIRESTORE] Erreur logSearch:', err));
-    }
-
-    function logInteraction(action, epreuveId) {
-        if (!epreuveId) return;
-        const userType = currentUser ? 'connecté' : 'anonyme';
-        db.collection('interaction_logs').add({
-            action: action,
-            epreuveId: epreuveId,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            userType: userType
-        }).catch(err => console.error('[FIRESTORE] Erreur logInteraction:', err));
-    }
-
-    // ============================================================
-    // AFFICHAGE DES LOGS DANS L'ADMIN
-    // ============================================================
-    function loadAdminLogs() {
-        if (!currentUser || !isAdmin) return;
-
-        db.collection('search_logs')
-            .orderBy('timestamp', 'desc')
-            .limit(50)
-            .get()
-            .then(snapshot => {
-                const keywords = {};
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.keyword) {
-                        const kw = data.keyword.toLowerCase();
-                        keywords[kw] = (keywords[kw] || 0) + 1;
-                    }
-                });
-                const sorted = Object.entries(keywords).sort((a,b) => b[1] - a[1]).slice(0,10);
-                if (topKeywordsContainer) {
-                    if (sorted.length === 0) {
-                        topKeywordsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune recherche enregistrée.</p>';
-                    } else {
-                        topKeywordsContainer.innerHTML = sorted.map(([kw, count]) =>
-                            `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border-color);">
-                                <span>${kw}</span>
-                                <span style="color:var(--text-light);">${count}</span>
-                            </div>`
-                        ).join('');
-                    }
-                }
-            })
-            .catch(err => console.error('[FIRESTORE] Erreur chargement search_logs:', err));
-
-        db.collection('interaction_logs')
-            .orderBy('timestamp', 'desc')
-            .limit(10)
-            .get()
-            .then(snapshot => {
-                if (recentInteractionsContainer) {
-                    if (snapshot.empty) {
-                        recentInteractionsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune interaction récente.</p>';
-                    } else {
-                        let html = '';
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            const actionLabel = data.action === 'voir' ? 'a consulté' : 'a téléchargé';
-                            const userLabel = data.userType === 'connecté' ? 'Connecté' : 'Anonyme';
-                            const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
-                            html += `<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-color);font-size:0.9rem;">
-                                <span style="color:var(--text-light);">${userLabel}</span>
-                                <span> ${actionLabel} </span>
-                                <span style="color:var(--accent-blue);">l'épreuve ${data.epreuveId ? data.epreuveId.substring(0,8) : ''}</span>
-                                <span style="color:var(--text-light);font-size:0.75rem;float:right;">${time}</span>
-                            </div>`;
-                        });
-                        recentInteractionsContainer.innerHTML = html;
-                    }
-                }
-            })
-            .catch(err => console.error('[FIRESTORE] Erreur chargement interaction_logs:', err));
-    }
+    // Variable globale pour le cache de la liste des épreuves
+    let cachedExamsSummary = null;
+    let geminiApiKey = '';
 
     // ============================================================
     // CHATBOT IA (GEMINI) – AVEC HISTORIQUE, PERSISTANCE, ACTIONS & SUPPRESSION
     // ============================================================
-    let geminiApiKey = '';
     let chatHistory = [];
     let messageIdCounter = 0;
 
@@ -2463,21 +2183,16 @@
 
     // === FONCTION DE TÉLÉCHARGEMENT PDF AVEC CONVERSION MARKDOWN ===
     function downloadPDFFromMessage(btn) {
-        // Récupérer le texte du message bot
         const msgContainer = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.parentElement.parentElement;
         if (!msgContainer) {
             showToast('Impossible de localiser le message.', 'error');
             return;
         }
-        // Récupérer le texte brut (sans les actions)
         let rawText = msgContainer.innerText || '';
-        // Nettoyer les boutons ou textes parasites du bouton
         rawText = rawText.replace(/📄 PDF|Copier|Supprimer|👍|👎/g, '').trim();
 
-        // Convertir le Markdown en HTML propre si 'marked' est chargé
         let formattedHTML = (typeof marked !== 'undefined') ? marked.parse(rawText) : rawText;
 
-        // Création du conteneur PDF
         const pdfElement = document.createElement('div');
         pdfElement.className = 'pdf-document-container';
         pdfElement.innerHTML = `
@@ -2572,7 +2287,6 @@
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-message ${sender}`;
         msgDiv.dataset.messageId = messageId;
-        // Stocker le texte brut pour le PDF
         msgDiv.setAttribute('data-raw-text', text);
         let htmlText = text;
         htmlText = htmlText.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
@@ -2584,7 +2298,6 @@
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'message-actions';
 
-            // Bouton Répondre
             const replyBtn = document.createElement('button');
             replyBtn.innerHTML = '<i class="fas fa-reply"></i>';
             replyBtn.title = 'Répondre en citant';
@@ -2597,7 +2310,6 @@
             });
             actionsDiv.appendChild(replyBtn);
 
-            // Bouton Copier
             const copyBtn = document.createElement('button');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.title = 'Copier le texte';
@@ -2616,7 +2328,6 @@
             });
             actionsDiv.appendChild(copyBtn);
 
-            // Bouton Thumbs Up
             const thumbsUp = document.createElement('button');
             thumbsUp.innerHTML = '<i class="fas fa-thumbs-up"></i>';
             thumbsUp.title = 'Utile';
@@ -2630,7 +2341,6 @@
             });
             actionsDiv.appendChild(thumbsUp);
 
-            // Bouton Thumbs Down
             const thumbsDown = document.createElement('button');
             thumbsDown.innerHTML = '<i class="fas fa-thumbs-down"></i>';
             thumbsDown.title = 'Pas utile';
@@ -2644,7 +2354,6 @@
             });
             actionsDiv.appendChild(thumbsDown);
 
-            // Bouton Supprimer
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
             deleteBtn.title = 'Supprimer ce message';
@@ -2656,7 +2365,6 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
-            // === BOUTON PDF (AJOUTÉ) ===
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.title = 'Télécharger en PDF';
@@ -2699,11 +2407,10 @@
         }
     }
 
-    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM (VERSION ASYNC) ===
+    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM ===
     async function displayWelcomeMessage() {
         const chatContainer = document.getElementById('chat-messages');
         if (!chatContainer) return;
-        // Vérifier si un message d'accueil existe déjà
         const existingWelcome = chatContainer.querySelector('.chat-message.welcome');
         if (existingWelcome) return;
 
@@ -2809,7 +2516,6 @@
         const quota = await getUserQuota();
         if (!quota) return { canSend: true, count: 0 };
         if (quota.lastDate !== today) {
-            // Réinitialiser
             await updateQuota(0, today);
             return { canSend: true, count: 0 };
         }
@@ -2828,7 +2534,9 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI AVEC RETRY SUR 429
+    // ENVOI DU MESSAGE À GEMINI 
+    // ⚠️ L'APPEL À L'API EST UNIQUEMENT DÉCLENCHÉ ICI
+    // AUCUN PRÉ-CHARGEMENT NI POLLING N'EST EFFECTUÉ
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0) {
         try {
@@ -2838,8 +2546,8 @@
                 return;
             }
 
-            // Utiliser le catalogue mis à jour tous les 5 jours
-            const examsSummary = await getExamsCatalogForAI();
+            // ⚠️ RÉCUPÉRATION DU CATALOGUE UNIQUEMENT ICI (à l'envoi explicite)
+            const examsSummary = await fetchExamsForAI();
             console.log('[IA] Liste envoyée à l\'IA :', examsSummary);
 
             const systemInstruction = 
@@ -2911,7 +2619,6 @@
             if (response.status === 429) {
                 console.warn('[IA] Erreur 429 (Rate Limit) détectée, tentative de retry...');
                 if (retryCount < 1) {
-                    // Attendre 3 secondes et réessayer
                     await new Promise(resolve => setTimeout(resolve, 3000));
                     return sendMessageToGemini(userMessage, fileData, retryCount + 1);
                 } else {
@@ -2949,7 +2656,6 @@
             chatInput.disabled = false;
             chatSendBtn.disabled = false;
             isChatLoading = false;
-            // Réactiver le bouton et le champ après cooldown si nécessaire
             if (cooldownTimeout) {
                 clearTimeout(cooldownTimeout);
                 cooldownTimeout = null;
@@ -2977,10 +2683,9 @@
             return;
         }
 
-        // Vérification du quota
+        // ⚠️ VÉRIFICATION DU QUOTA UNIQUEMENT À L'ENVOI
         checkAndResetQuota().then(quotaResult => {
             if (!quotaResult.canSend) {
-                // Afficher le message de blocage dans le chat
                 const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de vos 15 questions pour aujourd'hui. Votre quota sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
                 addChatMessage(blockMessage, 'bot');
                 return;
@@ -3001,10 +2706,10 @@
                 chatInput.style.height = 'auto';
                 chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 
-                // --- COOLDOWN 5 secondes ---                chatInput.disabled = true;
+                // Cooldown 5 secondes
+                chatInput.disabled = true;
                 chatSendBtn.disabled = true;
                 chatSendBtn.innerHTML = 'Patientez 5s...';
-                // Annuler un éventuel timeout précédent
                 if (cooldownTimeout) {
                     clearTimeout(cooldownTimeout);
                     cooldownTimeout = null;
@@ -3016,6 +2721,7 @@
                     cooldownTimeout = null;
                 }, 5000);
 
+                // ⚠️ APPEL À L'API UNIQUEMENT ICI
                 showLoading();
                 sendMessageToGemini(text, fileData);
             }).catch(err => {
@@ -3051,9 +2757,8 @@
         }
         chatWindow.classList.toggle('open');
         if (chatWindow.classList.contains('open')) {
-            if (chatHistory.length === 0) {
-                loadChatHistoryFromFirestore();
-            }
+            // Chargement de l'historique depuis Firestore - AUCUN APPEL API
+            loadChatHistoryFromFirestore();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     });
@@ -3096,6 +2801,10 @@
         chatFileInput.value = '';
     });
 
+    // ============================================================
+    // CHARGEMENT DE L'HISTORIQUE DEPUIS FIRESTORE 
+    // ⚠️ AUCUN APPEL API N'EST EFFECTUÉ ICI
+    // ============================================================
     function loadChatHistoryFromFirestore() {
         if (!currentUser) return Promise.resolve();
         const docRef = db.collection('users').doc(currentUser.uid).collection('chats').doc('current');
@@ -3163,7 +2872,7 @@
                 loadAndInjectGA();
                 if (isAdmin) loadAdminLogs();
                 chatFab.style.display = 'flex';
-                // Charger l'historique du chat et afficher le message d'accueil
+                // Chargement de l'historique depuis Firestore - AUCUN APPEL API
                 setTimeout(() => {
                     loadChatHistoryFromFirestore().then(() => {
                         if (chatMessages.children.length === 0) {
@@ -3211,7 +2920,7 @@
     }
 
     // ============================================================
-    // DOM CONTENT LOADED – Appel à fetchExamsForAI() en arrière-plan
+    // DOM CONTENT LOADED
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
@@ -3451,8 +3160,9 @@
         loadAndInjectGA();
         loadGeminiApiKey().then(key => { geminiApiKey = key; });
 
-        // Précharger le catalogue pour l'IA
-        getExamsCatalogForAI().catch(err => console.error('Erreur préchargement catalogue IA:', err));
+        // ⚠️ SUPPRESSION DU PRÉ-CHARGEMENT DU CATALOGUE
+        // La récupération se fait désormais uniquement dans sendMessageToGemini
+        console.log('[INIT] ✅ Application HosBac chargée - API sécurisée (appel uniquement sur envoi de message)');
     });
 
     // ============================================================
@@ -4383,6 +4093,255 @@
         };
     }
 
+    function injectGAScript(measurementId) {
+        const existingScript = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]');
+        if (existingScript) existingScript.remove();
+        const existingInline = document.getElementById('ga-inline-script');
+        if (existingInline) existingInline.remove();
+
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+        document.head.appendChild(script);
+
+        const inlineScript = document.createElement('script');
+        inlineScript.id = 'ga-inline-script';
+        inlineScript.innerHTML = `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${measurementId}');
+        `;
+        document.head.appendChild(inlineScript);
+    }
+
+    contactsForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!checkAuthRequired('mettre à jour les paramètres')) return;
+        if (!isAdmin) {
+            showToast('Action non autorisée', 'error');
+            return;
+        }
+        const whatsapp = contactWhatsapp?.value || '';
+        const facebook = contactFacebook?.value || '';
+        const email = contactEmail?.value || '';
+        const gaId = gaMeasurementId?.value || '';
+        const geminiKey = geminiApiKeyInput?.value || '';
+        saveContactsToFirestore(whatsapp, facebook, email, gaId, geminiKey)
+        .then(() => {
+            showToast('Paramètres mis à jour avec succès', 'success');
+            updateFooterContacts({ whatsapp, facebook, email });
+            if (gaId && gaId.trim().length > 0) {
+                injectGAScript(gaId.trim());
+            } else {
+                const script = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]');
+                if (script) script.remove();
+                const inline = document.getElementById('ga-inline-script');
+                if (inline) inline.remove();
+            }
+            if (geminiKey) {
+                geminiApiKey = geminiKey;
+            } else {
+                geminiApiKey = '';
+            }
+        })
+        .catch(err => {
+            console.error('[FIRESTORE] Erreur sauvegarde paramètres:', err);
+            showToast('Erreur lors de la mise à jour', 'error');
+        });
+    });
+
+    // ============================================================
+    // GESTION DES PAGES LÉGALES (FIRESTORE)
+    // ============================================================
+    const LEGAL_DOC_PATH = 'settings/legal';
+
+    function loadLegalPages() {
+        db.doc(LEGAL_DOC_PATH).get()
+        .then(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (legalCgu) legalCgu.value = data.cgu || '';
+                if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
+            } else {
+                const defaults = {
+                    cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...",
+                    confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..."
+                };
+                db.doc(LEGAL_DOC_PATH).set(defaults)
+                .then(() => {
+                    if (legalCgu) legalCgu.value = defaults.cgu;
+                    if (legalPrivacy) legalPrivacy.value = defaults.confidentialite;
+                })
+                .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
+            }
+        })
+        .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
+    }
+
+    function saveLegalPages(cgu, confidentialite) {
+        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite }, { merge: true });
+    }
+
+    legalForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!checkAuthRequired('modifier les pages légales')) return;
+        if (!isAdmin) {
+            showToast('Action non autorisée', 'error');
+            return;
+        }
+        const cgu = legalCgu?.value || '';
+        const confidentialite = legalPrivacy?.value || '';
+        saveLegalPages(cgu, confidentialite)
+        .then(() => {
+            showToast('Textes légaux enregistrés avec succès', 'success');
+        })
+        .catch(err => {
+            console.error('[FIRESTORE] Erreur sauvegarde legal:', err);
+            showToast('Erreur lors de l\'enregistrement', 'error');
+        });
+    });
+
+    function showLegalPopup(type) {
+        db.doc(LEGAL_DOC_PATH).get()
+        .then(doc => {
+            let content = '';
+            if (doc.exists) {
+                const data = doc.data();
+                if (type === 'cgu') {
+                    content = data.cgu || 'Textes en cours de rédaction...';
+                    if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>');
+                    if (termsPopup) termsPopup.style.display = 'flex';
+                } else if (type === 'privacy') {
+                    content = data.confidentialite || 'Textes en cours de rédaction...';
+                    if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>');
+                    if (privacyPopup) privacyPopup.style.display = 'flex';
+                }
+            } else {
+                const defaultMsg = 'Textes en cours de rédaction...';
+                if (type === 'cgu') {
+                    if (termsContent) termsContent.innerHTML = defaultMsg;
+                    if (termsPopup) termsPopup.style.display = 'flex';
+                } else {
+                    if (privacyContent) privacyContent.innerHTML = defaultMsg;
+                    if (privacyPopup) privacyPopup.style.display = 'flex';
+                }
+            }
+        })
+        .catch(err => {
+            console.error('[FIRESTORE] Erreur chargement legal:', err);
+            showToast('Erreur lors du chargement des textes', 'error');
+        });
+    }
+
+    termsLink?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showLegalPopup('cgu');
+    });
+    privacyLink?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showLegalPopup('privacy');
+    });
+    document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const popup = this.closest('.popup-overlay');
+            if (popup) popup.style.display = 'none';
+        });
+    });
+    document.querySelectorAll('#terms-popup, #privacy-popup').forEach(popup => {
+        popup.addEventListener('click', function(e) {
+            if (e.target === this) this.style.display = 'none';
+        });
+    });
+
+    // ============================================================
+    // SUIVI COMPORTEMENTAL (LOGS) - FIRESTORE
+    // ============================================================
+    function logSearch(keyword) {
+        if (!keyword || keyword.trim().length < 3) return;
+        const userType = currentUser ? 'connecté' : 'anonyme';
+        db.collection('search_logs').add({
+            keyword: keyword.trim(),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userType: userType
+        }).catch(err => console.error('[FIRESTORE] Erreur logSearch:', err));
+    }
+
+    function logInteraction(action, epreuveId) {
+        if (!epreuveId) return;
+        const userType = currentUser ? 'connecté' : 'anonyme';
+        db.collection('interaction_logs').add({
+            action: action,
+            epreuveId: epreuveId,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userType: userType
+        }).catch(err => console.error('[FIRESTORE] Erreur logInteraction:', err));
+    }
+
+    // ============================================================
+    // AFFICHAGE DES LOGS DANS L'ADMIN
+    // ============================================================
+    function loadAdminLogs() {
+        if (!currentUser || !isAdmin) return;
+
+        db.collection('search_logs')
+            .orderBy('timestamp', 'desc')
+            .limit(50)
+            .get()
+            .then(snapshot => {
+                const keywords = {};
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.keyword) {
+                        const kw = data.keyword.toLowerCase();
+                        keywords[kw] = (keywords[kw] || 0) + 1;
+                    }
+                });
+                const sorted = Object.entries(keywords).sort((a,b) => b[1] - a[1]).slice(0,10);
+                if (topKeywordsContainer) {
+                    if (sorted.length === 0) {
+                        topKeywordsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune recherche enregistrée.</p>';
+                    } else {
+                        topKeywordsContainer.innerHTML = sorted.map(([kw, count]) =>
+                            `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border-color);">
+                                <span>${kw}</span>
+                                <span style="color:var(--text-light);">${count}</span>
+                            </div>`
+                        ).join('');
+                    }
+                }
+            })
+            .catch(err => console.error('[FIRESTORE] Erreur chargement search_logs:', err));
+
+        db.collection('interaction_logs')
+            .orderBy('timestamp', 'desc')
+            .limit(10)
+            .get()
+            .then(snapshot => {
+                if (recentInteractionsContainer) {
+                    if (snapshot.empty) {
+                        recentInteractionsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune interaction récente.</p>';
+                    } else {
+                        let html = '';
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            const actionLabel = data.action === 'voir' ? 'a consulté' : 'a téléchargé';
+                            const userLabel = data.userType === 'connecté' ? 'Connecté' : 'Anonyme';
+                            const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
+                            html += `<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-color);font-size:0.9rem;">
+                                <span style="color:var(--text-light);">${userLabel}</span>
+                                <span> ${actionLabel} </span>
+                                <span style="color:var(--accent-blue);">l'épreuve ${data.epreuveId ? data.epreuveId.substring(0,8) : ''}</span>
+                                <span style="color:var(--text-light);font-size:0.75rem;float:right;">${time}</span>
+                            </div>`;
+                        });
+                        recentInteractionsContainer.innerHTML = html;
+                    }
+                }
+            })
+            .catch(err => console.error('[FIRESTORE] Erreur chargement interaction_logs:', err));
+    }
+
     // ============================================================
     // ENREGISTREMENT DU SERVICE WORKER
     // ============================================================
@@ -4437,6 +4396,8 @@
     });
 
     console.log('[INIT] ✅ Application HosBac chargée avec succès');
+    console.log('[SÉCURITÉ] 🔒 Appels API Gemini uniquement sur envoi de message explicite');
+    console.log('[SÉCURITÉ] 🔒 Chargement de l\'historique depuis Firestore sans appel API');
 </script>
 </body>
 </html>
