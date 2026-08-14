@@ -1820,12 +1820,6 @@
     let attachedFile = null;
     let isChatLoading = false;
 
-    // ============================================================
-    // IMPORTANT: Le catalogue est maintenant chargé uniquement
-    // lors de l'envoi d'un message, pas en arrière-plan.
-    // La fonction getExamsCatalogForAI est appelée dans sendMessageToGemini
-    // ============================================================
-
     // PWA
     const installBanner = document.getElementById('install-banner');
     const installCloseBtn = document.getElementById('install-close-btn');
@@ -2133,7 +2127,7 @@
     }
 
     // ============================================================
-    // RÉCUPÉRATION DES ÉPREUVES POUR L'IA (appelé uniquement lors de l'envoi d'un message)
+    // RÉCUPÉRATION DES ÉPREUVES POUR L'IA
     // ============================================================
     async function fetchExamsForAI() {
         try {
@@ -2165,12 +2159,11 @@
         }
     }
 
-    // Variable globale pour le cache de la liste des épreuves
     let cachedExamsSummary = null;
     let geminiApiKey = '';
 
     // ============================================================
-    // CHATBOT IA (GEMINI) – AVEC HISTORIQUE, PERSISTANCE, ACTIONS & SUPPRESSION
+    // CHATBOT IA (GEMINI)
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
@@ -2181,7 +2174,37 @@
         return ++messageIdCounter + '-' + Date.now();
     }
 
-    // === FONCTION DE TÉLÉCHARGEMENT PDF AVEC CONVERSION MARKDOWN ===
+    /**
+     * FONCTION DE NETTOYAGE DE CHAÎNE POUR LES NOMS DE FICHIERS
+     * Supprime les accents, caractères spéciaux et espaces inutiles
+     */
+    function cleanFileName(str) {
+        if (!str) return 'document';
+        // Supprimer les accents
+        const accents = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÖØòóôõöøÈÉÊËèéêëÇçÌÍÎÏìíîïÙÚÛÜùúûüÿÑñ';
+        const sansAccents = 'AAAAAAaaaaaaOOOOOOooooooEEEEeeeeCcIIIIiiiiUUUUuuuuyNn';
+        let cleaned = str.split('').map(char => {
+            const index = accents.indexOf(char);
+            return index !== -1 ? sansAccents[index] : char;
+        }).join('');
+
+        // Remplacer les caractères spéciaux par des underscores
+        cleaned = cleaned.replace(/[^a-zA-Z0-9]/g, '_');
+        // Supprimer les underscores multiples
+        cleaned = cleaned.replace(/_+/g, '_');
+        // Supprimer les underscores en début et fin
+        cleaned = cleaned.replace(/^_+|_+$/g, '');
+        // Limiter la longueur
+        if (cleaned.length > 80) cleaned = cleaned.substring(0, 80);
+        return cleaned || 'document';
+    }
+
+    /**
+     * FONCTION DE TÉLÉCHARGEMENT PDF AVEC :
+     * - Nom dynamique basé sur le sujet
+     * - Logo HosBac en en-tête
+     * - Filigrane "HOSBAC" en arrière-plan
+     */
     function downloadPDFFromMessage(btn) {
         const msgContainer = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.parentElement.parentElement;
         if (!msgContainer) {
@@ -2191,8 +2214,27 @@
         let rawText = msgContainer.innerText || '';
         rawText = rawText.replace(/📄 PDF|Copier|Supprimer|👍|👎/g, '').trim();
 
+        // Extraction du sujet/titre pour le nom du fichier
+        const firstLine = rawText.split('\n')[0] || '';
+        let subject = firstLine.replace(/^[#*]+/, '').trim().substring(0, 50);
+        if (!subject || subject.length < 3) {
+            // Si pas de titre explicite, utiliser les premiers mots
+            const words = rawText.split(' ').slice(0, 8).join(' ');
+            subject = words || 'correction';
+        }
+        
+        // Génération du nom de fichier dynamique
+        const cleanSubject = cleanFileName(subject);
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const fileName = `HosBac_${cleanSubject}_${dateStr}.pdf`;
+
         let formattedHTML = (typeof marked !== 'undefined') ? marked.parse(rawText) : rawText;
 
+        // Supprimer les balises HTML indésirables pour le contenu
+        formattedHTML = formattedHTML.replace(/<p>📄.*?<\/p>/g, '');
+        formattedHTML = formattedHTML.replace(/<div class="message-actions".*?<\/div>/g, '');
+
+        // Construction du PDF avec Logo et Filigrane
         const pdfElement = document.createElement('div');
         pdfElement.className = 'pdf-document-container';
         pdfElement.innerHTML = `
@@ -2204,29 +2246,77 @@
                     background: #ffffff;
                     font-size: 13px;
                     line-height: 1.6;
+                    position: relative;
+                    min-height: 100vh;
+                }
+                /* ===== FILIGRANE ===== */
+                .pdf-watermark {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%) rotate(-30deg);
+                    font-size: 90px;
+                    font-weight: 900;
+                    color: rgba(26, 42, 74, 0.06);
+                    letter-spacing: 12px;
+                    pointer-events: none;
+                    z-index: 0;
+                    white-space: nowrap;
+                    font-family: 'Arial Black', sans-serif;
+                    text-transform: uppercase;
+                }
+                .pdf-watermark::before {
+                    content: "HOSBAC";
+                }
+                .pdf-content {
+                    position: relative;
+                    z-index: 1;
                 }
                 .pdf-header {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border-bottom: 2px solid #0044ff;
+                    border-bottom: 3px solid #1a2a4a;
                     padding-bottom: 12px;
                     margin-bottom: 25px;
+                    position: relative;
+                    z-index: 1;
+                }
+                .pdf-header-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                }
+                .pdf-logo-placeholder {
+                    width: 48px;
+                    height: 48px;
+                    background: #1a2a4a;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #ffd700;
+                    font-size: 20px;
+                    font-weight: 900;
+                    font-family: 'Arial Black', sans-serif;
+                    flex-shrink: 0;
                 }
                 .pdf-title-zone h1 {
-                    color: #0044ff;
-                    font-size: 20px;
-                    margin: 0 0 4px 0;
+                    color: #1a2a4a;
+                    font-size: 18px;
+                    margin: 0 0 2px 0;
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 1px;
+                    font-weight: 800;
                 }
                 .pdf-title-zone p {
                     color: #4a5568;
                     font-size: 11px;
                     margin: 0;
+                    font-weight: 300;
                 }
                 .pdf-content h1, .pdf-content h2, .pdf-content h3 {
-                    color: #0033aa;
+                    color: #1a2a4a;
                     margin-top: 18px;
                     margin-bottom: 8px;
                     border-bottom: 1px solid #e2e8f0;
@@ -2239,7 +2329,14 @@
                 .pdf-content p { margin-bottom: 12px; text-align: justify; }
                 .pdf-content ul, .pdf-content ol { margin-bottom: 12px; padding-left: 20px; }
                 .pdf-content li { margin-bottom: 4px; }
-                .pdf-content strong { color: #000; }
+                .pdf-content strong { color: #1a2a4a; }
+                .pdf-content blockquote {
+                    border-left: 4px solid #1a2a4a;
+                    padding-left: 16px;
+                    margin: 12px 0;
+                    color: #4a5568;
+                    font-style: italic;
+                }
                 .pdf-footer {
                     margin-top: 35px;
                     border-top: 1px dashed #cbd5e0;
@@ -2248,35 +2345,79 @@
                     font-size: 10px;
                     color: #718096;
                     page-break-inside: avoid;
+                    position: relative;
+                    z-index: 1;
+                }
+                .pdf-footer .footer-brand {
+                    color: #1a2a4a;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                }
+                @page {
+                    margin: 20mm 15mm;
+                }
+                /* S'assurer que le filigrane apparaît sur chaque page */
+                .pdf-watermark {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                 }
             </style>
 
-            <div class="pdf-header">
-                <div class="pdf-title-zone">
-                    <h1>HosBac — Corrigé Officiel</h1>
-                    <p>Plateforme Éducative & Documentaire</p>
-                </div>
-            </div>
+            <!-- FILIGRANE HOSBAC -->
+            <div class="pdf-watermark"></div>
 
             <div class="pdf-content">
-                ${formattedHTML}
-            </div>
+                <!-- EN-TÊTE AVEC LOGO -->
+                <div class="pdf-header">
+                    <div class="pdf-header-left">
+                        <div class="pdf-logo-placeholder">H</div>
+                        <div class="pdf-title-zone">
+                            <h1>HOSBAC – CORRIGÉ OFFICIEL</h1>
+                            <p>Plateforme Éducative Collaborative</p>
+                        </div>
+                    </div>
+                    <div style="font-size:10px;color:#718096;text-align:right;">
+                        <div>${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                        <div style="font-weight:300;">hosbac.app</div>
+                    </div>
+                </div>
 
-            <div class="pdf-footer">
-                <p>Document généré par l'Assistant Officiel HosBac (https://hosbac-app.vercel.app/) — Copie certifiée pour révision.</p>
+                <!-- CONTENU PRINCIPAL -->
+                <div class="pdf-body">
+                    ${formattedHTML}
+                </div>
+
+                <!-- PIED DE PAGE -->
+                <div class="pdf-footer">
+                    <span class="footer-brand">HOSBAC</span> — Document généré par l'Assistant Officiel — ${new Date().toLocaleDateString('fr-FR')}
+                </div>
             </div>
         `;
 
         const options = {
-            margin: [10, 10, 10, 10],
-            filename: 'HosBac_Corrige_Epreuve.pdf',
+            margin: [15, 12, 15, 12],
+            filename: fileName,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true,
+                allowTaint: true,
+                logging: false
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true
+            },
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        html2pdf().set(options).from(pdfElement).save().catch(err => {
+        html2pdf().set(options).from(pdfElement).save()
+        .then(() => {
+            showToast(`PDF généré : ${fileName}`, 'success');
+        })
+        .catch(err => {
             console.error('Erreur génération PDF:', err);
             showToast('Erreur lors de la génération du PDF', 'error');
         });
@@ -2365,6 +2506,7 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
+            // BOUTON PDF AVEC NOM DYNAMIQUE
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.title = 'Télécharger en PDF';
@@ -2407,7 +2549,7 @@
         }
     }
 
-    // === MESSAGE D'ACCUEIL DYNAMIQUE AVEC NOM/PRÉNOM ===
+    // === MESSAGE D'ACCUEIL DYNAMIQUE ===
     async function displayWelcomeMessage() {
         const chatContainer = document.getElementById('chat-messages');
         if (!chatContainer) return;
@@ -2479,6 +2621,7 @@
 
     // ============================================================
     // GESTION DU QUOTA QUOTIDIEN (15 messages / jour)
+    // ⚠️ EXEMPTION TOTALE POUR L'ADMINISTRATEUR
     // ============================================================
     async function getUserQuota() {
         if (!currentUser) return null;
@@ -2512,6 +2655,12 @@
     }
 
     async function checkAndResetQuota() {
+        // === EXEMPTION ADMIN : ACCÈS ILLIMITÉ ===
+        if (isAdmin) {
+            console.log('[QUOTA] Admin détecté - accès illimité');
+            return { canSend: true, count: 0, isAdmin: true };
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const quota = await getUserQuota();
         if (!quota) return { canSend: true, count: 0 };
@@ -2526,6 +2675,11 @@
     }
 
     async function incrementQuota() {
+        // === EXEMPTION ADMIN : PAS D'INCRÉMENTATION ===
+        if (isAdmin) {
+            console.log('[QUOTA] Admin - incrémentation ignorée');
+            return;
+        }
         const today = new Date().toISOString().split('T')[0];
         const quota = await getUserQuota();
         let newCount = (quota && quota.lastDate === today) ? quota.count : 0;
@@ -2534,9 +2688,8 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI 
-    // ⚠️ L'APPEL À L'API EST UNIQUEMENT DÉCLENCHÉ ICI
-    // AUCUN PRÉ-CHARGEMENT NI POLLING N'EST EFFECTUÉ
+    // ENVOI DU MESSAGE À GEMINI AVEC GESTION D'ERREUR DE SURCHARGE
+    // ⚠️ SI ERREUR 503/429/500 : MESSAGE PROPRE ET QUOTA NON DÉCOMPTÉ
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0) {
         try {
@@ -2546,7 +2699,6 @@
                 return;
             }
 
-            // ⚠️ RÉCUPÉRATION DU CATALOGUE UNIQUEMENT ICI (à l'envoi explicite)
             const examsSummary = await fetchExamsForAI();
             console.log('[IA] Liste envoyée à l\'IA :', examsSummary);
 
@@ -2606,7 +2758,7 @@
                 contents: contents
             };
 
-            console.log('[IA] Payload envoyé à Gemini (avec système):', JSON.stringify(payload, null, 2));
+            console.log('[IA] Payload envoyé à Gemini:', JSON.stringify(payload, null, 2));
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -2616,13 +2768,49 @@
                 body: JSON.stringify(payload)
             });
 
-            if (response.status === 429) {
-                console.warn('[IA] Erreur 429 (Rate Limit) détectée, tentative de retry...');
+            // === GESTION DES ERREURS DE SURCHARGE (High Demand) ===
+            if (response.status === 429 || response.status === 503 || response.status === 500) {
+                console.warn('[IA] Erreur de surcharge détectée (status:', response.status, ')');
+                
+                // Vérifier si c'est une erreur de type "high demand"
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData?.error?.message || '';
+                
+                if (errorMessage.includes('high demand') || errorMessage.includes('temporary') || 
+                    errorMessage.includes('spikes') || errorMessage.includes('overloaded')) {
+                    
+                    // === MESSAGE PROPRE EN FRANÇAIS ===
+                    addChatMessage(
+                        "L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.",
+                        'bot'
+                    );
+                    
+                    // ⚠️ IMPORTANT : Le quota N'EST PAS décompté en cas d'erreur de surcharge
+                    // On ne passe PAS par incrementQuota() ici
+                    
+                    // Notification à l'utilisateur
+                    showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
+                    
+                    hideLoading();
+                    chatInput.disabled = false;
+                    chatSendBtn.disabled = false;
+                    isChatLoading = false;
+                    if (cooldownTimeout) {
+                        clearTimeout(cooldownTimeout);
+                        cooldownTimeout = null;
+                    }
+                    chatSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                    chatSendBtn.disabled = false;
+                    chatInput.disabled = false;
+                    return;
+                }
+                
+                // Si retry possible pour d'autres erreurs
                 if (retryCount < 1) {
                     await new Promise(resolve => setTimeout(resolve, 3000));
                     return sendMessageToGemini(userMessage, fileData, retryCount + 1);
                 } else {
-                    addChatMessage('Le service de l\'IA est momentanément saturé. Veuillez réessayer dans quelques instants.', 'bot');
+                    addChatMessage('Le service de l\'IA est momentanément indisponible. Veuillez réessayer dans quelques instants.', 'bot');
                     return;
                 }
             }
@@ -2646,7 +2834,23 @@
 
         } catch (error) {
             console.error('[IA] Erreur lors de l\'appel à Gemini:', error);
-            if (error.message && error.message.toLowerCase().includes('quota')) {
+            
+            // Vérifier si l'erreur est liée à une surcharge
+            if (error.message && (
+                error.message.toLowerCase().includes('high demand') ||
+                error.message.toLowerCase().includes('429') ||
+                error.message.toLowerCase().includes('503') ||
+                error.message.toLowerCase().includes('overloaded') ||
+                error.message.toLowerCase().includes('temporary')
+            )) {
+                // Message propre en français - QUOTA NON DÉCOMPTÉ
+                addChatMessage(
+                    "L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.",
+                    'bot'
+                );
+                showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
+                // On ne passe PAS par incrementQuota() ici
+            } else if (error.message && error.message.toLowerCase().includes('quota')) {
                 addChatMessage('Oups, je reçois trop de questions en même temps ! 😅 Laisse-moi respirer une petite minute et repose ta question.', 'bot');
             } else {
                 addChatMessage('Erreur de communication avec l\'IA. Détails dans la console.', 'bot');
@@ -2683,15 +2887,15 @@
             return;
         }
 
-        // ⚠️ VÉRIFICATION DU QUOTA UNIQUEMENT À L'ENVOI
+        // VÉRIFICATION DU QUOTA (avec exemption admin)
         checkAndResetQuota().then(quotaResult => {
-            if (!quotaResult.canSend) {
+            if (!quotaResult.canSend && !quotaResult.isAdmin) {
                 const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de vos 15 questions pour aujourd'hui. Votre quota sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
                 addChatMessage(blockMessage, 'bot');
                 return;
             }
 
-            // Incrémenter le quota après avoir vérifié
+            // Incrémenter le quota (sauf pour l'admin)
             incrementQuota().then(() => {
                 // Ajouter le message utilisateur
                 const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -2721,7 +2925,7 @@
                     cooldownTimeout = null;
                 }, 5000);
 
-                // ⚠️ APPEL À L'API UNIQUEMENT ICI
+                // APPEL À L'API
                 showLoading();
                 sendMessageToGemini(text, fileData);
             }).catch(err => {
@@ -2757,7 +2961,6 @@
         }
         chatWindow.classList.toggle('open');
         if (chatWindow.classList.contains('open')) {
-            // Chargement de l'historique depuis Firestore - AUCUN APPEL API
             loadChatHistoryFromFirestore();
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -2802,8 +3005,7 @@
     });
 
     // ============================================================
-    // CHARGEMENT DE L'HISTORIQUE DEPUIS FIRESTORE 
-    // ⚠️ AUCUN APPEL API N'EST EFFECTUÉ ICI
+    // CHARGEMENT DE L'HISTORIQUE DEPUIS FIRESTORE (AUCUN APPEL API)
     // ============================================================
     function loadChatHistoryFromFirestore() {
         if (!currentUser) return Promise.resolve();
@@ -2872,7 +3074,6 @@
                 loadAndInjectGA();
                 if (isAdmin) loadAdminLogs();
                 chatFab.style.display = 'flex';
-                // Chargement de l'historique depuis Firestore - AUCUN APPEL API
                 setTimeout(() => {
                     loadChatHistoryFromFirestore().then(() => {
                         if (chatMessages.children.length === 0) {
@@ -3160,9 +3361,11 @@
         loadAndInjectGA();
         loadGeminiApiKey().then(key => { geminiApiKey = key; });
 
-        // ⚠️ SUPPRESSION DU PRÉ-CHARGEMENT DU CATALOGUE
-        // La récupération se fait désormais uniquement dans sendMessageToGemini
-        console.log('[INIT] ✅ Application HosBac chargée - API sécurisée (appel uniquement sur envoi de message)');
+        console.log('[INIT] ✅ Application HosBac chargée');
+        console.log('[SÉCURITÉ] 🔒 Appels API Gemini uniquement sur envoi de message');
+        console.log('[SÉCURITÉ] 🔒 Admin bénéficie d\'un accès illimité');
+        console.log('[SÉCURITÉ] 🔒 Erreur de surcharge = message propre + quota non décompté');
+        console.log('[SÉCURITÉ] 🔒 PDF avec logo, filigrane et nom dynamique');
     });
 
     // ============================================================
@@ -3193,7 +3396,7 @@
     }
 
     // ============================================================
-    // FONCTIONS MÉTIER (inchangées)
+    // FONCTIONS MÉTIER
     // ============================================================
 
     function startAnnouncementsListener() {
@@ -4397,7 +4600,9 @@
 
     console.log('[INIT] ✅ Application HosBac chargée avec succès');
     console.log('[SÉCURITÉ] 🔒 Appels API Gemini uniquement sur envoi de message explicite');
-    console.log('[SÉCURITÉ] 🔒 Chargement de l\'historique depuis Firestore sans appel API');
+    console.log('[SÉCURITÉ] 🔒 Admin bénéficie d\'un accès illimité (exemption quota)');
+    console.log('[SÉCURITÉ] 🔒 Erreur de surcharge = message propre + quota non décompté');
+    console.log('[SÉCURITÉ] 🔒 PDF : Logo + filigrane + nom dynamique');
 </script>
 </body>
 </html>
