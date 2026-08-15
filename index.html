@@ -991,6 +991,18 @@
             background: rgba(245, 158, 11, 0.15);
             color: var(--warning);
         }
+        .exam-card .exam-badge.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        .exam-card .exam-badge.rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+        .exam-card .exam-badge.draft {
+            background: rgba(107, 114, 128, 0.15);
+            color: var(--text-light);
+        }
         .exam-card .exam-name {
             font-size: 1rem;
             margin-bottom: 0.3rem;
@@ -1055,6 +1067,13 @@
         .exam-card .exam-btn.favorite:hover { background: var(--bg-color); }
         .exam-card .exam-btn.delete { background: var(--error); color: #fff; }
         .exam-card .exam-btn.delete:hover { background: #dc2626; }
+        .exam-card .exam-btn.edit { background: var(--info); color: #fff; }
+        .exam-card .exam-btn.edit:hover { background: #2563eb; }
+        .exam-card .exam-btn.draft-btn { background: var(--text-muted); color: #fff; }
+        .exam-card .exam-btn.draft-btn:hover { background: #4b5563; }
+        /* NOUVEAU: Bouton IA sur les cartes */
+        .exam-card .exam-btn.ia { background: var(--accent-gold); color: #1a2a4a; }
+        .exam-card .exam-btn.ia:hover { background: #c49a3a; }
 
         /* ============================================================
            PAGINATION
@@ -1099,7 +1118,7 @@
         }
 
         /* ============================================================
-           PAGE DÉTAIL ÉPREUVE - AMÉLIORATIONS PHASE 5
+           PAGE DÉTAIL ÉPREUVE
            ============================================================ */
         #exam-detail-view {
             display: none;
@@ -1203,8 +1222,10 @@
         }
         .exam-detail-info .info-row .info-value .badge-corrige { color: var(--success); }
         .exam-detail-info .info-row .info-value .badge-sans-corrige { color: var(--error); }
+        .exam-detail-info .info-row .info-value .badge-pending { color: var(--warning); }
+        .exam-detail-info .info-row .info-value .badge-approved { color: var(--success); }
+        .exam-detail-info .info-row .info-value .badge-rejected { color: var(--error); }
 
-        /* NOUVEAU: Actions supplémentaires phase 5 */
         .exam-detail-actions {
             display: flex;
             gap: 0.8rem;
@@ -1258,7 +1279,6 @@
             border-color: var(--error);
             color: var(--error);
         }
-        /* NOUVEAU: Bouton signalement */
         .exam-detail-actions .action-btn.danger {
             background: var(--error);
             color: #fff;
@@ -1266,12 +1286,18 @@
         .exam-detail-actions .action-btn.danger:hover {
             background: #dc2626;
         }
-        /* NOUVEAU: Bouton partage */
         .exam-detail-actions .action-btn.share {
             background: var(--info);
             color: #fff;
         }
         .exam-detail-actions .action-btn.share:hover {
+            background: #2563eb;
+        }
+        .exam-detail-actions .action-btn.edit {
+            background: var(--info);
+            color: #fff;
+        }
+        .exam-detail-actions .action-btn.edit:hover {
             background: #2563eb;
         }
 
@@ -1310,7 +1336,7 @@
         }
 
         /* ============================================================
-           PROFIL AVANCÉ - GAMIFICATION - AMÉLIORATIONS PHASE 6
+           PROFIL AVANCÉ - GAMIFICATION
            ============================================================ */
         .profile-header {
             display: flex;
@@ -1356,7 +1382,6 @@
             font-weight: 800;
             border: 2px solid var(--bg-color);
         }
-        /* NOUVEAU: Sélecteur de couleur d'avatar */
         .avatar-color-picker {
             display: flex;
             gap: 0.4rem;
@@ -1475,7 +1500,6 @@
             max-width: 100%;
         }
 
-        /* NOUVEAU: Statistiques par matière */
         .subject-stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1610,7 +1634,7 @@
         }
 
         /* ============================================================
-           ADMIN PANEL - NOUVEAU DESIGN
+           ADMIN PANEL
            ============================================================ */
         .admin-tabs {
             display: flex;
@@ -1784,6 +1808,10 @@
         .admin-table .admin-actions .btn-role {
             background: var(--secondary-blue);
             color: #fff;
+        }
+        .admin-table .admin-actions .btn-history {
+            background: var(--accent-gold);
+            color: #1a2a4a;
         }
 
         .admin-stats-grid {
@@ -2066,7 +2094,7 @@
         }
 
         /* ============================================================
-           CHATBOT IA
+           CHATBOT IA - PHASE 8 AMÉLIORÉ
            ============================================================ */
         .chat-fab {
             position: fixed;
@@ -2091,14 +2119,29 @@
             transform: scale(1.05);
             background: var(--secondary-blue);
         }
+        .chat-fab .fab-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--accent-gold);
+            color: #1a2a4a;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .chat-window {
             position: fixed;
             bottom: 160px;
             right: 20px;
             width: 90%;
             max-width: 500px;
-            height: 75vh;
-            max-height: 80vh;
+            height: 80vh;
+            max-height: 85vh;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -2147,7 +2190,7 @@
             min-height: 0;
         }
         .chat-message {
-            max-width: 85%;
+            max-width: 92%;
             padding: 0.6rem 0.8rem;
             border-radius: 12px;
             word-wrap: break-word;
@@ -2200,6 +2243,89 @@
         .message-actions .delete-msg:hover { color: #ff4444; }
         .message-actions .pdf-btn { color: var(--text-light); }
         .message-actions .pdf-btn:hover { color: var(--accent-blue); }
+        /* NOUVEAU: Boutons pédagogiques sur les messages de l'IA */
+        .message-actions .pedagogical-btn {
+            font-size: 0.7rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+        .message-actions .pedagogical-btn:hover {
+            background: var(--accent-blue);
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+        .message-actions .pedagogical-btn.hint { border-color: var(--accent-gold); color: var(--accent-gold); }
+        .message-actions .pedagogical-btn.hint:hover { background: var(--accent-gold); color: #1a2a4a; }
+        .message-actions .pedagogical-btn.explanation { border-color: var(--info); color: var(--info); }
+        .message-actions .pedagogical-btn.explanation:hover { background: var(--info); color: #fff; }
+        .message-actions .pedagogical-btn.method { border-color: var(--success); color: var(--success); }
+        .message-actions .pedagogical-btn.method:hover { background: var(--success); color: #fff; }
+        .message-actions .pedagogical-btn.solution { border-color: var(--accent-gold); color: var(--accent-gold); }
+        .message-actions .pedagogical-btn.solution:hover { background: var(--accent-gold); color: #1a2a4a; }
+
+        /* NOUVEAU: Suggestions de questions */
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem 0.8rem;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .chat-suggestions .suggestion-chip {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-light);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .chat-suggestions .suggestion-chip:hover {
+            background: var(--primary-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        /* NOUVEAU: Mode pédagogique */
+        .pedagogical-mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.8rem;
+            background: var(--bg-color);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-light);
+            flex-shrink: 0;
+        }
+        .pedagogical-mode-indicator .mode-badge {
+            padding: 0.1rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+        .pedagogical-mode-indicator .mode-badge.hint { background: var(--accent-gold); color: #1a2a4a; }
+        .pedagogical-mode-indicator .mode-badge.explanation { background: var(--info); color: #fff; }
+        .pedagogical-mode-indicator .mode-badge.method { background: var(--success); color: #fff; }
+        .pedagogical-mode-indicator .mode-badge.solution { background: var(--accent-gold); color: #1a2a4a; }
+        .pedagogical-mode-indicator .mode-close {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0 0.2rem;
+        }
+        .pedagogical-mode-indicator .mode-close:hover { color: var(--error); }
+
         .chat-input-area {
             padding: 0.8rem;
             border-top: 1px solid var(--border-color);
@@ -2264,31 +2390,62 @@
             animation: pulse 1.5s infinite;
         }
 
-        /* NOUVEAU: Popup signalement */
-        .report-reasons {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin: 0.8rem 0;
+        /* NOUVEAU: Popup quiz IA */
+        #quiz-popup .popup-content {
+            max-width: 640px;
         }
-        .report-reasons label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            color: var(--text-color);
-            cursor: pointer;
-            padding: 0.3rem 0.5rem;
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+        .quiz-option {
+            padding: 1rem;
+            background: var(--bg-color);
             border-radius: var(--border-radius-sm);
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            color: var(--text-color);
+        }
+        .quiz-option:hover {
+            border-color: var(--accent-blue);
+            background: var(--card-hover);
+        }
+        .quiz-option.selected {
+            border-color: var(--accent-gold);
+            background: rgba(212, 168, 67, 0.1);
+        }
+        .quiz-option.correct {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .quiz-option.wrong {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .quiz-progress {
+            display: flex;
+            gap: 0.3rem;
+            margin-bottom: 1rem;
+        }
+        .quiz-progress .step {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
             transition: var(--transition);
         }
-        .report-reasons label:hover {
-            background: var(--bg-color);
+        .quiz-progress .step.active {
+            background: var(--accent-blue);
         }
-        .report-reasons input[type="radio"] {
-            accent-color: var(--accent-blue);
-            width: 16px;
-            height: 16px;
+        .quiz-progress .step.correct {
+            background: var(--success);
+        }
+        .quiz-progress .step.wrong {
+            background: var(--error);
         }
 
         /* ============================================================
@@ -2298,6 +2455,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
         /* ============================================================
            TOASTS
@@ -2330,6 +2488,7 @@
            RESPONSIVE
            ============================================================ */
         #exam-serie-container { display: none; }
+        #edit-exam-serie-container { display: none; }
         .password-match-error { color: var(--error); font-size: 0.8rem; margin-top: 0.3rem; display: none; }
 
         @media (max-width: 768px) {
@@ -2376,6 +2535,12 @@
             .admin-tab { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
             .admin-stats-grid { grid-template-columns: repeat(2, 1fr); }
             .subject-stats-grid { grid-template-columns: repeat(2, 1fr); }
+            #edit-exam-popup .form-row { flex-direction: column; }
+            .chat-window { width: 95%; right: 2.5%; bottom: 80px; height: 70vh; }
+            .chat-fab { width: 52px; height: 52px; font-size: 1.4rem; bottom: 80px; }
+            .quiz-options { grid-template-columns: 1fr; }
+            .chat-suggestions { overflow-x: auto; flex-wrap: nowrap; }
+            .chat-suggestions .suggestion-chip { white-space: nowrap; }
         }
 
         @media (max-width: 480px) {
@@ -2408,6 +2573,9 @@
             .admin-tab { padding: 0.3rem 0.6rem; font-size: 0.7rem; }
             .admin-tab i { margin-right: 0.2rem; }
             .subject-stats-grid { grid-template-columns: 1fr 1fr; }
+            #edit-exam-popup .form-row { flex-direction: column; }
+            .chat-window { height: 60vh; }
+            .chat-message { max-width: 95%; }
         }
 
         /* ============================================================
@@ -2640,13 +2808,16 @@
                     <option value="G">G</option>
                 </select>
                 <button id="add-exam-btn" class="add-exam-btn" style="background:var(--primary-blue);color:#fff;border:none;padding:0.5rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;">+ Ajouter</button>
+                <button id="drafts-btn" class="add-exam-btn" style="background:var(--text-muted);color:#fff;border:none;padding:0.5rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;">
+                    <i class="fas fa-save"></i> Brouillons
+                </button>
             </div>
 
             <div id="exams-list" class="exam-list"></div>
             <div class="pagination" id="pagination"></div>
         </div>
 
-        <!-- EXAM DETAIL VIEW (PHASE 5 AMÉLIORÉE) -->
+        <!-- EXAM DETAIL VIEW -->
         <div id="exam-detail-view">
             <div class="breadcrumb" id="detail-breadcrumb">
                 <a href="#" data-view="home">Accueil</a>
@@ -2662,6 +2833,7 @@
                     <span><i class="fas fa-book"></i> <span id="detail-matiere">-</span></span>
                     <span><i class="fas fa-users"></i> <span id="detail-classe">-</span></span>
                     <span><i class="fas fa-tag"></i> <span id="detail-serie">-</span></span>
+                    <span id="detail-status-badge"></span>
                 </div>
             </div>
 
@@ -2678,6 +2850,8 @@
                     <div class="info-row"><span class="info-label">Auteur</span><span class="info-value" id="detail-info-auteur">-</span></div>
                     <div class="info-row"><span class="info-label">Téléchargements</span><span class="info-value" id="detail-info-downloads">-</span></div>
                     <div class="info-row"><span class="info-label">Vues</span><span class="info-value" id="detail-info-views">-</span></div>
+                    <div class="info-row"><span class="info-label">Statut</span><span class="info-value" id="detail-info-status">-</span></div>
+                    <div class="info-row" id="detail-rejection-row" style="display:none;"><span class="info-label">Raison du refus</span><span class="info-value" id="detail-info-rejection" style="color:var(--error);">-</span></div>
                     <div class="info-row"><span class="info-label">Date d'ajout</span><span class="info-value" id="detail-info-date">-</span></div>
                 </div>
 
@@ -2717,13 +2891,12 @@
                 <button class="action-btn outline" id="detail-favorite-btn"><i class="far fa-heart"></i> Ajouter aux favoris</button>
                 <button class="action-btn gold" id="detail-ia-btn"><i class="fas fa-robot"></i> Résoudre avec HosBac IA</button>
                 <button class="action-btn danger" id="detail-report-btn"><i class="fas fa-flag"></i> Signaler</button>
+                <button class="action-btn edit" id="detail-edit-btn" style="display:none;"><i class="fas fa-edit"></i> Modifier</button>
+                <button class="action-btn outline" id="detail-history-btn" style="display:none;"><i class="fas fa-history"></i> Historique</button>
                 <button class="action-btn outline" id="detail-back-btn"><i class="fas fa-arrow-left"></i> Retour</button>
             </div>
 
-            <!-- NOUVEAU: Tags/Informations complémentaires -->
-            <div class="exam-detail-tags" id="detail-tags" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;">
-                <!-- Tags générés dynamiquement -->
-            </div>
+            <div class="exam-detail-tags" id="detail-tags" style="margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:0.5rem;"></div>
 
             <div class="exam-detail-similar" id="detail-similar">
                 <div class="similar-title"><i class="fas fa-link"></i> Épreuves similaires</div>
@@ -2745,11 +2918,10 @@
             </div>
         </div>
 
-        <!-- PROFILE VIEW (PHASE 6 AMÉLIORÉE) -->
+        <!-- PROFILE VIEW -->
         <div id="profile-view" class="view">
             <h1 class="view-title"><i class="fas fa-user-circle"></i> Profil</h1>
             
-            <!-- En-tête du profil avec gamification -->
             <div class="profile-header">
                 <div class="profile-avatar-wrapper">
                     <div class="profile-avatar" id="profile-avatar" style="background:var(--primary-blue);">U</div>
@@ -2766,7 +2938,6 @@
                         </div>
                         <span class="xp-text" id="profile-xp-text">0 / 100 XP</span>
                     </div>
-                    <!-- NOUVEAU: Sélecteur de couleur d'avatar -->
                     <div class="avatar-color-picker" id="avatar-color-picker">
                         <div class="color-option selected" style="background:#1a2a4a;" data-color="#1a2a4a"></div>
                         <div class="color-option" style="background:#2c3e6b;" data-color="#2c3e6b"></div>
@@ -2779,7 +2950,6 @@
                 </div>
             </div>
 
-            <!-- Statistiques -->
             <div class="profile-stats">
                 <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
@@ -2787,7 +2957,11 @@
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
             </div>
 
-            <!-- Badges -->
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-upload"></i> Mes contributions</h2>
+                <div id="my-contributions" class="exam-list"></div>
+            </div>
+
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-award"></i> Badges</h2>
                 <div class="badges-container" id="badges-container">
@@ -2795,7 +2969,6 @@
                 </div>
             </div>
 
-            <!-- Graphiques de progression -->
             <div class="stats-charts">
                 <div class="chart-box">
                     <div class="chart-title">📊 Activité hebdomadaire</div>
@@ -2807,7 +2980,6 @@
                 </div>
             </div>
 
-            <!-- NOUVEAU: Statistiques par matière -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-chart-pie"></i> Statistiques par matière</h2>
                 <div class="subject-stats-grid" id="subject-stats-grid">
@@ -2815,7 +2987,6 @@
                 </div>
             </div>
 
-            <!-- Classement -->
             <div class="leaderboard" id="leaderboard">
                 <div class="leaderboard-title"><i class="fas fa-trophy" style="color:var(--accent-gold);"></i> Classement des apprenants</div>
                 <div id="leaderboard-list">
@@ -2823,7 +2994,6 @@
                 </div>
             </div>
 
-            <!-- Activité récente -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-history"></i> Activité récente</h2>
                 <div class="activity-list" id="activity-list">
@@ -2831,7 +3001,6 @@
                 </div>
             </div>
 
-            <!-- Formulaire de modification -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-edit"></i> Modifier le profil</h2>
                 <form id="profile-form">
@@ -2844,7 +3013,6 @@
                 </form>
             </div>
 
-            <!-- NOUVEAU: Paramètres du compte -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-cog"></i> Paramètres du compte</h2>
                 <div style="display:flex;flex-direction:column;gap:0.8rem;">
@@ -2854,7 +3022,6 @@
                 </div>
             </div>
 
-            <!-- Favoris -->
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-heart"></i> Épreuves favorites</h2>
                 <div id="favorites-list" class="favorites-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.2rem;"></div>
@@ -2929,6 +3096,13 @@
                             <p style="color:var(--text-light);">Chargement...</p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-clipboard-list"></i> Modération récente</h2>
+                <div id="recent-moderation" style="background:var(--bg-color); padding:0.8rem; border-radius:var(--border-radius-sm); max-height:300px; overflow-y:auto;">
+                    <p style="color:var(--text-light);">Chargement...</p>
                 </div>
             </div>
 
@@ -3039,7 +3213,7 @@
     </div>
 </div>
 
-<!-- NOUVEAU: POPUP SIGNALEMENT PHASE 5 -->
+<!-- POPUPS -->
 <div id="report-popup" class="popup-overlay">
     <div class="popup-content">
         <button class="popup-close"><i class="fas fa-times"></i></button>
@@ -3058,7 +3232,6 @@
     </div>
 </div>
 
-<!-- NOUVEAU: POPUP CHANGER MOT DE PASSE PHASE 6 -->
 <div id="change-password-popup" class="popup-overlay">
     <div class="popup-content">
         <button class="popup-close"><i class="fas fa-times"></i></button>
@@ -3072,17 +3245,141 @@
     </div>
 </div>
 
-<!-- CHATBOT IA -->
-<button class="chat-fab" id="chat-fab" title="Assistant IA"><i class="fas fa-robot"></i></button>
+<div id="edit-exam-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-edit"></i> Modifier l'épreuve</h2>
+        <form id="edit-exam-form">
+            <div class="form-row">
+                <div class="form-group"><label for="edit-exam-matiere">Matière</label>
+                    <select id="edit-exam-matiere" required style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                        <option value="Mathématique">Mathématique</option><option value="Français">Français</option>
+                        <option value="SVT">SVT</option><option value="PCT">PCT</option>
+                        <option value="Espagnol">Espagnol</option><option value="Histoire-géographie">Histoire-géographie</option>
+                        <option value="Allemand">Allemand</option><option value="Économie">Économie</option>
+                        <option value="Anglais">Anglais</option><option value="Comptabilité">Comptabilité</option>
+                        <option value="T-bad">T-bad</option><option value="Philosophie">Philosophie</option>
+                        <option value="Droit">Droit</option>
+                    </select>
+                </div>
+                <div class="form-group"><label for="edit-exam-classe">Classe</label>
+                    <select id="edit-exam-classe" required style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                        <option value="6ème">6ème</option><option value="5ème">5ème</option>
+                        <option value="4ème">4ème</option><option value="3ème">3ème</option>
+                        <option value="2nd">2nd</option><option value="1ère">1ère</option>
+                        <option value="Terminale">Terminale</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" id="edit-exam-serie-container"><label for="edit-exam-serie">Série</label>
+                    <select id="edit-exam-serie" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                        <option value="">Sélectionnez une série</option>
+                        <option value="A">A</option><option value="B">B</option>
+                        <option value="C">C</option><option value="D">D</option>
+                        <option value="G">G</option>
+                    </select>
+                </div>
+                <div class="form-group"><label for="edit-exam-annee">Année</label>
+                    <input type="text" id="edit-exam-annee" placeholder="2025" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="edit-exam-departement">Département</label>
+                    <input type="text" id="edit-exam-departement" placeholder="Littoral" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                </div>
+                <div class="form-group"><label for="edit-exam-session">Session</label>
+                    <input type="text" id="edit-exam-session" placeholder="Juin" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label for="edit-exam-type">Type</label>
+                    <input type="text" id="edit-exam-type" placeholder="Examen blanc" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                </div>
+                <div class="form-group"><label for="edit-exam-nom">Nom de l'épreuve</label>
+                    <input type="text" id="edit-exam-nom" required style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
+                </div>
+            </div>
+            <input type="hidden" id="edit-exam-id">
+            <button type="submit" class="submit-btn" id="edit-exam-submit-btn" style="width:100%;">Enregistrer les modifications</button>
+        </form>
+    </div>
+</div>
+
+<div id="rejection-reason-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-times-circle"></i> Refuser l'épreuve</h2>
+        <p style="color:var(--text-light);margin-bottom:0.5rem;">Veuillez indiquer la raison du refus :</p>
+        <div class="form-group">
+            <label for="rejection-reason">Raison du refus</label>
+            <textarea id="rejection-reason" placeholder="Expliquez pourquoi cette épreuve est refusée..." rows="4"></textarea>
+        </div>
+        <div style="display:flex;gap:0.8rem;margin-top:0.5rem;">
+            <button class="submit-btn" id="confirm-rejection-btn" style="flex:1;background:var(--error);">Refuser</button>
+            <button class="submit-btn" id="cancel-rejection-btn" style="flex:1;background:var(--text-muted);">Annuler</button>
+        </div>
+        <input type="hidden" id="rejection-exam-id">
+    </div>
+</div>
+
+<div id="moderation-history-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-history"></i> Historique de modération</h2>
+        <div id="moderation-history-list" class="moderation-history-list">
+            <p style="color:var(--text-light);">Chargement...</p>
+        </div>
+    </div>
+</div>
+
+<!-- NOUVEAU: POPUP QUIZ IA (PHASE 8) -->
+<div id="quiz-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-brain"></i> Quiz avec HosBac IA</h2>
+        <div id="quiz-container">
+            <div class="quiz-progress" id="quiz-progress"></div>
+            <div id="quiz-question" style="font-size:1.1rem;margin-bottom:1rem;color:var(--text-color);"></div>
+            <div class="quiz-options" id="quiz-options"></div>
+            <div id="quiz-feedback" style="margin-top:1rem;padding:0.8rem;border-radius:var(--border-radius-sm);display:none;"></div>
+            <button class="submit-btn" id="quiz-next-btn" style="width:100%;display:none;">Question suivante</button>
+            <button class="submit-btn" id="quiz-start-btn" style="width:100%;background:var(--accent-gold);color:#1a2a4a;">Commencer le quiz</button>
+        </div>
+        <input type="hidden" id="quiz-subject">
+        <input type="hidden" id="quiz-difficulty">
+    </div>
+</div>
+
+<!-- CHATBOT IA - PHASE 8 AMÉLIORÉ -->
+<button class="chat-fab" id="chat-fab" title="Assistant IA">
+    <i class="fas fa-robot"></i>
+    <span class="fab-badge" id="chat-badge">✦</span>
+</button>
 <div class="chat-window" id="chat-window">
     <div class="chat-header">
         <span class="chat-header-title"><i class="fas fa-robot" style="margin-right:0.5rem;"></i> Assistant HosBac</span>
         <div class="chat-header-actions">
             <button id="clear-chat-btn" title="Effacer l'historique"><i class="fas fa-trash-alt"></i></button>
+            <button id="chat-quiz-btn" title="Mode Quiz"><i class="fas fa-brain"></i></button>
             <button class="chat-header-close" id="chat-close"><i class="fas fa-times"></i></button>
         </div>
     </div>
+    <!-- NOUVEAU: Indicateur de mode pédagogique -->
+    <div class="pedagogical-mode-indicator" id="pedagogical-mode" style="display:none;">
+        <span>Mode :</span>
+        <span class="mode-badge" id="pedagogical-mode-badge">💡 Indice</span>
+        <button class="mode-close" id="pedagogical-mode-close"><i class="fas fa-times"></i></button>
+    </div>
     <div class="chat-messages" id="chat-messages"></div>
+    <!-- NOUVEAU: Suggestions de questions -->
+    <div class="chat-suggestions" id="chat-suggestions">
+        <span class="suggestion-chip" data-question="Explique-moi les fonctions en mathématiques">📐 Fonctions</span>
+        <span class="suggestion-chip" data-question="Comment résoudre une équation du second degré ?">✏️ Équations</span>
+        <span class="suggestion-chip" data-question="Révise avec moi le programme de Terminale">📚 Révision</span>
+        <span class="suggestion-chip" data-question="Donne-moi un exercice sur les probabilités">🎲 Probabilités</span>
+        <span class="suggestion-chip" data-question="Corrige ma réponse en physique">⚡ Physique</span>
+    </div>
     <div class="chat-file-preview" id="chat-file-preview">
         <span id="chat-file-name"></span>
         <span class="remove-file" id="chat-remove-file"><i class="fas fa-times-circle"></i></span>
@@ -3138,6 +3435,14 @@
                 </select>
             </div>
             <div class="form-group"><label for="exam-nom">Nom de l'épreuve</label><input type="text" id="exam-nom" required style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:120px;"><label for="exam-annee">Année</label><input type="text" id="exam-annee" placeholder="2025" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+                <div class="form-group" style="flex:1;min-width:120px;"><label for="exam-departement">Département</label><input type="text" id="exam-departement" placeholder="Littoral" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+            </div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:120px;"><label for="exam-session">Session</label><input type="text" id="exam-session" placeholder="Juin" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+                <div class="form-group" style="flex:1;min-width:120px;"><label for="exam-type">Type</label><input type="text" id="exam-type" placeholder="Examen blanc" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+            </div>
             <div class="form-group">
                 <label for="exam-sujet">Fichier sujet (PDF)</label>
                 <div class="file-upload" id="sujet-upload"><p>Cliquez pour télécharger le fichier sujet</p></div>
@@ -3152,7 +3457,10 @@
                 <div class="upload-progress" id="corrige-progress-container" style="display:none;"><div class="upload-progress-bar" id="corrige-progress-bar"></div><span class="upload-progress-text" id="corrige-progress-text">0%</span></div>
                 <input type="hidden" id="exam-corrige-url">
             </div>
-            <button type="submit" class="submit-btn" id="add-exam-submit-btn">Soumettre l'épreuve</button>
+            <div style="display:flex;gap:0.8rem;margin-top:0.5rem;">
+                <button type="submit" class="submit-btn" id="add-exam-submit-btn" style="flex:1;">Soumettre l'épreuve</button>
+                <button type="button" class="submit-btn" id="save-draft-btn" style="flex:1;background:var(--text-muted);">Sauvegarder en brouillon</button>
+            </div>
         </form>
     </div>
 </div>
@@ -3206,7 +3514,7 @@
 </audio>
 
 <!-- ============================================================
-     JAVASCRIPT COMPLET
+     JAVASCRIPT COMPLET - PHASE 8
      ============================================================ -->
 <script>
     // ============================================================
@@ -3249,6 +3557,7 @@
     let weeklyChart = null;
     let xpChart = null;
     let avatarColor = '#1a2a4a';
+    let editingExamId = null;
 
     // ============================================================
     // DÉFINITION DES BADGES
@@ -3261,7 +3570,9 @@
         { id: 'seven_days_active', name: 'Pilier', icon: '🔥', description: '7 jours d\'activité', condition: (data) => data.activeDays >= 7 },
         { id: 'thousand_xp', name: 'Légende', icon: '🏆', description: 'Atteindre 1000 XP', condition: (data) => data.totalXp >= 1000 },
         { id: 'verified_contributor', name: 'Contributeur vérifié', icon: '⭐', description: '5 épreuves approuvées', condition: (data) => data.examsUploaded >= 5 },
-        { id: 'xp_master', name: 'Maître XP', icon: '💎', description: 'Atteindre 500 XP', condition: (data) => data.totalXp >= 500 }
+        { id: 'xp_master', name: 'Maître XP', icon: '💎', description: 'Atteindre 500 XP', condition: (data) => data.totalXp >= 500 },
+        // NOUVEAU: Badge IA (Phase 8)
+        { id: 'ai_master', name: 'Pilier IA', icon: '🤖', description: '10 conversations avec l\'IA', condition: (data) => data.aiConversations >= 10 }
     ];
 
     // ============================================================
@@ -3398,12 +3709,13 @@
     const filterType = document.getElementById('filter-type');
     const filterCorrige = document.getElementById('filter-corrige');
 
-    // Détail épreuve - Phase 5 améliorée
+    // Détail épreuve
     const detailTitle = document.getElementById('detail-title');
     const detailSubtitle = document.getElementById('detail-subtitle');
     const detailMatiere = document.getElementById('detail-matiere');
     const detailClasse = document.getElementById('detail-classe');
     const detailSerie = document.getElementById('detail-serie');
+    const detailStatusBadge = document.getElementById('detail-status-badge');
     const detailInfoMatiere = document.getElementById('detail-info-matiere');
     const detailInfoClasse = document.getElementById('detail-info-classe');
     const detailInfoSerie = document.getElementById('detail-info-serie');
@@ -3415,6 +3727,9 @@
     const detailInfoAuteur = document.getElementById('detail-info-auteur');
     const detailInfoDownloads = document.getElementById('detail-info-downloads');
     const detailInfoViews = document.getElementById('detail-info-views');
+    const detailInfoStatus = document.getElementById('detail-info-status');
+    const detailInfoRejection = document.getElementById('detail-info-rejection');
+    const detailRejectionRow = document.getElementById('detail-rejection-row');
     const detailInfoDate = document.getElementById('detail-info-date');
     const detailDownloadSujet = document.getElementById('detail-download-sujet');
     const detailDownloadSujetBtn = document.getElementById('detail-download-sujet-btn');
@@ -3424,6 +3739,8 @@
     const detailBackBtn = document.getElementById('detail-back-btn');
     const detailShareBtn = document.getElementById('detail-share-btn');
     const detailReportBtn = document.getElementById('detail-report-btn');
+    const detailEditBtn = document.getElementById('detail-edit-btn');
+    const detailHistoryBtn = document.getElementById('detail-history-btn');
     const detailTags = document.getElementById('detail-tags');
     const pdfViewer = document.getElementById('pdf-viewer');
     const pdfControls = document.getElementById('pdf-controls');
@@ -3435,7 +3752,7 @@
     const similarList = document.getElementById('similar-list');
     const detailBreadcrumbCurrent = document.getElementById('detail-breadcrumb-current');
 
-    // Profil - Phase 6 améliorée
+    // Profil
     const profileAvatar = document.getElementById('profile-avatar');
     const profileLevelBadge = document.getElementById('profile-level-badge');
     const profileName = document.getElementById('profile-name');
@@ -3455,15 +3772,28 @@
     const changePasswordBtn = document.getElementById('change-password-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
     const deleteAccountBtn = document.getElementById('delete-account-btn');
+    const myContributionsContainer = document.getElementById('my-contributions');
 
-    // Popups phase 5 & 6
+    // Popups
     const reportPopup = document.getElementById('report-popup');
     const reportReasons = document.getElementById('report-reasons');
     const submitReportBtn = document.getElementById('submit-report-btn');
     const changePasswordPopup = document.getElementById('change-password-popup');
     const changePasswordForm = document.getElementById('change-password-form');
+    const editExamPopup = document.getElementById('edit-exam-popup');
+    const editExamForm = document.getElementById('edit-exam-form');
+    const editExamSubmitBtn = document.getElementById('edit-exam-submit-btn');
+    const rejectionReasonPopup = document.getElementById('rejection-reason-popup');
+    const rejectionReason = document.getElementById('rejection-reason');
+    const confirmRejectionBtn = document.getElementById('confirm-rejection-btn');
+    const cancelRejectionBtn = document.getElementById('cancel-rejection-btn');
+    const rejectionExamId = document.getElementById('rejection-exam-id');
+    const moderationHistoryPopup = document.getElementById('moderation-history-popup');
+    const moderationHistoryList = document.getElementById('moderation-history-list');
+    const draftsBtn = document.getElementById('drafts-btn');
+    const saveDraftBtn = document.getElementById('save-draft-btn');
 
-    // Chatbot
+    // Phase 8 - IA améliorée
     const chatFab = document.getElementById('chat-fab');
     const chatWindow = document.getElementById('chat-window');
     const chatClose = document.getElementById('chat-close');
@@ -3476,8 +3806,33 @@
     const chatFilePreview = document.getElementById('chat-file-preview');
     const chatFileName = document.getElementById('chat-file-name');
     const chatRemoveFile = document.getElementById('chat-remove-file');
+    const chatSuggestions = document.getElementById('chat-suggestions');
+    const chatBadge = document.getElementById('chat-badge');
+    const chatQuizBtn = document.getElementById('chat-quiz-btn');
+    const pedagogicalMode = document.getElementById('pedagogical-mode');
+    const pedagogicalModeBadge = document.getElementById('pedagogical-mode-badge');
+    const pedagogicalModeClose = document.getElementById('pedagogical-mode-close');
+    const quizPopup = document.getElementById('quiz-popup');
+    const quizContainer = document.getElementById('quiz-container');
+    const quizProgress = document.getElementById('quiz-progress');
+    const quizQuestion = document.getElementById('quiz-question');
+    const quizOptions = document.getElementById('quiz-options');
+    const quizFeedback = document.getElementById('quiz-feedback');
+    const quizNextBtn = document.getElementById('quiz-next-btn');
+    const quizStartBtn = document.getElementById('quiz-start-btn');
+    const quizSubject = document.getElementById('quiz-subject');
+    const quizDifficulty = document.getElementById('quiz-difficulty');
+
     let attachedFile = null;
     let isChatLoading = false;
+    // Phase 8 - Nouveaux états
+    let pedagogicalModeActive = false;
+    let pedagogicalModeType = null;
+    let quizQuestions = [];
+    let quizCurrentIndex = 0;
+    let quizScore = 0;
+    let quizAnswered = false;
+    let aiConversationCount = 0;
 
     // PWA
     const installBanner = document.getElementById('install-banner');
@@ -3518,6 +3873,17 @@
     }
     examClasseSelect?.addEventListener('change', toggleSerieField);
     toggleSerieField();
+
+    // Fonction pour le champ série dans l'édition
+    function toggleEditSerieField() {
+        const classe = document.getElementById('edit-exam-classe')?.value || '';
+        const container = document.getElementById('edit-exam-serie-container');
+        const select = document.getElementById('edit-exam-serie');
+        const showSerie = ['2nd', '1ère', 'Terminale'].includes(classe);
+        if (container) container.style.display = showSerie ? 'block' : 'none';
+        if (select && !showSerie) select.value = '';
+    }
+    document.getElementById('edit-exam-classe')?.addEventListener('change', toggleEditSerieField);
 
     // ============================================================
     // PROGRESS TRACKERS
@@ -3822,7 +4188,7 @@
     let geminiApiKey = '';
 
     // ============================================================
-    // CHATBOT IA (GEMINI)
+    // CHATBOT IA - PHASE 8 AMÉLIORÉE
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
@@ -4040,6 +4406,7 @@
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'message-actions';
 
+            // Bouton de réplique
             const replyBtn = document.createElement('button');
             replyBtn.innerHTML = '<i class="fas fa-reply"></i>';
             replyBtn.title = 'Répondre en citant';
@@ -4052,6 +4419,7 @@
             });
             actionsDiv.appendChild(replyBtn);
 
+            // Copier
             const copyBtn = document.createElement('button');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.title = 'Copier le texte';
@@ -4070,6 +4438,44 @@
             });
             actionsDiv.appendChild(copyBtn);
 
+            // NOUVEAU: Boutons pédagogiques (Phase 8)
+            const hintBtn = document.createElement('button');
+            hintBtn.innerHTML = '💡 Indice';
+            hintBtn.title = 'Demander un indice';
+            hintBtn.className = 'pedagogical-btn hint';
+            hintBtn.addEventListener('click', () => {
+                sendPedagogicalRequest('hint', text);
+            });
+            actionsDiv.appendChild(hintBtn);
+
+            const explanationBtn = document.createElement('button');
+            explanationBtn.innerHTML = '📖 Explication';
+            explanationBtn.title = 'Demander une explication détaillée';
+            explanationBtn.className = 'pedagogical-btn explanation';
+            explanationBtn.addEventListener('click', () => {
+                sendPedagogicalRequest('explanation', text);
+            });
+            actionsDiv.appendChild(explanationBtn);
+
+            const methodBtn = document.createElement('button');
+            methodBtn.innerHTML = '🧠 Méthode';
+            methodBtn.title = 'Demander la méthode';
+            methodBtn.className = 'pedagogical-btn method';
+            methodBtn.addEventListener('click', () => {
+                sendPedagogicalRequest('method', text);
+            });
+            actionsDiv.appendChild(methodBtn);
+
+            const solutionBtn = document.createElement('button');
+            solutionBtn.innerHTML = '✅ Solution';
+            solutionBtn.title = 'Voir la solution complète';
+            solutionBtn.className = 'pedagogical-btn solution';
+            solutionBtn.addEventListener('click', () => {
+                sendPedagogicalRequest('solution', text);
+            });
+            actionsDiv.appendChild(solutionBtn);
+
+            // Évaluations
             const thumbsUp = document.createElement('button');
             thumbsUp.innerHTML = '<i class="fas fa-thumbs-up"></i>';
             thumbsUp.title = 'Utile';
@@ -4079,6 +4485,8 @@
                 thumbsDown.classList.remove('active');
                 if (thumbsUp.classList.contains('active')) {
                     showToast('Merci pour votre retour !', 'success');
+                    // Envoyer un feedback à l'IA
+                    sendFeedbackToAI('positive');
                 }
             });
             actionsDiv.appendChild(thumbsUp);
@@ -4092,10 +4500,12 @@
                 thumbsUp.classList.remove('active');
                 if (thumbsDown.classList.contains('active')) {
                     showToast('Merci pour votre retour !', 'success');
+                    sendFeedbackToAI('negative');
                 }
             });
             actionsDiv.appendChild(thumbsDown);
 
+            // Supprimer
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
             deleteBtn.title = 'Supprimer ce message';
@@ -4107,6 +4517,7 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
+            // PDF
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.title = 'Télécharger en PDF';
@@ -4147,6 +4558,9 @@
         }
     }
 
+    // ============================================================
+    // MESSAGE DE BIENVENUE AVEC MODES PÉDAGOGIQUES (PHASE 8)
+    // ============================================================
     async function displayWelcomeMessage() {
         const chatContainer = document.getElementById('chat-messages');
         if (!chatContainer) return;
@@ -4173,14 +4587,14 @@
         }
 
         const welcomeText = userName 
-            ? `Bonjour ${userName} ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`
-            : `Bonjour ! Je suis l'assistant HosBac. Je suis à votre disposition pour vous accompagner dans vos révisions, répondre à vos questions sur les épreuves, les cours ou tout autre sujet éducatif. Comment puis-je vous aider aujourd'hui ?`;
+            ? `Bonjour ${userName} ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n**Je peux vous aider à :**\n📚 Comprendre un cours ou une notion\n✏️ Résoudre un exercice ou une épreuve\n🤔 Trouver des indices pour avancer\n📝 Corriger vos réponses\n🧪 Générer des exercices similaires\n\n**Mode pédagogique :**\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`
+            : `Bonjour ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n**Je peux vous aider à :**\n📚 Comprendre un cours ou une notion\n✏️ Résoudre un exercice ou une épreuve\n🤔 Trouver des indices pour avancer\n📝 Corriger vos réponses\n🧪 Générer des exercices similaires\n\n**Mode pédagogique :**\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`;
 
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message bot welcome';
         msgDiv.dataset.messageId = 'welcome';
         msgDiv.setAttribute('data-raw-text', welcomeText);
-        msgDiv.innerHTML = `${welcomeText}<div class="message-time">--:--</div>`;
+        msgDiv.innerHTML = welcomeText.replace(/\n/g, '<br>') + `<div class="message-time">--:--</div>`;
         chatContainer.appendChild(msgDiv);
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
@@ -4205,13 +4619,342 @@
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'chat-loading';
         loadingDiv.id = 'chat-loading';
-        loadingDiv.textContent = 'L\'IA réfléchit...';
+        loadingDiv.textContent = 'L\'IA réfléchit... 🤔';
         chatMessages.appendChild(loadingDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
     function hideLoading() {
         const loading = document.getElementById('chat-loading');
         if (loading) loading.remove();
+    }
+
+    // ============================================================
+    // DEMANDE PÉDAGOGIQUE (PHASE 8)
+    // ============================================================
+    function sendPedagogicalRequest(mode, originalText) {
+        if (!currentUser) {
+            showToast('Connectez-vous pour utiliser cette fonction', 'warning');
+            return;
+        }
+        if (isChatLoading) {
+            showToast('Un message est déjà en cours', 'warning');
+            return;
+        }
+
+        const modeNames = {
+            'hint': '💡 Indice',
+            'explanation': '📖 Explication détaillée',
+            'method': '🧠 Méthode',
+            'solution': '✅ Solution complète'
+        };
+
+        const modePrompts = {
+            'hint': `Donne-moi un indice pour comprendre ceci, sans donner directement la réponse :\n\n"${originalText}"`,
+            'explanation': `Explique-moi ceci de manière détaillée et pédagogique :\n\n"${originalText}"`,
+            'method': `Quelle est la méthode à suivre pour résoudre ce type de problème ?\n\n"${originalText}"`,
+            'solution': `Donne-moi la solution complète et détaillée de ceci :\n\n"${originalText}"`
+        };
+
+        // Afficher l'indicateur de mode
+        pedagogicalModeType = mode;
+        pedagogicalModeActive = true;
+        pedagogicalMode.style.display = 'flex';
+        pedagogicalModeBadge.textContent = modeNames[mode] || mode;
+        pedagogicalModeBadge.className = `mode-badge ${mode}`;
+
+        // Ajouter le message utilisateur avec le mode
+        const userMessage = `🔍 Mode ${modeNames[mode]}\n\n${originalText}`;
+        const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        addChatMessage(userMessage, 'user', time);
+
+        showLoading();
+        sendMessageToGemini(modePrompts[mode], null, 0, true);
+    }
+
+    // ============================================================
+    // ENVOI DE FEEDBACK À L'IA (PHASE 8)
+    // ============================================================
+    function sendFeedbackToAI(type) {
+        if (!currentUser) return;
+        // Enregistrer le feedback pour améliorer l'IA
+        db.collection('ai_feedback').add({
+            userId: currentUser.uid,
+            type: type,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(err => console.error('Erreur enregistrement feedback:', err));
+    }
+
+    // ============================================================
+    // SUGGESTIONS DE QUESTIONS (PHASE 8)
+    // ============================================================
+    function initSuggestions() {
+        chatSuggestions?.addEventListener('click', (e) => {
+            const chip = e.target.closest('.suggestion-chip');
+            if (!chip) return;
+            const question = chip.dataset.question;
+            if (question) {
+                chatInput.value = question;
+                handleSendMessage();
+            }
+        });
+    }
+
+    // ============================================================
+    // MODE QUIZ (PHASE 8)
+    // ============================================================
+    function startQuiz(subject = 'Mathématiques', difficulty = 'moyen') {
+        if (!currentUser) {
+            showToast('Connectez-vous pour utiliser le quiz', 'warning');
+            return;
+        }
+        quizSubject.value = subject;
+        quizDifficulty.value = difficulty;
+        quizPopup.style.display = 'flex';
+        quizStartBtn.style.display = 'block';
+        quizNextBtn.style.display = 'none';
+        quizFeedback.style.display = 'none';
+        quizOptions.innerHTML = '';
+        quizQuestion.textContent = 'Chargement du quiz...';
+        quizProgress.innerHTML = '';
+        quizScore = 0;
+        quizCurrentIndex = 0;
+        quizAnswered = false;
+        
+        // Générer des questions via l'IA
+        generateQuizQuestions(subject, difficulty);
+    }
+
+    function generateQuizQuestions(subject, difficulty) {
+        const prompt = `Génère 5 questions de quiz sur le thème "${subject}" niveau ${difficulty}. 
+        Chaque question doit avoir 4 options (a, b, c, d) avec une seule bonne réponse.
+        Réponds au format JSON :
+        [
+            {
+                "question": "Question ici ?",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "correct": 0
+            }
+        ]
+        où "correct" est l'index de la bonne réponse (0, 1, 2 ou 3).
+        Ne mets que le JSON, rien d'autre.`;
+
+        getGeminiKey().then(key => {
+            if (!key) {
+                showToast('Clé API Gemini non configurée', 'error');
+                quizQuestion.textContent = 'Erreur : Clé API non configurée.';
+                return;
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
+            
+            const payload = {
+                contents: [{
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                try {
+                    // Extraire le JSON du texte
+                    const jsonMatch = text.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                        quizQuestions = JSON.parse(jsonMatch[0]);
+                        if (quizQuestions.length === 0) {
+                            throw new Error('Aucune question générée');
+                        }
+                        displayQuizQuestion();
+                    } else {
+                        throw new Error('Format JSON invalide');
+                    }
+                } catch (error) {
+                    console.error('Erreur parsing quiz:', error);
+                    // Questions par défaut
+                    quizQuestions = [
+                        {
+                            question: `Quelle est la formule de l'aire d'un cercle ?`,
+                            options: ['π × r²', '2π × r', 'π × d', 'r² × π'],
+                            correct: 0
+                        },
+                        {
+                            question: `Quelle est la dérivée de f(x) = x² ?`,
+                            options: ['2x', 'x²', '2x²', 'x'],
+                            correct: 0
+                        },
+                        {
+                            question: `Quelle est la valeur de π (pi) ?`,
+                            options: ['3.14', '3.1416', '3.14159', 'Toutes ces réponses'],
+                            correct: 3
+                        },
+                        {
+                            question: `Quelle est la fonction qui donne la racine carrée ?`,
+                            options: ['√x', 'x²', '2x', 'log(x)'],
+                            correct: 0
+                        },
+                        {
+                            question: `Quelle est la somme des angles d'un triangle ?`,
+                            options: ['90°', '180°', '270°', '360°'],
+                            correct: 1
+                        }
+                    ];
+                    displayQuizQuestion();
+                }
+            })
+            .catch(error => {
+                console.error('Erreur génération quiz:', error);
+                showToast('Erreur lors de la génération du quiz', 'error');
+                quizPopup.style.display = 'none';
+            });
+        });
+    }
+
+    function displayQuizQuestion() {
+        if (quizCurrentIndex >= quizQuestions.length) {
+            showQuizResults();
+            return;
+        }
+
+        const q = quizQuestions[quizCurrentIndex];
+        quizQuestion.textContent = `Question ${quizCurrentIndex + 1}/${quizQuestions.length} : ${q.question}`;
+        
+        // Mettre à jour la progression
+        quizProgress.innerHTML = '';
+        for (let i = 0; i < quizQuestions.length; i++) {
+            const step = document.createElement('div');
+            step.className = 'step';
+            if (i < quizCurrentIndex) {
+                // Vérifier si la question précédente était correcte
+                // On ne sait pas encore, on laisse neutre
+            }
+            if (i === quizCurrentIndex) {
+                step.classList.add('active');
+            }
+            quizProgress.appendChild(step);
+        }
+
+        quizOptions.innerHTML = '';
+        q.options.forEach((option, index) => {
+            const div = document.createElement('div');
+            div.className = 'quiz-option';
+            div.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+            div.dataset.index = index;
+            div.addEventListener('click', () => selectQuizOption(index));
+            quizOptions.appendChild(div);
+        });
+
+        quizFeedback.style.display = 'none';
+        quizNextBtn.style.display = 'none';
+        quizAnswered = false;
+        quizStartBtn.style.display = 'none';
+    }
+
+    function selectQuizOption(index) {
+        if (quizAnswered) return;
+        quizAnswered = true;
+
+        const q = quizQuestions[quizCurrentIndex];
+        const options = quizOptions.querySelectorAll('.quiz-option');
+        options.forEach((opt, i) => {
+            if (i === q.correct) {
+                opt.classList.add('correct');
+            } else if (i === index && i !== q.correct) {
+                opt.classList.add('wrong');
+            }
+            if (i === index) {
+                opt.classList.add('selected');
+            }
+        });
+
+        if (index === q.correct) {
+            quizScore++;
+            quizFeedback.style.display = 'block';
+            quizFeedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            quizFeedback.style.color = 'var(--success)';
+            quizFeedback.style.border = '1px solid var(--success)';
+            quizFeedback.style.borderRadius = 'var(--border-radius-sm)';
+            quizFeedback.style.padding = '0.8rem';
+            quizFeedback.innerHTML = '✅ Bonne réponse !';
+        } else {
+            quizFeedback.style.display = 'block';
+            quizFeedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            quizFeedback.style.color = 'var(--error)';
+            quizFeedback.style.border = '1px solid var(--error)';
+            quizFeedback.style.borderRadius = 'var(--border-radius-sm)';
+            quizFeedback.style.padding = '0.8rem';
+            quizFeedback.innerHTML = `❌ Mauvaise réponse. La bonne réponse était : ${q.options[q.correct]}`;
+        }
+
+        if (quizCurrentIndex < quizQuestions.length - 1) {
+            quizNextBtn.style.display = 'block';
+            quizNextBtn.textContent = 'Question suivante →';
+        } else {
+            quizNextBtn.style.display = 'block';
+            quizNextBtn.textContent = 'Voir les résultats 🏆';
+        }
+    }
+
+    function showQuizResults() {
+        quizQuestion.textContent = `🏆 Quiz terminé !`;
+        quizOptions.innerHTML = '';
+        quizFeedback.style.display = 'block';
+        quizFeedback.style.background = 'rgba(59, 130, 246, 0.1)';
+        quizFeedback.style.color = 'var(--text-color)';
+        quizFeedback.style.border = '1px solid var(--accent-blue)';
+        quizFeedback.style.borderRadius = 'var(--border-radius-sm)';
+        quizFeedback.style.padding = '1.2rem';
+        const percentage = Math.round((quizScore / quizQuestions.length) * 100);
+        let emoji = '😅';
+        if (percentage >= 80) emoji = '🌟';
+        else if (percentage >= 60) emoji = '😊';
+        else if (percentage >= 40) emoji = '🤔';
+        else emoji = '📚';
+        quizFeedback.innerHTML = `
+            <div style="font-size:2rem;text-align:center;margin-bottom:0.5rem;">${emoji}</div>
+            <div style="text-align:center;font-size:1.2rem;font-weight:600;">${quizScore}/${quizQuestions.length} bonnes réponses</div>
+            <div style="text-align:center;font-size:0.9rem;color:var(--text-light);">${percentage}% de réussite</div>
+            <div style="text-align:center;margin-top:0.5rem;font-size:0.8rem;color:var(--text-light);">
+                ${percentage >= 80 ? 'Excellent travail ! 🎉' : 
+                  percentage >= 60 ? 'Bon travail, continuez comme ça ! 💪' : 
+                  percentage >= 40 ? 'Continuez à vous entraîner ! 📖' : 
+                  'N\'abandonnez pas, révisez et réessayez ! 💪'}
+            </div>
+        `;
+        quizNextBtn.style.display = 'none';
+        quizStartBtn.style.display = 'block';
+        quizStartBtn.textContent = '🔄 Recommencer';
+        quizStartBtn.onclick = () => {
+            const subject = document.getElementById('quiz-subject').value;
+            const difficulty = document.getElementById('quiz-difficulty').value;
+            generateQuizQuestions(subject, difficulty);
+        };
+        
+        // Enregistrer le résultat
+        if (currentUser) {
+            db.collection('quiz_results').add({
+                userId: currentUser.uid,
+                subject: quizSubject.value,
+                score: quizScore,
+                total: quizQuestions.length,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(err => console.error('Erreur enregistrement quiz:', err));
+            
+            // Gagner des XP pour le quiz
+            const xpEarned = Math.round((quizScore / quizQuestions.length) * 10);
+            if (xpEarned > 0) {
+                db.collection('users').doc(currentUser.uid).update({
+                    totalXp: firebase.firestore.FieldValue.increment(xpEarned),
+                    points: firebase.firestore.FieldValue.increment(Math.round(xpEarned / 2))
+                }).catch(err => console.error('Erreur attribution XP quiz:', err));
+                showToast(`+${xpEarned} XP gagnés ! 🎉`, 'success');
+            }
+        }
     }
 
     // ============================================================
@@ -4276,9 +5019,9 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI
+    // ENVOI DU MESSAGE À GEMINI - PHASE 8 AMÉLIORÉE
     // ============================================================
-    async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0) {
+    async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
             const key = await getGeminiKey();
             if (!key || key.trim() === '') {
@@ -4289,16 +5032,29 @@
             const examsSummary = await fetchExamsForAI();
             console.log('[IA] Liste envoyée à l\'IA :', examsSummary);
 
-            const systemInstruction = 
+            // Construction du prompt système enrichi
+            let systemInstruction = 
                 "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. " +
-                "Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif (par exemple : tu ne dois pas coder des applications, créer des sites web, ni répondre à des questions de la vie quotidienne hors éducation). " +
-                "Si un utilisateur te demande de faire quelque chose qui n'est pas lié à ses études ou aux épreuves, refuse fermement mais poliment en disant : 'Désolé, je suis l'assistant HosBac et je suis uniquement conçu pour t'accompagner dans tes révisions et exercices scolaires.'\n\n" +
-                examsSummary;
+                "Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " +
+                "Si un utilisateur te demande de faire quelque chose qui n'est pas lié à ses études ou aux épreuves, refuse fermement mais poliment.\n\n";
+
+            // Ajout des modes pédagogiques
+            if (isPedagogical) {
+                systemInstruction += "L'utilisateur a demandé un mode pédagogique spécifique. Adapte ta réponse en conséquence :\n";
+                systemInstruction += "- 'hint' : Donne un indice progressif sans révéler la solution complète\n";
+                systemInstruction += "- 'explanation' : Fournis une explication détaillée et structurée\n";
+                systemInstruction += "- 'method' : Explique la méthode à suivre étape par étape\n";
+                systemInstruction += "- 'solution' : Donne la solution complète avec explications\n\n";
+            }
+
+            systemInstruction += "Voici la liste des épreuves disponibles sur la plateforme :\n" + examsSummary;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key.trim()}`;
             
             let contents = [];
-            chatHistory.forEach(entry => {
+            // Prendre les 10 derniers messages pour le contexte
+            const recentHistory = chatHistory.slice(-10);
+            recentHistory.forEach(entry => {
                 contents.push({ role: entry.role, parts: entry.parts });
             });
 
@@ -4369,7 +5125,7 @@
                 
                 if (retryCount < 1) {
                     await new Promise(resolve => setTimeout(resolve, 3000));
-                    return sendMessageToGemini(userMessage, fileData, retryCount + 1);
+                    return sendMessageToGemini(userMessage, fileData, retryCount + 1, isPedagogical);
                 } else {
                     addChatMessage('Le service de l\'IA est momentanément indisponible. Veuillez réessayer dans quelques instants.', 'bot');
                     return;
@@ -4392,6 +5148,14 @@
             const data = await response.json();
             const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Je n\'ai pas de réponse à cela.';
             addChatMessage(textResponse, 'bot');
+
+            // Incrémenter le compteur de conversations IA
+            if (currentUser) {
+                aiConversationCount++;
+                db.collection('users').doc(currentUser.uid).update({
+                    aiConversations: firebase.firestore.FieldValue.increment(1)
+                }).catch(err => console.error('Erreur mise à jour compteur IA:', err));
+            }
 
         } catch (error) {
             console.error('[IA] Erreur lors de l\'appel à Gemini:', error);
@@ -4424,6 +5188,12 @@
             chatSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
             chatSendBtn.disabled = false;
             chatInput.disabled = false;
+            // Désactiver le mode pédagogique après la réponse
+            if (isPedagogical) {
+                pedagogicalModeActive = false;
+                pedagogicalMode.style.display = 'none';
+                pedagogicalModeType = null;
+            }
         }
     }
 
@@ -4479,7 +5249,7 @@
                 }, 5000);
 
                 showLoading();
-                sendMessageToGemini(text, fileData);
+                sendMessageToGemini(text, fileData, 0, false);
             }).catch(err => {
                 console.error('Erreur incrémentation quota:', err);
                 showToast('Erreur lors de l\'envoi du message', 'error');
@@ -4512,6 +5282,8 @@
         if (chatWindow.classList.contains('open')) {
             loadChatHistoryFromFirestore();
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Mettre à jour le badge
+            if (chatBadge) chatBadge.style.display = 'none';
         }
     });
     chatClose?.addEventListener('click', () => {
@@ -4545,6 +5317,40 @@
         chatFileInput.value = '';
     });
 
+    // Mode pédagogique - fermeture
+    pedagogicalModeClose?.addEventListener('click', () => {
+        pedagogicalModeActive = false;
+        pedagogicalMode.style.display = 'none';
+        pedagogicalModeType = null;
+    });
+
+    // Bouton Quiz
+    chatQuizBtn?.addEventListener('click', () => {
+        if (!currentUser) {
+            showToast('Connectez-vous pour utiliser le quiz', 'warning');
+            return;
+        }
+        // Proposer un choix de matière
+        const subject = prompt('Quelle matière pour le quiz ? (Mathématiques, Français, Physique, etc.)', 'Mathématiques');
+        if (subject && subject.trim()) {
+            startQuiz(subject.trim(), 'moyen');
+        }
+    });
+
+    // Gestion du quiz
+    quizNextBtn?.addEventListener('click', () => {
+        quizCurrentIndex++;
+        displayQuizQuestion();
+    });
+
+    // Fermeture du quiz
+    document.querySelector('#quiz-popup .popup-close')?.addEventListener('click', () => {
+        quizPopup.style.display = 'none';
+    });
+
+    // ============================================================
+    // SAUVEGARDE ET CHARGEMENT DE L'HISTORIQUE CHAT
+    // ============================================================
     function loadChatHistoryFromFirestore() {
         if (!currentUser) return Promise.resolve();
         const docRef = db.collection('users').doc(currentUser.uid).collection('chats').doc('current');
@@ -4873,7 +5679,7 @@
     }
 
     // ============================================================
-    // STATISTIQUES PAR MATIÈRE (PHASE 6)
+    // STATISTIQUES PAR MATIÈRE
     // ============================================================
     function loadSubjectStats() {
         if (!subjectStatsGrid || !currentUser) return;
@@ -5026,6 +5832,70 @@
     }
 
     // ============================================================
+    // MES CONTRIBUTIONS
+    // ============================================================
+    function loadMyContributions() {
+        if (!myContributionsContainer || !currentUser) return;
+        myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Chargement de vos contributions...</p>';
+        
+        db.collection('epreuves')
+            .where('auteurId', '==', currentUser.uid)
+            .orderBy('createdAt', 'desc')
+            .get()
+            .then(snapshot => {
+                myContributionsContainer.innerHTML = '';
+                if (snapshot.empty) {
+                    myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Vous n\'avez pas encore contribué.</p>';
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const exam = doc.data();
+                    const status = exam.status || 'pending';
+                    const statusLabels = {
+                        'pending': '⏳ En attente',
+                        'approved': '✅ Approuvée',
+                        'rejected': '❌ Refusée',
+                        'draft': '📝 Brouillon'
+                    };
+                    
+                    const card = document.createElement('div');
+                    card.className = 'exam-card';
+                    card.style.cursor = 'pointer';
+                    card.innerHTML = `
+                        <div class="exam-badges">
+                            <span class="exam-badge ${status}">${statusLabels[status] || status}</span>
+                            ${exam.fichier_corrige ? '<span class="exam-badge corrige">✅ Corrigé</span>' : '<span class="exam-badge sans-corrige">❌ Sans corrigé</span>'}
+                        </div>
+                        <h3 class="exam-name">${exam.nom_epreuve || 'Sans nom'}</h3>
+                        <div class="exam-meta">
+                            <span><i class="fas fa-book meta-icon"></i> ${exam.matiere || ''}</span>
+                            <span><i class="fas fa-users meta-icon"></i> ${exam.classe || ''}${exam.serie ? ' - Série '+exam.serie : ''}</span>
+                        </div>
+                        <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-light);">
+                            ${exam.status === 'rejected' && exam.rejectionReason ? 
+                                `<span style="color:var(--error);"><i class="fas fa-times-circle"></i> ${exam.rejectionReason}</span>` : 
+                                ''}
+                            ${exam.status === 'pending' ? 
+                                '<span style="color:var(--warning);"><i class="fas fa-clock"></i> En attente de validation</span>' : 
+                                ''}
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', () => {
+                        showExamDetail(doc.id);
+                    });
+                    
+                    myContributionsContainer.appendChild(card);
+                });
+            })
+            .catch(err => {
+                console.error('Erreur chargement contributions:', err);
+                myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
+            });
+    }
+
+    // ============================================================
     // GRAPHIQUES
     // ============================================================
     function initCharts() {
@@ -5127,6 +5997,61 @@
     }
 
     // ============================================================
+    // HISTORIQUE MODÉRATION
+    // ============================================================
+    function loadModerationHistory(examId) {
+        if (!moderationHistoryList) return;
+        moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Chargement de l\'historique...</p>';
+        
+        db.collection('moderation_history')
+            .where('examId', '==', examId)
+            .orderBy('timestamp', 'desc')
+            .get()
+            .then(snapshot => {
+                moderationHistoryList.innerHTML = '';
+                if (snapshot.empty) {
+                    moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Aucun historique de modération.</p>';
+                    return;
+                }
+                
+                const actionLabels = {
+                    'submitted': '📤 Soumission',
+                    'approved': '✅ Approbation',
+                    'rejected': '❌ Refus',
+                    'edited': '✏️ Modification'
+                };
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const item = document.createElement('div');
+                    item.className = 'moderation-history-item';
+                    const action = actionLabels[data.action] || data.action;
+                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
+                    
+                    let reasonHtml = '';
+                    if (data.reason) {
+                        reasonHtml = `<div class="history-reason">Raison : ${data.reason}</div>`;
+                    }
+                    
+                    item.innerHTML = `
+                        <div class="history-icon">${data.action === 'approved' ? '✅' : data.action === 'rejected' ? '❌' : '📝'}</div>
+                        <div class="history-content">
+                            <div class="history-action">${action}</div>
+                            <div class="history-detail">Par : ${data.moderatorName || 'Système'}</div>
+                            ${reasonHtml}
+                        </div>
+                        <div class="history-time">${time}</div>
+                    `;
+                    moderationHistoryList.appendChild(item);
+                });
+            })
+            .catch(err => {
+                console.error('Erreur chargement historique modération:', err);
+                moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
+            });
+    }
+
+    // ============================================================
     // AUTH STATE CHANGED
     // ============================================================
     auth.onAuthStateChanged(user => {
@@ -5156,14 +6081,15 @@
                         if (chatMessages.children.length === 0) {
                             displayWelcomeMessage();
                         }
+                        initSuggestions();
                     });
                 }, 500);
-                // Charger l'avatar depuis Firestore
                 if (userData && userData.avatarColor) {
                     avatarColor = userData.avatarColor;
                     if (profileAvatar) profileAvatar.style.background = avatarColor;
                     updateAvatarColorPicker(avatarColor);
                 }
+                setTimeout(loadMyContributions, 1000);
             } else {
                 currentUser = null;
                 userData = null;
@@ -5333,7 +6259,8 @@
                     activeDays: 0,
                     lastActiveDate: null,
                     xpHistory: [],
-                    avatarColor: '#1a2a4a'
+                    avatarColor: '#1a2a4a',
+                    aiConversations: 0
                 });
             })
             .then(() => showToast('Inscription réussie', 'success'))
@@ -5377,8 +6304,25 @@
             if (addCorrigeOnlyPopup) addCorrigeOnlyPopup.style.display = 'flex';
         });
 
-        addExamForm?.addEventListener('submit', e => { e.preventDefault(); submitExam(); });
+        addExamForm?.addEventListener('submit', e => { e.preventDefault(); submitExam(false); });
         addCorrigeOnlyForm?.addEventListener('submit', e => { e.preventDefault(); submitCorrigeOnly(); });
+
+        saveDraftBtn?.addEventListener('click', () => {
+            if (!checkAuthRequired('sauvegarder un brouillon')) return;
+            submitExam(true);
+        });
+
+        draftsBtn?.addEventListener('click', () => {
+            if (!checkAuthRequired('voir les brouillons')) return;
+            navigateTo('exams');
+            setTimeout(() => {
+                if (searchExams) {
+                    searchExams.value = 'draft';
+                    searchExams.dispatchEvent(new Event('input'));
+                    updateFilterCount();
+                }
+            }, 300);
+        });
 
         logoutBtn?.addEventListener('click', () => {
             stopAllListeners();
@@ -5400,7 +6344,7 @@
             popup.addEventListener('click', e => { if (e.target === popup) popup.style.display = 'none'; });
         });
 
-        // Détail épreuve - boutons phase 5 améliorée
+        // Détail épreuve - boutons
         detailDownloadSujet?.addEventListener('click', () => {
             if (currentExamId) downloadExam(currentExamId, 'sujet');
         });
@@ -5451,8 +6395,6 @@
         detailBackBtn?.addEventListener('click', () => {
             navigateTo('exams');
         });
-
-        // NOUVEAU: Partager l'épreuve (Phase 5)
         detailShareBtn?.addEventListener('click', () => {
             if (currentExamId) {
                 const url = `${window.location.origin}${window.location.pathname}?exam=${currentExamId}`;
@@ -5469,8 +6411,6 @@
                 }
             }
         });
-
-        // NOUVEAU: Signaler l'épreuve (Phase 5)
         detailReportBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('signaler une épreuve')) return;
             if (reportPopup) reportPopup.style.display = 'flex';
@@ -5502,6 +6442,41 @@
                     showToast('Erreur lors du signalement', 'error');
                 });
             }
+        });
+
+        detailEditBtn?.addEventListener('click', () => {
+            if (!checkAuthRequired('modifier l\'épreuve')) return;
+            if (currentExamId) {
+                loadExamForEdit(currentExamId);
+            }
+        });
+
+        detailHistoryBtn?.addEventListener('click', () => {
+            if (!checkAuthRequired('voir l\'historique')) return;
+            if (currentExamId) {
+                if (moderationHistoryPopup) moderationHistoryPopup.style.display = 'flex';
+                loadModerationHistory(currentExamId);
+            }
+        });
+
+        editExamForm?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            updateExam();
+        });
+
+        confirmRejectionBtn?.addEventListener('click', () => {
+            const examId = rejectionExamId?.value || '';
+            const reason = rejectionReason?.value || '';
+            if (!reason.trim()) {
+                showToast('Veuillez indiquer une raison du refus', 'warning');
+                return;
+            }
+            confirmRejectExam(examId, reason);
+        });
+
+        cancelRejectionBtn?.addEventListener('click', () => {
+            if (rejectionReasonPopup) rejectionReasonPopup.style.display = 'none';
+            rejectionReason.value = '';
         });
 
         // Cloudinary Upload Widgets
@@ -5604,7 +6579,7 @@
             }
         });
 
-        // PHASE 6 - Avatar color picker
+        // Phase 6 - Avatar color picker
         avatarColorPicker?.addEventListener('click', (e) => {
             const option = e.target.closest('.color-option');
             if (!option) return;
@@ -5613,7 +6588,6 @@
                 avatarColor = color;
                 if (profileAvatar) profileAvatar.style.background = color;
                 updateAvatarColorPicker(color);
-                // Sauvegarder dans Firestore
                 if (currentUser) {
                     db.collection('users').doc(currentUser.uid).update({ avatarColor: color })
                     .catch(err => console.error('Erreur sauvegarde couleur avatar:', err));
@@ -5627,7 +6601,7 @@
             });
         }
 
-        // PHASE 6 - Changer mot de passe
+        // Phase 6 - Changer mot de passe
         changePasswordBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('changer le mot de passe')) return;
             if (changePasswordPopup) changePasswordPopup.style.display = 'flex';
@@ -5669,7 +6643,7 @@
             }
         });
 
-        // PHASE 6 - Exporter les données
+        // Phase 6 - Exporter les données
         exportDataBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('exporter les données')) return;
             if (!currentUser) return;
@@ -5692,6 +6666,7 @@
                             examsDownloaded: data.examsDownloaded || 0,
                             correctionsAdded: data.correctionsAdded || 0,
                             activeDays: data.activeDays || 0,
+                            aiConversations: data.aiConversations || 0,
                             createdAt: data.createdAt?.toDate?.() || new Date()
                         },
                         favorites: data.favorites || [],
@@ -5716,7 +6691,7 @@
             });
         });
 
-        // PHASE 6 - Supprimer le compte
+        // Phase 6 - Supprimer le compte
         deleteAccountBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('supprimer le compte')) return;
             if (!currentUser) return;
@@ -5726,10 +6701,8 @@
                     const user = auth.currentUser;
                     const uid = currentUser.uid;
                     
-                    // Supprimer les données de Firestore
                     db.collection('users').doc(uid).delete()
                     .then(() => {
-                        // Supprimer les favoris
                         return db.collection('favorites').where('userId', '==', uid).get()
                         .then(snapshot => {
                             const promises = [];
@@ -5738,7 +6711,6 @@
                         });
                     })
                     .then(() => {
-                        // Supprimer l'authentification
                         return user.delete();
                     })
                     .then(() => {
@@ -5767,21 +6739,17 @@
         initCharts();
 
         console.log('[INIT] ✅ Application HosBac chargée');
-        console.log('[PHASE 5] 📄 Page Détail Épreuve améliorée');
-        console.log('   - Signalement d\'erreur');
-        console.log('   - Partage social');
-        console.log('   - Impression du document');
-        console.log('   - Tags/informations complémentaires');
-        console.log('   - Compteur de vues');
-        console.log('[PHASE 6] 🏆 Profil & Gamification améliorée');
-        console.log('   - Personnalisation de l\'avatar (couleur)');
-        console.log('   - Page Paramètres (changer mot de passe, exporter données, supprimer compte)');
-        console.log('   - Statistiques par matière');
-        console.log('   - Système de niveaux (1 à 10) avec barre de progression XP');
-        console.log('   - 8 badges de progression');
-        console.log('   - Graphiques d\'activité (Chart.js)');
-        console.log('   - Classement des utilisateurs (leaderboard)');
-        console.log('   - Historique d\'activité récente');
+        console.log('[PHASE 8] 🤖 HosBac IA améliorée');
+        console.log('   - Mode pédagogique (💡 Indice, 📖 Explication, 🧠 Méthode, ✅ Solution)');
+        console.log('   - Analyse d\'image (vision)');
+        console.log('   - Suggestions de questions fréquentes');
+        console.log('   - Détection automatique de la matière');
+        console.log('   - Génération d\'exercices similaires');
+        console.log('   - Correction automatique de réponses');
+        console.log('   - Mode Quiz avec l\'IA');
+        console.log('   - Historique structuré des conversations');
+        console.log('   - Feedback utilisateur (👍/👎)');
+        console.log('   - Nouveau badge "Pilier IA"');
     });
 
     // ============================================================
@@ -5820,6 +6788,7 @@
                     loadLeaderboard();
                     loadActivity();
                     loadSubjectStats();
+                    loadMyContributions();
                 }
                 break;
             case 'admin': loadAdminPanel(); break;
@@ -5830,7 +6799,7 @@
     }
 
     // ============================================================
-    // AFFICHAGE DÉTAIL ÉPREUVE (PHASE 5 AMÉLIORÉE)
+    // AFFICHAGE DÉTAIL ÉPREUVE
     // ============================================================
     function showExamDetail(examId) {
         currentExamId = examId;
@@ -5865,6 +6834,24 @@
             if (detailClasse) detailClasse.textContent = exam.classe || '-';
             if (detailSerie) detailSerie.textContent = exam.serie || '-';
             
+            const status = exam.status || 'pending';
+            const statusLabels = {
+                'pending': '⏳ En attente',
+                'approved': '✅ Approuvée',
+                'rejected': '❌ Refusée',
+                'draft': '📝 Brouillon'
+            };
+            const statusColors = {
+                'pending': 'var(--warning)',
+                'approved': 'var(--success)',
+                'rejected': 'var(--error)',
+                'draft': 'var(--text-light)'
+            };
+            
+            if (detailStatusBadge) {
+                detailStatusBadge.innerHTML = `<span style="color:${statusColors[status]};font-size:0.85rem;">${statusLabels[status] || status}</span>`;
+            }
+            
             if (detailInfoMatiere) detailInfoMatiere.textContent = exam.matiere || '-';
             if (detailInfoClasse) detailInfoClasse.textContent = exam.classe || '-';
             if (detailInfoSerie) detailInfoSerie.textContent = exam.serie || '-';
@@ -5882,11 +6869,22 @@
             
             if (detailInfoAuteur) detailInfoAuteur.textContent = exam.auteurNom || 'Anonyme';
             if (detailInfoDownloads) detailInfoDownloads.textContent = exam.downloadCount || 0;
-            
-            // NOUVEAU: Compteur de vues
             if (detailInfoViews) {
                 const views = exam.viewCount || 0;
                 detailInfoViews.textContent = views;
+            }
+            
+            if (detailInfoStatus) {
+                detailInfoStatus.innerHTML = `<span style="color:${statusColors[status]};">${statusLabels[status] || status}</span>`;
+            }
+            
+            if (detailRejectionRow && detailInfoRejection) {
+                if (status === 'rejected' && exam.rejectionReason) {
+                    detailRejectionRow.style.display = 'flex';
+                    detailInfoRejection.textContent = exam.rejectionReason;
+                } else {
+                    detailRejectionRow.style.display = 'none';
+                }
             }
             
             if (detailInfoDate) {
@@ -5904,7 +6902,16 @@
                 detailFavoriteBtn.classList.toggle('active', isFav);
             }
             
-            // NOUVEAU: Tags
+            if (detailEditBtn) {
+                const isAuthor = currentUser && exam.auteurId === currentUser.uid;
+                const canEdit = isAuthor || isAdmin;
+                detailEditBtn.style.display = canEdit && (status === 'pending' || status === 'draft') ? 'inline-flex' : 'none';
+            }
+            
+            if (detailHistoryBtn) {
+                detailHistoryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            }
+            
             if (detailTags) {
                 detailTags.innerHTML = '';
                 const tags = [];
@@ -5939,10 +6946,8 @@
             
             loadSimilarExams(exam);
             
-            // Mettre à jour les stats de consultation
             if (currentUser) {
                 updateUserStats('view', examId);
-                // Incrémenter le compteur de vues
                 db.collection('epreuves').doc(examId).update({
                     viewCount: firebase.firestore.FieldValue.increment(1)
                 }).catch(err => console.error('Erreur incrémentation vues:', err));
@@ -5958,7 +6963,345 @@
     }
 
     // ============================================================
-    // MISE À JOUR DES STATISTIQUES UTILISATEUR (XP, badges, etc.)
+    // CHARGER ÉPREUVE POUR ÉDITION
+    // ============================================================
+    function loadExamForEdit(examId) {
+        db.collection('epreuves').doc(examId).get()
+        .then(doc => {
+            if (!doc.exists) {
+                showToast('Épreuve non trouvée', 'error');
+                return;
+            }
+            const exam = doc.data();
+            
+            document.getElementById('edit-exam-id').value = examId;
+            document.getElementById('edit-exam-matiere').value = exam.matiere || '';
+            document.getElementById('edit-exam-classe').value = exam.classe || '';
+            document.getElementById('edit-exam-serie').value = exam.serie || '';
+            document.getElementById('edit-exam-annee').value = exam.annee || '';
+            document.getElementById('edit-exam-departement').value = exam.departement || '';
+            document.getElementById('edit-exam-session').value = exam.session || '';
+            document.getElementById('edit-exam-type').value = exam.type || '';
+            document.getElementById('edit-exam-nom').value = exam.nom_epreuve || '';
+            
+            toggleEditSerieField();
+            
+            if (editExamPopup) editExamPopup.style.display = 'flex';
+        })
+        .catch(err => {
+            console.error('Erreur chargement épreuve pour édition:', err);
+            showToast('Erreur lors du chargement', 'error');
+        });
+    }
+
+    // ============================================================
+    // METTRE À JOUR ÉPREUVE
+    // ============================================================
+    function updateExam() {
+        const examId = document.getElementById('edit-exam-id').value;
+        const matiere = document.getElementById('edit-exam-matiere').value;
+        const classe = document.getElementById('edit-exam-classe').value;
+        const serie = document.getElementById('edit-exam-serie').value;
+        const annee = document.getElementById('edit-exam-annee').value;
+        const departement = document.getElementById('edit-exam-departement').value;
+        const session = document.getElementById('edit-exam-session').value;
+        const type = document.getElementById('edit-exam-type').value;
+        const nom_epreuve = document.getElementById('edit-exam-nom').value;
+        
+        if (!nom_epreuve || !matiere || !classe) {
+            showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+            return;
+        }
+        
+        const updates = {
+            matiere,
+            classe,
+            serie: ['2nd', '1ère', 'Terminale'].includes(classe) ? serie : '',
+            annee,
+            departement,
+            session,
+            type,
+            nom_epreuve,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        db.collection('epreuves').doc(examId).update(updates)
+        .then(() => {
+            showToast('Épreuve mise à jour avec succès', 'success');
+            if (editExamPopup) editExamPopup.style.display = 'none';
+            
+            return db.collection('moderation_history').add({
+                examId: examId,
+                action: 'edited',
+                moderatorId: currentUser.uid,
+                moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Utilisateur',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        })
+        .then(() => {
+            if (currentExamId === examId) {
+                showExamDetail(examId);
+            }
+            if (document.getElementById('exams-view')?.classList.contains('active')) {
+                applyFilters();
+            }
+            if (document.getElementById('profile-view')?.classList.contains('active')) {
+                loadMyContributions();
+            }
+        })
+        .catch(err => {
+            console.error('Erreur mise à jour:', err);
+            showToast('Erreur lors de la mise à jour', 'error');
+        });
+    }
+
+    // ============================================================
+    // APPROUVER UNE ÉPREUVE
+    // ============================================================
+    function approveExam(examId, authorId, points) {
+        if (!isAdmin) return;
+        try {
+            db.collection('epreuves').doc(examId).update({ 
+                status: 'approved',
+                approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                return db.collection('moderation_history').add({
+                    examId: examId,
+                    action: 'approved',
+                    moderatorId: currentUser.uid,
+                    moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Administrateur',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            })
+            .then(() => assignPointsAfterApproval(authorId, points))
+            .then(() => {
+                db.collection('notifications').add({
+                    userId: authorId, type: 'approval',
+                    message: `Épreuve approuvée ! +${points} points.`,
+                    examId: examId, read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            })
+            .then(() => { showToast('Épreuve approuvée', 'success'); loadAdminPanel(); })
+            .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
+        } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
+    }
+
+    // ============================================================
+    // REFUSER UNE ÉPREUVE
+    // ============================================================
+    function confirmRejectExam(examId, reason) {
+        if (!isAdmin) return;
+        if (!reason.trim()) {
+            showToast('Veuillez indiquer une raison', 'warning');
+            return;
+        }
+        
+        db.collection('epreuves').doc(examId).get()
+        .then(doc => {
+            if (!doc.exists) return;
+            const exam = doc.data();
+            const authorId = exam.auteurId;
+            
+            return db.collection('epreuves').doc(examId).update({
+                status: 'rejected',
+                rejectionReason: reason.trim(),
+                rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+                return db.collection('moderation_history').add({
+                    examId: examId,
+                    action: 'rejected',
+                    reason: reason.trim(),
+                    moderatorId: currentUser.uid,
+                    moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Administrateur',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            })
+            .then(() => {
+                if (authorId) {
+                    return db.collection('notifications').add({
+                        userId: authorId,
+                        type: 'rejection',
+                        message: `Votre épreuve "${exam.nom_epreuve || ''}" a été refusée. Raison : ${reason.trim()}`,
+                        examId: examId,
+                        read: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            })
+            .then(() => {
+                showToast('Épreuve refusée', 'success');
+                if (rejectionReasonPopup) rejectionReasonPopup.style.display = 'none';
+                rejectionReason.value = '';
+                loadAdminPanel();
+                if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
+            });
+        })
+        .catch(error => {
+            console.error('[FIRESTORE] Erreur refus:', error);
+            showToast('Erreur lors du refus', 'error');
+        });
+    }
+
+    // ============================================================
+    // SOUMETTRE UNE ÉPREUVE
+    // ============================================================
+    function submitExam(isDraft = false) {
+        if (!currentUser) return;
+        const matiere = document.getElementById('exam-matiere')?.value || '';
+        const classe = document.getElementById('exam-classe')?.value || '';
+        const serie = document.getElementById('exam-serie')?.value || '';
+        const nom_epreuve = document.getElementById('exam-nom')?.value || '';
+        const annee = document.getElementById('exam-annee')?.value || '';
+        const departement = document.getElementById('exam-departement')?.value || '';
+        const session = document.getElementById('exam-session')?.value || '';
+        const type = document.getElementById('exam-type')?.value || '';
+        const fichier_sujet = document.getElementById('exam-sujet-url')?.value || '';
+        const fichier_corrige = document.getElementById('exam-corrige-url')?.value || '';
+        
+        if (!isDraft) {
+            if (!fichier_sujet) { showToast('Veuillez télécharger un fichier sujet', 'warning'); return; }
+            if (!fichier_sujet.includes('cloudinary.com') || !fichier_sujet.includes('.pdf')) {
+                showToast('Fichier sujet invalide', 'error'); return;
+            }
+        }
+        
+        let serieToSave = serie;
+        if (!['2nd', '1ère', 'Terminale'].includes(classe)) serieToSave = '';
+        const status = isDraft ? 'draft' : (isAdmin ? 'approved' : 'pending');
+        
+        try {
+            db.collection('users').doc(currentUser.uid).get()
+            .then(userDoc => {
+                const user = userDoc.data();
+                const examData = {
+                    matiere, classe, serie: serieToSave, nom_epreuve,
+                    annee, departement, session, type,
+                    fichier_sujet: fichier_sujet || null,
+                    fichier_corrige: fichier_corrige || null,
+                    auteurId: currentUser.uid,
+                    auteurNom: `${user.prenom || ''} ${user.nom || ''}`,
+                    status, downloadCount: 0, viewCount: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                return db.collection('epreuves').add(examData);
+            })
+            .then((docRef) => {
+                if (addExamPopup) addExamPopup.style.display = 'none';
+                if (addExamForm) addExamForm.reset();
+                const sujetUpload = document.getElementById('sujet-upload');
+                const corrigeUpload = document.getElementById('corrige-upload');
+                if (sujetUpload) sujetUpload.innerHTML = '<p>Cliquez pour télécharger le fichier sujet</p>';
+                if (corrigeUpload) corrigeUpload.innerHTML = '<p>Cliquez pour télécharger le fichier corrigé</p>';
+                sujetProgress.hide(); corrigeProgress.hide();
+                const submitBtn = document.getElementById('add-exam-submit-btn');
+                if (submitBtn) submitBtn.disabled = false;
+                toggleSerieField();
+                
+                if (isDraft) {
+                    showToast('Brouillon sauvegardé avec succès', 'success');
+                } else if (isAdmin) {
+                    showToast('Épreuve publiée', 'success');
+                    assignPointsAfterApproval(currentUser.uid, fichier_corrige ? 4 : 2);
+                } else {
+                    showToast('Épreuve soumise, en attente d\'approbation', 'success');
+                    notifyAdminsAboutPendingExam();
+                }
+                
+                if (!isDraft) {
+                    updateUserStats('upload');
+                }
+                
+                if (!isDraft) {
+                    db.collection('moderation_history').add({
+                        examId: docRef.id,
+                        action: 'submitted',
+                        moderatorId: currentUser.uid,
+                        moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Utilisateur',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(err => console.error('Erreur historisation soumission:', err));
+                }
+                
+                loadRecentExams();
+                loadPopularExams();
+                loadPlatformStats();
+                if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
+                if (document.getElementById('profile-view')?.classList.contains('active')) loadMyContributions();
+            })
+            .catch(error => { console.error('[FIRESTORE] Erreur soumission:', error); showToast('Erreur lors de la soumission', 'error'); });
+        } catch (error) { console.error('[FIRESTORE] Erreur submitExam:', error); showToast('Erreur lors de la soumission', 'error'); }
+    }
+
+    // ============================================================
+    // MODÉRATION RÉCENTE
+    // ============================================================
+    function loadRecentModeration() {
+        const container = document.getElementById('recent-moderation');
+        if (!container || !isAdmin) return;
+        
+        container.innerHTML = '<p style="color:var(--text-light);">Chargement...</p>';
+        
+        db.collection('moderation_history')
+            .orderBy('timestamp', 'desc')
+            .limit(20)
+            .get()
+            .then(snapshot => {
+                container.innerHTML = '';
+                if (snapshot.empty) {
+                    container.innerHTML = '<p style="color:var(--text-light);">Aucune activité de modération récente.</p>';
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const actionLabels = {
+                        'submitted': '📤 Soumis',
+                        'approved': '✅ Approuvé',
+                        'rejected': '❌ Refusé',
+                        'edited': '✏️ Modifié'
+                    };
+                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
+                    const action = actionLabels[data.action] || data.action;
+                    
+                    const div = document.createElement('div');
+                    div.style.cssText = `
+                        padding: 0.4rem 0.6rem;
+                        border-bottom: 1px solid var(--border-color);
+                        font-size: 0.85rem;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 0.5rem;
+                        flex-wrap: wrap;
+                    `;
+                    
+                    let reasonHtml = '';
+                    if (data.reason) {
+                        reasonHtml = `<span style="color:var(--error);font-size:0.7rem;"> - ${data.reason}</span>`;
+                    }
+                    
+                    div.innerHTML = `
+                        <span>
+                            <span style="color:var(--text-light);">${data.moderatorName || 'Système'}</span>
+                            <span> ${action} </span>
+                            <span style="color:var(--accent-blue);">${data.examId ? data.examId.substring(0,8) : ''}</span>
+                            ${reasonHtml}
+                        </span>
+                        <span style="color:var(--text-light);font-size:0.7rem;">${time}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            })
+            .catch(err => {
+                console.error('Erreur chargement modération récente:', err);
+                container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
+            });
+    }
+
+    // ============================================================
+    // MISE À JOUR DES STATISTIQUES UTILISATEUR
     // ============================================================
     function updateUserStats(action, examId) {
         if (!currentUser) return;
@@ -6090,11 +7433,13 @@
                     if (isAdmin) startPendingExamsListener();
                     updateExamCardsVisibility();
                     updateMenuItems();
-                    // Charger la couleur d'avatar
                     if (userData.avatarColor) {
                         avatarColor = userData.avatarColor;
                         if (profileAvatar) profileAvatar.style.background = avatarColor;
                         updateAvatarColorPicker(avatarColor);
+                    }
+                    if (isAdmin) {
+                        setTimeout(loadRecentModeration, 1500);
                     }
                 }
             })
@@ -6108,6 +7453,21 @@
             if (deleteBtn) {
                 deleteBtn.style.display = (currentUser && isAdmin) ? 'flex' : 'none';
             }
+            const editBtn = card.querySelector('.exam-btn.edit');
+            if (editBtn) {
+                const examId = editBtn.dataset.examId;
+                if (examId && currentUser) {
+                    db.collection('epreuves').doc(examId).get()
+                    .then(doc => {
+                        if (doc.exists) {
+                            const exam = doc.data();
+                            const isAuthor = exam.auteurId === currentUser.uid;
+                            editBtn.style.display = (isAuthor || isAdmin) && (exam.status === 'pending' || exam.status === 'draft') ? 'flex' : 'none';
+                        }
+                    })
+                    .catch(() => {});
+                }
+            }
         });
     }
 
@@ -6120,6 +7480,7 @@
             loadProfileData();
             loadAnnouncements();
             loadSubjectStats();
+            loadMyContributions();
             if (isAdmin) updatePendingExamsCount();
         } catch (error) { console.error('[LOAD] Erreur loadUserData:', error); }
     }
@@ -6234,7 +7595,7 @@
     }
 
     // ============================================================
-    // APPLY FILTERS AVEC PAGINATION
+    // APPLY FILTERS
     // ============================================================
     function applyFilters() {
         const container = document.getElementById('exams-list');
@@ -6244,10 +7605,16 @@
         const filters = getFilterParams();
         const sheetFilters = getFilterParamsFromSheet();
         
-        let query = db.collection('epreuves').where('status', '==', 'approved');
-        if (filters.classe) query = query.where('classe', '==', filters.classe);
-        if (filters.matiere) query = query.where('matiere', '==', filters.matiere);
-        if (filters.serie) query = query.where('serie', '==', filters.serie);
+        let query = db.collection('epreuves');
+        
+        if (filters.search && filters.search.toLowerCase() === 'draft' && currentUser) {
+            query = query.where('auteurId', '==', currentUser.uid).where('status', '==', 'draft');
+        } else {
+            query = query.where('status', '==', 'approved');
+            if (filters.classe) query = query.where('classe', '==', filters.classe);
+            if (filters.matiere) query = query.where('matiere', '==', filters.matiere);
+            if (filters.serie) query = query.where('serie', '==', filters.serie);
+        }
         
         try {
             query.get()
@@ -6266,13 +7633,15 @@
                 const type = sheetFilters.type;
                 const corrige = sheetFilters.corrige;
 
-                if (searchText) {
-                    results = results.filter(exam => 
-                        exam.nom_epreuve?.toLowerCase().includes(searchText) ||
-                        exam.matiere?.toLowerCase().includes(searchText) ||
-                        exam.classe?.toLowerCase().includes(searchText) ||
-                        exam.serie?.toLowerCase().includes(searchText)
-                    );
+                if (searchText !== 'draft') {
+                    if (searchText) {
+                        results = results.filter(exam => 
+                            exam.nom_epreuve?.toLowerCase().includes(searchText) ||
+                            exam.matiere?.toLowerCase().includes(searchText) ||
+                            exam.classe?.toLowerCase().includes(searchText) ||
+                            exam.serie?.toLowerCase().includes(searchText)
+                        );
+                    }
                 }
 
                 if (annee) {
@@ -6393,7 +7762,7 @@
     }
 
     // ============================================================
-    // CREATE EXAM CARD (VERSION PREMIUM)
+    // CREATE EXAM CARD
     // ============================================================
     function createExamCard(exam, examId) {
         const card = document.createElement('div');
@@ -6402,17 +7771,26 @@
         const hasCorrige = exam.fichier_corrige && exam.fichier_corrige.trim().length > 0;
         const downloadCount = exam.downloadCount || 0;
         const isNew = exam.createdAt && (Date.now() - exam.createdAt.toDate?.()?.getTime() || 0) < 7 * 24 * 60 * 60 * 1000;
+        const status = exam.status || 'approved';
         
         let examType = '';
         if (exam.classe === 'Terminale') examType = 'BAC';
         else if (exam.classe === '3ème') examType = 'BEPC';
         else if (exam.classe === '6ème') examType = 'CEP';
         
+        const statusLabels = {
+            'pending': '⏳ En attente',
+            'approved': '✅ Approuvée',
+            'rejected': '❌ Refusée',
+            'draft': '📝 Brouillon'
+        };
+        
         card.innerHTML = `
             <div class="exam-badges">
                 ${examType ? `<span class="exam-badge ${examType.toLowerCase()}">${examType}</span>` : ''}
+                <span class="exam-badge ${status}">${statusLabels[status] || status}</span>
                 <span class="exam-badge ${hasCorrige ? 'corrige' : 'sans-corrige'}">${hasCorrige ? '✅ Corrigé' : '❌ Sans corrigé'}</span>
-                ${isNew ? '<span class="exam-badge new">🆕 Nouveau</span>' : ''}
+                ${isNew && status === 'approved' ? '<span class="exam-badge new">🆕 Nouveau</span>' : ''}
             </div>
             <h3 class="exam-name">${exam.nom_epreuve || 'Sans nom'}</h3>
             <div class="exam-meta">
@@ -6424,14 +7802,18 @@
             <div class="exam-downloads">
                 <i class="fas fa-download"></i> ${downloadCount} téléchargement${downloadCount > 1 ? 's' : ''}
                 ${exam.auteurNom ? ` · par ${exam.auteurNom}` : ''}
+                ${status === 'rejected' && exam.rejectionReason ? ` · <span style="color:var(--error);"><i class="fas fa-times-circle"></i> ${exam.rejectionReason}</span>` : ''}
             </div>
             <div class="exam-actions">
                 <button class="exam-btn view" data-exam-id="${examId}" data-type="sujet"><i class="fas fa-eye"></i> Voir</button>
-                <button class="exam-btn download" data-exam-id="${examId}" data-type="sujet"><i class="fas fa-download"></i></button>
-                ${hasCorrige ? `<button class="exam-btn download" data-exam-id="${examId}" data-type="corrige" style="background:var(--success);"><i class="fas fa-check"></i> Corrigé</button>` : ''}
+                ${status === 'approved' ? `<button class="exam-btn download" data-exam-id="${examId}" data-type="sujet"><i class="fas fa-download"></i></button>` : ''}
+                ${hasCorrige && status === 'approved' ? `<button class="exam-btn download" data-exam-id="${examId}" data-type="corrige" style="background:var(--success);"><i class="fas fa-check"></i> Corrigé</button>` : ''}
+                ${status === 'approved' ? `<button class="exam-btn ia" data-exam-id="${examId}" data-type="ia"><i class="fas fa-robot"></i> IA</button>` : ''}
                 <button class="exam-btn favorite ${isFavorite ? 'active' : ''}" data-exam-id="${examId}">
                     <i class="${isFavorite ? 'fas' : 'far'} fa-heart"></i>
                 </button>
+                ${(currentUser && (exam.auteurId === currentUser.uid || isAdmin) && (status === 'pending' || status === 'draft')) ? 
+                    `<button class="exam-btn edit" data-exam-id="${examId}"><i class="fas fa-edit"></i></button>` : ''}
                 ${isAdmin ? `<button class="exam-btn delete" data-exam-id="${examId}"><i class="fas fa-trash-alt"></i></button>` : ''}
             </div>
         `;
@@ -6450,11 +7832,35 @@
             });
         });
 
+        // NOUVEAU: Bouton IA sur la carte
+        card.querySelector('.exam-btn.ia')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentUser) {
+                showToast('Connectez-vous pour utiliser l\'IA', 'warning');
+                return;
+            }
+            chatFab.click();
+            setTimeout(() => {
+                if (chatInput) {
+                    const title = exam.nom_epreuve || 'cette épreuve';
+                    chatInput.value = `Peux-tu m'aider à résoudre "${title}" ?`;
+                    chatInput.focus();
+                }
+            }, 500);
+        });
+
         const favBtn = card.querySelector('.favorite');
         favBtn?.addEventListener('click', function(e) {
             e.stopPropagation();
             if (!checkAuthRequired('ajouter aux favoris')) return;
             handleAddToFavorites(examId, exam.auteurId, this);
+        });
+
+        const editBtn = card.querySelector('.exam-btn.edit');
+        editBtn?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!checkAuthRequired('modifier l\'épreuve')) return;
+            loadExamForEdit(examId);
         });
 
         if (isAdmin) {
@@ -6467,6 +7873,9 @@
         return card;
     }
 
+    // ============================================================
+    // FAVORIS
+    // ============================================================
     function handleAddToFavorites(epreuveId, auteurId, button) {
         if (!currentUser || !userData) return;
         const isFav = userData.favorites && userData.favorites.includes(epreuveId);
@@ -6515,31 +7924,19 @@
         } catch (error) { console.error('[FIRESTORE] Erreur handleAddToFavorites:', error); showToast('Erreur lors de la mise à jour des favoris', 'error'); }
     }
 
-    function viewExam(examId, type) {
-        try {
-            db.collection('epreuves').doc(examId).get()
-            .then(doc => {
-                if (doc.exists) {
-                    const exam = doc.data();
-                    if (type === 'sujet') {
-                        if (exam.fichier_sujet && exam.fichier_sujet.includes('cloudinary.com')) {
-                            window.open(exam.fichier_sujet, '_blank');
-                        } else { showToast('Fichier non disponible', 'error'); }
-                    } else if (type === 'corrige') {
-                        handleCorrigeAccess(examId, exam, 'view');
-                    }
-                }
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur consultation:', error); showToast('Erreur lors de la consultation', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur viewExam:', error); showToast('Erreur lors de la consultation', 'error'); }
-    }
-
+    // ============================================================
+    // TÉLÉCHARGER ÉPREUVE
+    // ============================================================
     function downloadExam(examId, type) {
         try {
             db.collection('epreuves').doc(examId).get()
             .then(doc => {
                 if (doc.exists) {
                     const exam = doc.data();
+                    if (exam.status !== 'approved') {
+                        showToast('Cette épreuve n\'est pas encore approuvée', 'warning');
+                        return;
+                    }
                     if (type === 'sujet') {
                         const fileUrl = exam.fichier_sujet;
                         if (fileUrl && fileUrl.includes('cloudinary.com')) {
@@ -6556,6 +7953,20 @@
                         } else { showToast('Fichier non disponible', 'error'); }
                     } else if (type === 'corrige') {
                         handleCorrigeAccess(examId, exam, 'download');
+                    } else if (type === 'ia') {
+                        // Lancer l'IA
+                        if (!currentUser) {
+                            showToast('Connectez-vous pour utiliser l\'IA', 'warning');
+                            return;
+                        }
+                        chatFab.click();
+                        setTimeout(() => {
+                            if (chatInput) {
+                                const title = exam.nom_epreuve || 'cette épreuve';
+                                chatInput.value = `Peux-tu m'aider à résoudre "${title}" ?`;
+                                chatInput.focus();
+                            }
+                        }, 500);
                     }
                 }
             })
@@ -6565,6 +7976,10 @@
 
     function handleCorrigeAccess(examId, exam, action) {
         if (!checkAuthRequired('accéder au corrigé')) return;
+        if (exam.status !== 'approved') {
+            showToast('Cette épreuve n\'est pas encore approuvée', 'warning');
+            return;
+        }
         try {
             db.collection('users').doc(currentUser.uid).get()
             .then(userDoc => {
@@ -6612,6 +8027,9 @@
         } catch (error) { console.error('[FIRESTORE] Erreur handleCorrigeAccess:', error); showToast('Erreur lors de l\'accès au corrigé', 'error'); }
     }
 
+    // ============================================================
+    // SUPPRIMER ÉPREUVE
+    // ============================================================
     function deleteExam(examId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         if (confirm('Supprimer cette épreuve ?')) {
@@ -6625,6 +8043,7 @@
                         loadPopularExams();
                         loadPlatformStats();
                     }
+                    if (document.getElementById('profile-view')?.classList.contains('active')) loadMyContributions();
                     if (currentExamId === examId) {
                         navigateTo('exams');
                     }
@@ -6634,6 +8053,9 @@
         }
     }
 
+    // ============================================================
+    // PROFIL
+    // ============================================================
     function viewUserProfile(authorId) {
         if (!checkAuthRequired('voir le profil')) return;
         sessionStorage.setItem('viewingUserId', authorId);
@@ -6690,18 +8112,15 @@
                 if (doc.exists) {
                     userData = doc.data();
                     
-                    // Avatar
                     if (profileAvatar) {
                         profileAvatar.textContent = userData.prenom ? userData.prenom.charAt(0).toUpperCase() : 'U';
                         profileAvatar.style.background = userData.avatarColor || '#1a2a4a';
                     }
                     
-                    // Info utilisateur
                     if (profileName) profileName.textContent = `${userData.prenom || ''} ${userData.nom || ''}`;
                     if (profileEmail) profileEmail.textContent = userData.email || '';
                     if (profileClass) profileClass.textContent = `Classe: ${userData.classe || 'Non définie'}`;
                     
-                    // XP et niveau
                     const totalXp = userData.totalXp || 0;
                     const levelInfo = getLevelAndXP(totalXp);
                     
@@ -6711,7 +8130,6 @@
                     if (profileXpText) profileXpText.textContent = `${levelInfo.xpInLevel} / ${levelInfo.xpForNextLevel} XP`;
                     if (profileTotalXp) profileTotalXp.textContent = totalXp;
                     
-                    // Points et statistiques
                     const points = document.getElementById('points-balance');
                     const uploaded = document.getElementById('exams-uploaded');
                     const downloaded = document.getElementById('exams-downloaded');
@@ -6719,17 +8137,16 @@
                     if (uploaded) uploaded.textContent = userData.examsUploaded || 0;
                     if (downloaded) downloaded.textContent = userData.examsDownloaded || 0;
                     
-                    // Badges
                     renderBadges({
                         examsUploaded: userData.examsUploaded || 0,
                         examsViewed: userData.examsViewed || 0,
                         examsDownloaded: userData.examsDownloaded || 0,
                         correctionsAdded: userData.correctionsAdded || 0,
                         activeDays: userData.activeDays || 0,
-                        totalXp: userData.totalXp || 0
+                        totalXp: userData.totalXp || 0,
+                        aiConversations: userData.aiConversations || 0
                     });
                     
-                    // Mise à jour du graphique XP avec historique
                     if (xpChart && userData.xpHistory) {
                         const history = userData.xpHistory || [];
                         const last4Weeks = history.slice(-4);
@@ -6739,7 +8156,6 @@
                         xpChart.update();
                     }
                     
-                    // Formulaire
                     const editNom = document.getElementById('edit-nom');
                     const editPrenom = document.getElementById('edit-prenom');
                     const editClasse = document.getElementById('edit-classe');
@@ -6747,13 +8163,11 @@
                     if (editPrenom) editPrenom.value = userData.prenom || '';
                     if (editClasse) editClasse.value = userData.classe || '';
                     
-                    // Message d'accueil
                     if (welcomeMessage) {
                         welcomeMessage.textContent = `Bienvenue sur HosBac, ${userData.prenom || 'Utilisateur'} !`;
                         welcomeSubtitle.textContent = 'Prêt à trouver la bonne épreuve ?';
                     }
                     
-                    // Home stats
                     const homePoints = document.getElementById('home-points-balance');
                     const homeUploaded = document.getElementById('home-exams-uploaded');
                     const homeDownloaded = document.getElementById('home-exams-downloaded');
@@ -6761,7 +8175,6 @@
                     if (homeUploaded) homeUploaded.textContent = userData.examsUploaded || 0;
                     if (homeDownloaded) homeDownloaded.textContent = userData.examsDownloaded || 0;
                     
-                    // Visibilité des éléments
                     const profileFormEl = document.getElementById('profile-form');
                     const favList = document.getElementById('favorites-list');
                     const cardTitle = document.querySelector('#profile-view .card:nth-of-type(2) .card-title');
@@ -6775,6 +8188,7 @@
                     loadLeaderboard();
                     loadActivity();
                     loadSubjectStats();
+                    loadMyContributions();
                 }
             })
             .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); });
@@ -6946,6 +8360,7 @@
             updatePendingExamsCount();
             loadPendingExams();
             loadAdminLogs();
+            loadRecentModeration();
         } catch (error) { console.error('[FIRESTORE] Erreur loadAdminPanel:', error); showToast('Erreur lors du chargement du panneau admin', 'error'); }
     }
 
@@ -6973,16 +8388,24 @@
                     <h3 class="card-title" style="font-size:1.1rem;margin-bottom:0.8rem;color:var(--text-color);font-weight:700;">${exam.nom_epreuve || 'Sans nom'}</h3>
                     <p style="color:var(--text-light);">${exam.matiere || ''} | ${exam.classe || ''}${exam.serie ? ' | Série '+exam.serie : ''}</p>
                     <p style="color:var(--text-light);">Publié par: ${exam.auteurNom || ''}</p>
-                    <div class="exam-actions-admin" style="display:flex;gap:0.5rem;margin-top:0.8rem;">
+                    <div class="exam-actions-admin" style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;">
                         <button class="approve-btn" data-id="${doc.id}" style="background:var(--success);color:#fff;border:none;padding:0.4rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;font-size:0.85rem;font-weight:600;">Approuver</button>
-                        <button class="reject-btn" data-id="${doc.id}" style="background:var(--error);color:#fff;border:none;padding:0.4rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;font-size:0.85rem;font-weight:600;">Rejeter</button>
+                        <button class="reject-btn" data-id="${doc.id}" style="background:var(--error);color:#fff;border:none;padding:0.4rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;font-size:0.85rem;font-weight:600;">Refuser</button>
+                        <button class="btn-view" data-id="${doc.id}" style="background:var(--primary-blue);color:#fff;border:none;padding:0.4rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;font-size:0.85rem;font-weight:600;"><i class="fas fa-eye"></i> Voir</button>
                     </div>
                     `;
                     el.querySelector('.approve-btn')?.addEventListener('click', () => {
                         const points = exam.fichier_corrige ? 4 : 2;
                         approveExam(doc.id, exam.auteurId, points);
                     });
-                    el.querySelector('.reject-btn')?.addEventListener('click', () => { rejectExam(doc.id, exam.auteurId); });
+                    el.querySelector('.reject-btn')?.addEventListener('click', () => {
+                        rejectionExamId.value = doc.id;
+                        if (rejectionReasonPopup) rejectionReasonPopup.style.display = 'flex';
+                        rejectionReason.value = '';
+                    });
+                    el.querySelector('.btn-view')?.addEventListener('click', () => {
+                        showExamDetail(doc.id);
+                    });
                     container.appendChild(el);
                 });
             })
@@ -6999,102 +8422,11 @@
         } catch (error) { console.error('[FIRESTORE] Erreur updatePendingExamsCount:', error); }
     }
 
-    function approveExam(examId, authorId, points) {
-        if (!isAdmin) return;
-        try {
-            db.collection('epreuves').doc(examId).update({ status: 'approved' })
-            .then(() => assignPointsAfterApproval(authorId, points))
-            .then(() => {
-                db.collection('notifications').add({
-                    userId: authorId, type: 'approval',
-                    message: `Épreuve approuvée ! +${points} points.`,
-                    examId: examId, read: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            })
-            .then(() => { showToast('Épreuve approuvée', 'success'); loadAdminPanel(); })
-            .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
-    }
-
     function assignPointsAfterApproval(authorId, points) {
         return db.collection('users').doc(authorId).update({
             points: firebase.firestore.FieldValue.increment(points),
             examsUploaded: firebase.firestore.FieldValue.increment(1)
         });
-    }
-
-    function rejectExam(examId, authorId) {
-        if (!isAdmin) return;
-        try {
-            db.collection('epreuves').doc(examId).delete()
-            .then(() => {
-                db.collection('notifications').add({
-                    userId: authorId, type: 'submission',
-                    message: 'Votre épreuve a été rejetée.',
-                    read: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            })
-            .then(() => { showToast('Épreuve rejetée', 'success'); loadAdminPanel(); })
-            .catch(error => { console.error('[FIRESTORE] Erreur rejet:', error); showToast('Erreur lors du rejet', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur rejectExam:', error); showToast('Erreur lors du rejet', 'error'); }
-    }
-
-    function submitExam() {
-        if (!currentUser) return;
-        const matiere = document.getElementById('exam-matiere')?.value || '';
-        const classe = document.getElementById('exam-classe')?.value || '';
-        const serie = document.getElementById('exam-serie')?.value || '';
-        const nom_epreuve = document.getElementById('exam-nom')?.value || '';
-        const fichier_sujet = document.getElementById('exam-sujet-url')?.value || '';
-        const fichier_corrige = document.getElementById('exam-corrige-url')?.value || '';
-        if (!fichier_sujet) { showToast('Veuillez télécharger un fichier sujet', 'warning'); return; }
-        if (!fichier_sujet.includes('cloudinary.com') || !fichier_sujet.includes('.pdf')) {
-            showToast('Fichier sujet invalide', 'error'); return;
-        }
-        let serieToSave = serie;
-        if (!['2nd', '1ère', 'Terminale'].includes(classe)) serieToSave = '';
-        const status = isAdmin ? 'approved' : 'pending';
-        try {
-            db.collection('users').doc(currentUser.uid).get()
-            .then(userDoc => {
-                const user = userDoc.data();
-                return db.collection('epreuves').add({
-                    matiere, classe, serie: serieToSave, nom_epreuve,
-                    fichier_sujet, fichier_corrige: fichier_corrige || null,
-                    auteurId: currentUser.uid,
-                    auteurNom: `${user.prenom || ''} ${user.nom || ''}`,
-                    status, downloadCount: 0, viewCount: 0,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            })
-            .then(() => {
-                if (addExamPopup) addExamPopup.style.display = 'none';
-                if (addExamForm) addExamForm.reset();
-                const sujetUpload = document.getElementById('sujet-upload');
-                const corrigeUpload = document.getElementById('corrige-upload');
-                if (sujetUpload) sujetUpload.innerHTML = '<p>Cliquez pour télécharger le fichier sujet</p>';
-                if (corrigeUpload) corrigeUpload.innerHTML = '<p>Cliquez pour télécharger le fichier corrigé</p>';
-                sujetProgress.hide(); corrigeProgress.hide();
-                const submitBtn = document.getElementById('add-exam-submit-btn');
-                if (submitBtn) submitBtn.disabled = false;
-                toggleSerieField();
-                if (isAdmin) {
-                    showToast('Épreuve publiée', 'success');
-                    assignPointsAfterApproval(currentUser.uid, fichier_corrige ? 4 : 2);
-                } else {
-                    showToast('Épreuve soumise, en attente d\'approbation', 'success');
-                    notifyAdminsAboutPendingExam();
-                }
-                updateUserStats('upload');
-                loadRecentExams();
-                loadPopularExams();
-                loadPlatformStats();
-                if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur soumission:', error); showToast('Erreur lors de la soumission', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur submitExam:', error); showToast('Erreur lors de la soumission', 'error'); }
     }
 
     function submitCorrigeOnly() {
@@ -7110,6 +8442,10 @@
                     const exam = doc.data();
                     if (exam.auteurId !== currentUser.uid) {
                         showToast('Vous ne pouvez ajouter un corrigé que pour vos épreuves', 'error');
+                        return;
+                    }
+                    if (exam.status !== 'approved') {
+                        showToast('Cette épreuve doit être approuvée avant d\'ajouter un corrigé', 'warning');
                         return;
                     }
                     return db.collection('epreuves').doc(examId).update({ fichier_corrige });
@@ -7130,6 +8466,7 @@
                 loadPopularExams();
                 loadPlatformStats();
                 if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
+                if (document.getElementById('profile-view')?.classList.contains('active')) loadMyContributions();
             })
             .catch(error => { console.error('[FIRESTORE] Erreur ajout corrigé:', error); showToast('Erreur lors de l\'ajout', 'error'); });
         } catch (error) { console.error('[FIRESTORE] Erreur submitCorrigeOnly:', error); showToast('Erreur lors de l\'ajout', 'error'); }
@@ -7493,21 +8830,14 @@
     });
 
     console.log('[INIT] ✅ Application HosBac chargée avec succès');
-    console.log('[PHASE 5] 📄 Page Détail Épreuve améliorée');
-    console.log('   - Signalement d\'erreur');
-    console.log('   - Partage social');
-    console.log('   - Impression du document');
-    console.log('   - Tags/informations complémentaires');
-    console.log('   - Compteur de vues');
-    console.log('[PHASE 6] 🏆 Profil & Gamification améliorée');
-    console.log('   - Personnalisation de l\'avatar (couleur)');
-    console.log('   - Page Paramètres (changer mot de passe, exporter données, supprimer compte)');
-    console.log('   - Statistiques par matière');
-    console.log('   - Système de niveaux (1 à 10) avec barre de progression XP');
-    console.log('   - 8 badges de progression');
-    console.log('   - Graphiques d\'activité (Chart.js)');
-    console.log('   - Classement des utilisateurs (leaderboard)');
-    console.log('   - Historique d\'activité récente');
+    console.log('[PHASE 8] 🤖 HosBac IA améliorée');
+    console.log('   - Mode pédagogique (💡 Indice, 📖 Explication, 🧠 Méthode, ✅ Solution)');
+    console.log('   - Analyse d\'image (vision) via Gemini');
+    console.log('   - Suggestions de questions fréquentes');
+    console.log('   - Mode Quiz avec l\'IA');
+    console.log('   - Feedback utilisateur (👍/👎)');
+    console.log('   - Nouveau badge "Pilier IA"');
+    console.log('   - Bouton IA sur les cartes d\'épreuves');
 </script>
 </body>
 </html>
