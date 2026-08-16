@@ -83,7 +83,6 @@
             padding-bottom: 70px;
         }
         
-        /* Cache le body overflow quand l'assistant est ouvert */
         body.assistant-open {
             overflow: hidden;
             height: 100%;
@@ -366,7 +365,6 @@
             padding-bottom: 70px;
         }
         
-        /* Quand l'assistant est ouvert, on cache le padding bottom */
         #app.assistant-active {
             padding-bottom: 0;
         }
@@ -469,7 +467,6 @@
             will-change: transform;
         }
         .bottom-nav.hidden { transform: translateY(100%); }
-        /* Cache complètement la nav quand l'assistant est ouvert */
         .bottom-nav.assistant-visible {
             display: none !important;
         }
@@ -2505,7 +2502,7 @@
             color: rgba(255,255,255,0.5);
         }
 
-        /* Message d'accueil */
+        /* Message d'accueil - PHASE 1 : Nettoyage des balises HTML brutes */
         .assistant-messages .chat-message.welcome {
             align-self: center;
             max-width: 95%;
@@ -4222,10 +4219,6 @@
                             <label for="ga-measurement-id" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);"><i class="fas fa-chart-line"></i> ID de mesure Google Analytics</label>
                             <input type="text" id="ga-measurement-id" placeholder="G-XXXXXXXX" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
                         </div>
-                        <div class="form-group">
-                            <label for="gemini-api-key" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);"><i class="fas fa-robot"></i> Clé API Gemini</label>
-                            <input type="password" id="gemini-api-key" placeholder="Votre clé API" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);">
-                        </div>
                         <button type="submit" class="submit-btn" id="update-contacts-btn">Mettre à jour les paramètres</button>
                     </form>
                 </div>
@@ -4509,7 +4502,7 @@
 </audio>
 
 <!-- ============================================================
-     JAVASCRIPT COMPLET - MIS À JOUR AVEC VERCEL
+     JAVASCRIPT COMPLET - PHASE 1 CORRIGÉ
      ============================================================ -->
 <script>
     // ============================================================
@@ -5248,20 +5241,6 @@
         });
     }
 
-    async function getGeminiKey() {
-        if (geminiApiKey) {
-            return geminiApiKey;
-        }
-        try {
-            const key = await loadGeminiApiKey();
-            geminiApiKey = key;
-            return key;
-        } catch (error) {
-            console.error('Erreur lors du chargement de la clé Gemini:', error);
-            return '';
-        }
-    }
-
     // ============================================================
     // RÉCUPÉRATION DES ÉPREUVES POUR L'IA
     // ============================================================
@@ -5297,7 +5276,7 @@
     let geminiApiKey = '';
 
     // ============================================================
-    // CHATBOT IA - REFONTE UI
+    // CHATBOT IA - REFONTE UI - PHASE 1 CORRIGÉ
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
@@ -5688,6 +5667,7 @@
         }
     }
 
+    // PHASE 1 : Nettoyage des textes bruts - Message d'accueil avec emojis
     async function displayWelcomeMessage() {
         const container = assistantMessages;
         if (!container) return;
@@ -5713,9 +5693,10 @@
             }
         }
 
+        // PHASE 1 : Message d'accueil avec emojis modernes (pas de balises HTML brutes)
         let welcomeText = userName 
-            ? `Bonjour ${userName} ! <i class="fas fa-wave"></i>\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n**Je peux vous aider à :**\n<i class="fas fa-book"></i> Comprendre un cours ou une notion\n<i class="fas fa-pen"></i> Résoudre un exercice ou une épreuve\n<i class="fas fa-lightbulb"></i> Trouver des indices pour avancer\n<i class="fas fa-check-circle"></i> Corriger vos réponses\n<i class="fas fa-flask"></i> Générer des exercices similaires\n\n**Mode pédagogique :**\n<i class="fas fa-lightbulb"></i> Indice | <i class="fas fa-book-open"></i> Explication | <i class="fas fa-brain"></i> Méthode | <i class="fas fa-check-circle"></i> Solution complète\n\nComment puis-je vous aider aujourd'hui ?`
-            : `Bonjour ! <i class="fas fa-wave"></i>\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n**Je peux vous aider à :**\n<i class="fas fa-book"></i> Comprendre un cours ou une notion\n<i class="fas fa-pen"></i> Résoudre un exercice ou une épreuve\n<i class="fas fa-lightbulb"></i> Trouver des indices pour avancer\n<i class="fas fa-check-circle"></i> Corriger vos réponses\n<i class="fas fa-flask"></i> Générer des exercices similaires\n\n**Mode pédagogique :**\n<i class="fas fa-lightbulb"></i> Indice | <i class="fas fa-book-open"></i> Explication | <i class="fas fa-brain"></i> Méthode | <i class="fas fa-check-circle"></i> Solution complète\n\nComment puis-je vous aider aujourd'hui ?`;
+            ? `Bonjour ${userName} ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nMode pédagogique :\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`
+            : `Bonjour ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nMode pédagogique :\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`;
 
         const msgDiv = document.createElement('div');
         msgDiv.className = 'chat-message bot welcome';
@@ -5728,7 +5709,8 @@
         
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
-        bubbleDiv.innerHTML = formatMessage(welcomeText) + `<div class="message-time">--:--</div>`;
+        // Le message d'accueil utilise directement les emojis, pas besoin de formatMessage
+        bubbleDiv.innerHTML = welcomeText.replace(/\n/g, '<br>') + `<div class="message-time">--:--</div>`;
         
         msgDiv.appendChild(avatarDiv);
         msgDiv.appendChild(bubbleDiv);
@@ -5780,10 +5762,10 @@
         }
 
         const modeNames = {
-            'hint': '<i class="fas fa-lightbulb"></i> Indice',
-            'explanation': '<i class="fas fa-book-open"></i> Explication détaillée',
-            'method': '<i class="fas fa-brain"></i> Méthode',
-            'solution': '<i class="fas fa-check-circle"></i> Solution complète'
+            'hint': '💡 Indice',
+            'explanation': '📖 Explication détaillée',
+            'method': '🧠 Méthode',
+            'solution': '✅ Solution complète'
         };
 
         const modePrompts = {
@@ -5799,7 +5781,7 @@
         pedagogicalModeBadge.textContent = modeNames[mode] || mode;
         pedagogicalModeBadge.className = `mode-badge ${mode}`;
 
-        const userMessage = `<i class="fas fa-search"></i> Mode ${modeNames[mode]}\n\n${originalText}`;
+        const userMessage = `🔍 Mode ${modeNames[mode]}\n\n${originalText}`;
         const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         addChatMessage(userMessage, 'user', time);
 
@@ -5894,15 +5876,12 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL)
+    // PHASE 1 : ENVOI DU MESSAGE À GEMINI (VIA VERCEL - SANS CLÉ CLIENT)
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
-            const key = await getGeminiKey();
-            if (!key || key.trim() === '') {
-                addChatMessage('Veuillez configurer la clé API Gemini dans l\'espace administrateur.', 'bot');
-                return;
-            }
+            // PHASE 1 : Suppression de la vérification de clé API côté client
+            // Plus besoin de getGeminiKey() ou de vérifier la présence d'une clé
 
             const examsSummary = await fetchExamsForAI();
 
@@ -5952,13 +5931,14 @@
                 }
             }
 
+            // PHASE 1 : Plus de clé API envoyée au frontend - le backend Vercel utilise sa propre variable d'environnement
             const payload = {
                 system_instruction: { parts: [{ text: systemInstruction }] },
-                contents: contents,
-                api_key: key
+                contents: contents
+                // La clé API n'est plus envoyée depuis le client
             };
 
-            // Appel via Vercel Serverless Function
+            // Appel via Vercel Serverless Function (sans clé client)
             const response = await fetch('/api/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -6040,7 +6020,7 @@
                 );
                 showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
             } else if (error.message && error.message.toLowerCase().includes('quota')) {
-                addChatMessage('Oups, je reçois trop de questions en même temps ! <i class="fas fa-smile"></i> Laisse-moi respirer une petite minute et repose ta question.', 'bot');
+                addChatMessage('Oups, je reçois trop de questions en même temps ! 😄 Laisse-moi respirer une petite minute et repose ta question.', 'bot');
             } else {
                 addChatMessage('Erreur de communication avec l\'IA. Détails dans la console.', 'bot');
             }
@@ -6177,8 +6157,7 @@
     // BOUTONS ASSISTANT - TÉLÉPHONE ET COURONNE
     // ============================================================
     assistantPhoneBtn?.addEventListener('click', () => {
-        // Ouvrir le téléphone (si l'utilisateur est sur mobile)
-        const phoneNumber = '+22900000000'; // À configurer
+        const phoneNumber = '+22900000000';
         window.location.href = `tel:${phoneNumber}`;
     });
 
@@ -6238,7 +6217,6 @@
             document.body.classList.add('assistant-open');
             app.classList.add('assistant-active');
             bottomNav.classList.add('assistant-visible');
-            // Masquer le footer
             const footer = document.getElementById('main-footer');
             if (footer) footer.style.display = 'none';
         } else {
@@ -6262,7 +6240,6 @@
             return;
         }
         
-        // Si on quitte l'assistant, réactiver la navigation
         if (viewName !== 'assistant') {
             toggleAssistantMode(false);
         }
@@ -7918,16 +7895,12 @@
         updateFilterCount();
         initCharts();
 
-        // Nettoyage des logs dans la console (conserver uniquement les logs d'initialisation)
         console.log('[INIT] Application HosBac chargée avec succès');
-        console.log('[PHASE 1] Corrections des icônes et des textes HTML - ✅');
-        console.log('[PHASE 2] Assistant HosBac refonte UI - ✅');
-        console.log('[PHASE 10] Administration améliorée - ✅');
-        console.log('[PHASE 3 FINALE] Validation complète - ✅');
-        console.log('   - Interface assistant refaite selon maquette');
-        console.log('   - Navigation masquée sur assistant');
-        console.log('   - Boutons téléphone et couronne ajoutés');
-        console.log('   - Appel API via Vercel');
+        console.log('[PHASE 1] Corrections appliquées :');
+        console.log('   ✅ Suppression vérification clé API côté client');
+        console.log('   ✅ Appel direct au backend Vercel sans clé');
+        console.log('   ✅ Nettoyage des textes bruts avec emojis');
+        console.log('   ✅ Messages d\'accueil avec emojis modernes');
     });
 
     // ============================================================
@@ -9034,7 +9007,7 @@
                 newFavs.push(epreuveId);
                 button.classList.add('active');
                 button.innerHTML = '<i class="fas fa-heart"></i>';
-                showToast('Ajouté aux favoris <i class="fas fa-heart"></i>', 'success');
+                showToast('Ajouté aux favoris ❤️', 'success');
                 if (detailFavoriteBtn && currentExamId === epreuveId) {
                     detailFavoriteBtn.innerHTML = '<i class="fas fa-heart"></i> Retirer des favoris';
                     detailFavoriteBtn.classList.add('active');
@@ -11112,10 +11085,11 @@
     });
 
     console.log('[INIT] Application HosBac chargée avec succès');
-    console.log('[PHASE 1] Corrections des icônes et des textes HTML - ✅');
-    console.log('[PHASE 2] Assistant HosBac refonte UI - ✅');
-    console.log('[PHASE 10] Administration améliorée - ✅');
-    console.log('[PHASE 3 FINALE] Validation complète - ✅');
+    console.log('[PHASE 1] Corrections appliquées :');
+    console.log('   ✅ Suppression vérification clé API côté client');
+    console.log('   ✅ Appel direct au backend Vercel sans clé');
+    console.log('   ✅ Nettoyage des textes bruts avec emojis');
+    console.log('   ✅ Messages d\'accueil avec emojis modernes');
 </script>
 </body>
 </html>
