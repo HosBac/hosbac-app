@@ -1,9 +1,10 @@
 // api/gemini.js
-// Vercel Serverless Function pour sécuriser l'appel à l'API Gemini pour HOSBAC
+// Vercel Serverless Function pour sécuriser l'appel à l'API Gemini
 
 module.exports = async (req, res) => {
-    // Autoriser les requêtes CORS (mis sur '*' pour éviter tout blocage depuis ton frontend)
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Autoriser les requêtes CORS pour votre domaine
+    const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://votre-domaine.com';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -20,16 +21,18 @@ module.exports = async (req, res) => {
 
     try {
         const payload = req.body;
-        // Le serveur récupère la clé secrète configurée dans Vercel
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // Vérifier que la clé API est bien configurée côté serveur
+        // Vérifier que la clé API est configurée
         if (!apiKey) {
             console.error('Clé API Gemini manquante dans les variables d\'environnement');
             return res.status(500).json({ error: 'Configuration serveur manquante' });
         }
 
-        // Construire la requête avec le BON modèle (gemini-1.5-flash)
+        // PHASE 1 : La clé API n'est plus envoyée depuis le client
+        // Le backend utilise sa propre variable d'environnement
+
+        // Construire la requête pour l'API Gemini
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
         // Préparer le corps de la requête
@@ -38,7 +41,7 @@ module.exports = async (req, res) => {
             contents: payload.contents
         };
 
-        // Appeler l'API Gemini (la ligne 50 est parfaite avec 'url')
+        // Appeler l'API Gemini
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -53,7 +56,6 @@ module.exports = async (req, res) => {
         // Vérifier si la réponse est valide
         if (!response.ok) {
             console.error('Erreur API Gemini:', data);
-            // Transmettre l'erreur au frontend
             return res.status(response.status).json({
                 error: data.error || { message: 'Erreur de l\'API Gemini' }
             });
