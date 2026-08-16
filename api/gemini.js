@@ -37,7 +37,8 @@ module.exports = async (req, res) => {
         }
 
         // Construire la requête pour l'API Gemini
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+}`;
 
         // Préparer le corps de la requête
         const requestBody = {
