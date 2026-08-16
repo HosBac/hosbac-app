@@ -1,10 +1,9 @@
 // api/gemini.js
-// Vercel Serverless Function pour sécuriser l'appel à l'API Gemini
+// Vercel Serverless Function pour sécuriser l'appel à l'API Gemini pour HOSBAC
 
 module.exports = async (req, res) => {
-    // Autoriser les requêtes CORS pour votre domaine
-    const allowedOrigin = process.env.ALLOWED_ORIGIN || 'https://votre-domaine.com';
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    // Autoriser les requêtes CORS (mis sur '*' pour éviter tout blocage depuis ton frontend)
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -21,24 +20,17 @@ module.exports = async (req, res) => {
 
     try {
         const payload = req.body;
+        // Le serveur récupère la clé secrète configurée dans Vercel
         const apiKey = process.env.GEMINI_API_KEY;
 
-        // Vérifier que la clé API est configurée
+        // Vérifier que la clé API est bien configurée côté serveur
         if (!apiKey) {
             console.error('Clé API Gemini manquante dans les variables d\'environnement');
             return res.status(500).json({ error: 'Configuration serveur manquante' });
         }
 
-        // Vérifier que la clé fournie par le client correspond (sécurité additionnelle)
-        const clientApiKey = payload.api_key;
-        if (!clientApiKey || clientApiKey !== apiKey) {
-            console.warn('Tentative d\'accès avec une clé API invalide');
-            return res.status(401).json({ error: 'Clé API invalide ou manquante' });
-        }
-
-        // Construire la requête pour l'API Gemini
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-}`;
+        // Construire la requête avec le BON modèle (gemini-1.5-flash)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         // Préparer le corps de la requête
         const requestBody = {
@@ -46,7 +38,7 @@ module.exports = async (req, res) => {
             contents: payload.contents
         };
 
-        // Appeler l'API Gemini
+        // Appeler l'API Gemini (la ligne 50 est parfaite avec 'url')
         const response = await fetch(url, {
             method: 'POST',
             headers: {
