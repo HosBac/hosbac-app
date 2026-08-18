@@ -37,7 +37,7 @@ const PROVIDERS = [
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-3.6-flash', // Modèle stable et officiel de la famille 3.6
+    model: 'gemini-0.6-flash', // Modèle stable et officiel de la famille 3.6
   },
   {
     name: 'Groq',
@@ -51,11 +51,11 @@ const PROVIDERS = [
     apiKey: process.env.OPENROUTER_API_KEY,
     model: 'deepseek/deepseek-chat:free',
   },
-  {
+    {
     name: 'Cerebras',
     baseURL: 'https://api.cerebras.ai/v1',
     apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'llama3.1-8b',
+    model: 'gemma-4-31b', // ✅ Modèle actuel affiché sur ton dashboard Cerebras
   },
   {
     name: 'Mistral',
