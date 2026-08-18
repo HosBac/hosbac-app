@@ -79,7 +79,7 @@ const PROVIDERS = [
     name: 'HuggingFace',
     baseURL: 'https://api-inference.huggingface.co/v1',
     apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: 'nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16',
+    model: 'deepseek-ai/DeepSeek-V4-Flash-0731',
   },
   {
     name: 'Cohere',
