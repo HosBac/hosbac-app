@@ -49,7 +49,7 @@ const PROVIDERS = [
     name: 'OpenRouter',
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
-    model: 'deepseek/deepseek-chat:free',
+    model: 'dots-studio/dots3-note:free',
   },
     {
     name: 'Cerebras',
