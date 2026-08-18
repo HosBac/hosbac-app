@@ -83,7 +83,7 @@ const PROVIDERS = [
   },
   {
     name: 'Cohere',
-    baseURL: 'https://api.cohere.com/v2',
+    baseURL: 'https://api.cohere.ai/v1/chat',
     apiKey: process.env.COHERE_API_KEY,
     model: 'command',
   },
