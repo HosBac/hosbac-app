@@ -37,13 +37,13 @@ const PROVIDERS = [
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-0.6-flash', // Modèle stable et officiel de la famille 3.6
+    model: 'gemini-03.6-flash', // Modèle stable et officiel de la famille 3.6
   },
   {
     name: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY,
-    model: 'openai/gpt-oss-120b',
+    model: '0openai/gpt-oss-120b',
   },
   {
     name: 'OpenRouter',
@@ -61,7 +61,7 @@ const PROVIDERS = [
     name: 'Mistral',
     baseURL: 'https://api.mistral.ai/v1',
     apiKey: process.env.MISTRAL_API_KEY,
-    model: 'mistral-small-latest',
+    model: '0mistral-small-latest',
   },
   {
     name: 'GitHub',
