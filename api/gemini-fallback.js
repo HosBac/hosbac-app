@@ -33,11 +33,11 @@ const db = admin.apps.length ? admin.firestore() : null;
 // 1. CONFIGURATION DES FOURNISSEURS D'API
 // ============================================================
 const PROVIDERS = [
-    {
+  {
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-03.6-flash', // Modèle stable et officiel de la famille 3.6
+    model: 'gemini-03.6-flash',
   },
   {
     name: 'Groq',
@@ -51,11 +51,11 @@ const PROVIDERS = [
     apiKey: process.env.OPENROUTER_API_KEY,
     model: '0nvidia/nemotron-3.5-lightning:free',
   },
-    {
+  {
     name: 'Cerebras',
     baseURL: 'https://api.cerebras.ai/v1',
     apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'gemma-4-31b', // ✅ Modèle actuel affiché sur ton dashboard Cerebras
+    model: 'gemma-4-31b',
   },
   {
     name: 'Mistral',
@@ -85,7 +85,7 @@ const PROVIDERS = [
     name: 'Cohere',
     baseURL: 'https://api.cohere.ai/v1/chat',
     apiKey: process.env.COHERE_API_KEY,
-    model: 'command',
+    model: 'command-light', // Mis à jour pour éviter l'erreur 404 de l'ancien 'command'
   },
   {
     name: 'Cloudflare',
@@ -148,9 +148,9 @@ async function callProvider(provider, payload) {
   let url;
   let body;
 
-  // Gestion spécifique pour Cohere (URL exacte et corps natif)
+  // Gestion spécifique pour Cohere (endpoint canonique et payload natif)
   if (name === 'Cohere') {
-    url = baseURL; 
+    url = 'https://api.cohere.ai/v1/chat';
     
     let userMessage = 'Bonjour';
     const contents = payload.contents || [];
@@ -163,7 +163,7 @@ async function callProvider(provider, payload) {
     }
 
     body = {
-      model: model,
+      model: model, // 'command-light'
       message: userMessage,
       temperature: 0.7,
       max_tokens: 2048,
@@ -221,13 +221,13 @@ async function callProvider(provider, payload) {
 
   const data = await response.json();
 
-  // Normalisation de la réponse pour Cohere
+  // Normalisation de la réponse pour Cohere vers le format standard
   if (name === 'Cohere') {
     return {
       choices: [
         {
           message: {
-            content: data.text || 'Pas de réponse disponible.',
+            content: data.text || data.message || 'Pas de réponse disponible.',
           },
         },
       ],
