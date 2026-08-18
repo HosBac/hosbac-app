@@ -5271,6 +5271,29 @@
     // ============================================================
     // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK ET CORRECTION PDF
     // ============================================================
+    // Fonction d'extraction de texte à partir d'un fichier PDF (via pdf.js)
+    async function extractTextFromPDF(file) {
+        try {
+            // Convertir le fichier en ArrayBuffer
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdfDocument = await loadingTask.promise;
+            let extractedFullText = "";
+
+            for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+                const page = await pdfDocument.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(" ");
+                extractedFullText += `--- Épreuve / Document - Page ${pageNum} ---\n${pageText}\n\n`;
+            }
+
+            return extractedFullText;
+        } catch (error) {
+            console.error("Erreur lors de l'extraction du PDF :", error);
+            throw new Error("Impossible de lire le contenu du fichier PDF. Veuillez vérifier le format du fichier.");
+        }
+    }
+
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
             const examsSummary = await fetchExamsForAI();
@@ -5283,28 +5306,20 @@
             let extractedText = '';
 
             if (fileData && fileData.type === 'application/pdf') {
-                // Tenter d'extraire le texte du PDF via PDF.js (côté client)
+                // Tenter d'extraire le texte du PDF via pdf.js (côté client)
                 try {
-                    // Convertir la chaîne base64 (sans préfixe) en Uint8Array
+                    // On a le fichier encodé en base64 dans fileData.data
+                    // On le convertit en Blob puis en ArrayBuffer
                     const binaryString = atob(fileData.data);
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
-                    const loadingTask = pdfjsLib.getDocument({ data: bytes });
-                    const pdf = await loadingTask.promise;
-                    let textContent = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        const strings = content.items.map(item => item.str);
-                        textContent += strings.join(' ') + '\n';
-                    }
-                    extractedText = textContent.trim();
-                    if (!extractedText) {
-                        extractedText = "Le PDF ne contient pas de texte lisible (peut-être une image). Le nom du fichier : " + (fileData.name || 'fichier.pdf');
-                    }
+                    // Créer un objet File à partir du Uint8Array pour utiliser la fonction d'extraction
+                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                    const file = new File([blob], fileData.name || 'document.pdf', { type: 'application/pdf' });
+                    extractedText = await extractTextFromPDF(file);
                 } catch (err) {
                     console.warn('Erreur extraction texte PDF:', err);
                     extractedText = "Impossible d'extraire le texte du PDF. Le nom du fichier : " + (fileData.name || 'fichier.pdf');
