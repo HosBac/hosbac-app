@@ -73,7 +73,7 @@ const PROVIDERS = [
     name: 'SambaNova',
     baseURL: 'https://api.sambanova.ai/v1',
     apiKey: process.env.SAMBANOVA_API_KEY,
-    model: 'Meta-Llama-3.3-70B-Instruct',
+    model: '​DeepSeek-V3.1',
   },
   {
     name: 'HuggingFace',
