@@ -79,7 +79,7 @@ const PROVIDERS = [
     name: 'HuggingFace',
     baseURL: 'https://api-inference.huggingface.co/v1',
     apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: '​Qwen/Qwen3.8-27B',
+    model: 'nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16',
   },
   {
     name: 'Cohere',
