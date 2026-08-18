@@ -73,7 +73,7 @@ const PROVIDERS = [
     name: 'SambaNova',
     baseURL: 'https://api.sambanova.ai/v1',
     apiKey: process.env.SAMBANOVA_API_KEY,
-    model: '​​​MiniMax-M2.7',
+    model: '​​​​gemma-4-31b-it',
   },
   {
     name: 'HuggingFace',
