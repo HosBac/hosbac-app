@@ -144,36 +144,63 @@ async function saveToCache(cacheKey, response) {
 // ============================================================
 async function callProvider(provider, payload) {
   const { baseURL, apiKey, model, name } = provider;
-  const url = `${baseURL.replace(/\/$/, '')}/chat/completions`;
   
-  const body = {
-    model: model,
-    messages: [],
-    temperature: 0.7,
-    max_tokens: 2048,
-  };
+  let url;
+  let body;
 
-  if (payload.system_instruction && payload.system_instruction.parts) {
-    const systemText = payload.system_instruction.parts.map(p => p.text).join('\n');
-    body.messages.push({ role: 'system', content: systemText });
-  }
-
-  const contents = payload.contents || [];
-  const recentContents = contents.slice(-10);
-  for (const content of recentContents) {
-    const role = content.role === 'user' ? 'user' : 'assistant';
-    let contentText = '';
-    if (content.parts) {
-      const textParts = content.parts.filter(p => p.text);
-      contentText = textParts.map(p => p.text).join('\n');
+  // Gestion spécifique pour Cohere (URL exacte et corps natif)
+  if (name === 'Cohere') {
+    url = baseURL; 
+    
+    let userMessage = 'Bonjour';
+    const contents = payload.contents || [];
+    if (contents.length > 0) {
+      const lastContent = contents[contents.length - 1];
+      if (lastContent.parts) {
+        const textParts = lastContent.parts.filter(p => p.text);
+        userMessage = textParts.map(p => p.text).join('\n') || 'Bonjour';
+      }
     }
-    if (contentText) {
-      body.messages.push({ role, content: contentText });
-    }
-  }
 
-  if (body.messages.length === 0) {
-    body.messages.push({ role: 'user', content: 'Bonjour' });
+    body = {
+      model: model,
+      message: userMessage,
+      temperature: 0.7,
+      max_tokens: 2048,
+    };
+  } else {
+    // Format standard OpenAI pour tous les autres fournisseurs
+    url = `${baseURL.replace(/\/$/, '')}/chat/completions`;
+    
+    body = {
+      model: model,
+      messages: [],
+      temperature: 0.7,
+      max_tokens: 2048,
+    };
+
+    if (payload.system_instruction && payload.system_instruction.parts) {
+      const systemText = payload.system_instruction.parts.map(p => p.text).join('\n');
+      body.messages.push({ role: 'system', content: systemText });
+    }
+
+    const contents = payload.contents || [];
+    const recentContents = contents.slice(-10);
+    for (const content of recentContents) {
+      const role = content.role === 'user' ? 'user' : 'assistant';
+      let contentText = '';
+      if (content.parts) {
+        const textParts = content.parts.filter(p => p.text);
+        contentText = textParts.map(p => p.text).join('\n');
+      }
+      if (contentText) {
+        body.messages.push({ role, content: contentText });
+      }
+    }
+
+    if (body.messages.length === 0) {
+      body.messages.push({ role: 'user', content: 'Bonjour' });
+    }
   }
 
   console.log(`[API] Appel vers ${name} (${model})`);
@@ -193,6 +220,20 @@ async function callProvider(provider, payload) {
   }
 
   const data = await response.json();
+
+  // Normalisation de la réponse pour Cohere
+  if (name === 'Cohere') {
+    return {
+      choices: [
+        {
+          message: {
+            content: data.text || 'Pas de réponse disponible.',
+          },
+        },
+      ],
+    };
+  }
+
   return data;
 }
 
