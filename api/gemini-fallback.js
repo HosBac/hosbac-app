@@ -91,7 +91,7 @@ const PROVIDERS = [
     name: 'Cloudflare',
     baseURL: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
     apiKey: process.env.CLOUDFLARE_API_KEY,
-    model: '@cf/meta/llama-3.3-70b-instruct',
+    model: '@cf/qwen/qwen3.8-27b',
   },
 ];
 
