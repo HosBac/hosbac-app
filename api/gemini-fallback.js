@@ -43,7 +43,7 @@ const PROVIDERS = [
     name: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY,
-    model: 'llama-3.1-8b-instant',
+    model: 'openai/gpt-oss-120b',
   },
   {
     name: 'OpenRouter',
