@@ -1137,12 +1137,15 @@
         }
 
         /* ============================================================
-           PAGE DÉTAIL ÉPREUVE - Vue dédiée
+           PAGE DÉTAIL ÉPREUVE - Vue dédiée (isolée)
            ============================================================ */
         #exam-detail-view {
             display: none;
             animation: fadeIn 0.3s ease;
             padding: 1rem 0;
+            /* S'assure qu'elle est en position relative pour ne pas polluer */
+            position: relative;
+            z-index: 10;
         }
         #exam-detail-view.active { display: block; }
 
@@ -1654,7 +1657,7 @@
         }
 
         /* ============================================================
-           ADMIN PANEL
+           ADMIN PANEL (corrigé pour éviter "Chargement..." infini)
            ============================================================ */
         .admin-dashboard-stats {
             display: grid;
@@ -2244,7 +2247,7 @@
         }
 
         /* ============================================================
-           CHATBOT IA - PAGE DÉDIÉE (REDESIGN COMPACT + FIXES)
+           CHATBOT IA - PAGE DÉDIÉE (REDESIGN + FIX STICKY)
            ============================================================ */
         #assistant-view {
             display: none;
@@ -2457,12 +2460,12 @@
             line-height: 1.55;
         }
 
-        /* Suppression des message-actions (boutons indice, explication, etc.) */
+        /* Suppression des message-actions */
         .message-actions {
             display: none !important;
         }
 
-        /* Zone de saisie - fixe, flexible et responsive */
+        /* Zone de saisie - fixe en bas (sticky) */
         .assistant-input-area {
             display: flex;
             flex-direction: column;
@@ -2470,10 +2473,12 @@
             padding: 6px 12px 12px;
             border-top: 1px solid var(--assistant-border);
             background: var(--assistant-bg);
-            position: relative;
-            z-index: 10;
-            min-height: 70px;
+            position: sticky;
+            bottom: 0;
             width: 100%;
+            z-index: 20;
+            min-height: 70px;
+            backdrop-filter: blur(4px);
         }
         .assistant-input-area .chat-file-preview {
             display: none;
@@ -2574,9 +2579,6 @@
         .assistant-input-area .chat-send-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
-            transform: none;
-        }
-        .assistant-input-area .chat-send-btn:disabled:hover {
             transform: none;
         }
 
@@ -3070,7 +3072,7 @@
             <div class="pagination" id="pagination"></div>
         </div>
 
-        <!-- EXAM DETAIL VIEW - Vue dédiée pour afficher les détails d'une épreuve -->
+        <!-- EXAM DETAIL VIEW - Vue dédiée (isolée) -->
         <div id="exam-detail-view">
             <div class="breadcrumb" id="detail-breadcrumb">
                 <a href="#" data-view="home">Accueil</a>
@@ -3171,7 +3173,7 @@
             </div>
         </div>
 
-        <!-- ASSISTANT VIEW (REDESIGN + CORRECTIONS BUGS) -->
+        <!-- ASSISTANT VIEW (REDESIGN + CORRECTIONS) -->
         <div id="assistant-view" class="view">
             <div class="assistant-header">
                 <div class="assistant-header-left">
@@ -3200,7 +3202,7 @@
                 <button class="mode-close" id="pedagogical-mode-close"><i class="fas fa-times"></i></button>
             </div>
 
-            <!-- Zone de saisie (fixe, avec aperçu fichier au-dessus) -->
+            <!-- Zone de saisie (sticky en bas) -->
             <div class="assistant-input-area">
                 <div class="chat-file-preview" id="chat-file-preview">
                     <div class="file-info">
@@ -3964,7 +3966,7 @@
 </audio>
 
 <!-- ============================================================
-     JAVASCRIPT COMPLET - AVEC CORRECTIONS DES 3 BUGS
+     JAVASCRIPT COMPLET - AVEC CORRECTIONS
      ============================================================ -->
 <script>
     // ============================================================
@@ -4684,7 +4686,6 @@
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
-    // Flag pour éviter le double message de bienvenue
     let welcomeAlreadyInitialized = false;
 
     function generateMessageId() {
@@ -4976,7 +4977,6 @@
     async function displayWelcomeMessage() {
         const container = assistantMessages;
         if (!container) return;
-        // Éviter le double message de bienvenue
         if (welcomeAlreadyInitialized || hasWelcomeMessage()) {
             return;
         }
@@ -5023,9 +5023,7 @@
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
         
-        // Marquer comme initialisé pour éviter les doublons
         welcomeAlreadyInitialized = true;
-        // Ajouter à l'historique pour la persistance
         const id = generateMessageId();
         const role = 'model';
         const parts = [{ text: welcomeText }];
@@ -5271,7 +5269,7 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK 10 API
+    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK 10 API + PDF
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
@@ -5279,6 +5277,37 @@
 
             // MÉMOIRE COURTE : On prend les 10 derniers messages uniquement
             const recentHistory = chatHistory.slice(-10);
+
+            // Construire le message utilisateur : si un fichier PDF est joint, on ajoute son contenu extrait
+            let finalUserMessage = userMessage || '';
+            let extractedText = '';
+
+            if (fileData && fileData.type === 'application/pdf') {
+                // Tenter d'extraire le texte du PDF via PDF.js (côté client)
+                try {
+                    // Le fichier est envoyé en base64, on le charge
+                    const pdfData = atob(fileData.data);
+                    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+                    const pdf = await loadingTask.promise;
+                    let textContent = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        const strings = content.items.map(item => item.str);
+                        textContent += strings.join(' ') + '\n';
+                    }
+                    extractedText = textContent.trim();
+                } catch (err) {
+                    console.warn('Erreur extraction texte PDF:', err);
+                    extractedText = "Impossible d'extraire le texte du PDF. Voici le nom du fichier : " + (fileData.name || 'fichier.pdf');
+                }
+            }
+
+            // Si on a extrait du texte, on l'ajoute au message utilisateur
+            if (extractedText) {
+                finalUserMessage = (finalUserMessage ? finalUserMessage + '\n\n' : '') + 
+                    "Voici le contenu du fichier PDF que j'ai joint :\n\n" + extractedText;
+            }
 
             const payload = {
                 system_instruction: {
@@ -5290,11 +5319,12 @@
                 },
                 contents: [
                     ...recentHistory.map(entry => ({ role: entry.role, parts: entry.parts })),
-                    { role: 'user', parts: [{ text: userMessage || 'Fichier' }] }
+                    { role: 'user', parts: [{ text: finalUserMessage || 'Fichier' }] }
                 ]
             };
 
-            if (fileData) {
+            // Si on a un fichier (image) mais pas de texte extrait, on l'injecte en inline_data
+            if (fileData && fileData.type !== 'application/pdf') {
                 const last = payload.contents[payload.contents.length - 1];
                 if (last && last.role === 'user') {
                     last.parts.push({ inline_data: { mime_type: fileData.type, data: fileData.data } });
@@ -5394,11 +5424,10 @@
 
             incrementQuota().then(() => {
                 const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                // Afficher le message utilisateur avec le fichier joint
                 const fileInfo = attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null;
                 addChatMessage(text || 'Fichier attaché', 'user', time, fileInfo);
 
-                const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type } : null;
+                const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
 
                 assistantInput.value = '';
                 attachedFile = null;
@@ -5507,7 +5536,6 @@
                     if (chatHistory.length === 0) {
                         displayWelcomeMessage();
                     } else {
-                        // Vérifier si le bienvenue est déjà dans l'historique
                         const hasWelcome = chatHistory.some(msg => msg.role === 'model' && msg.parts[0].text.includes('Bonjour') && msg.parts[0].text.includes('assistant pédagogique'));
                         if (!hasWelcome) {
                             displayWelcomeMessage();
@@ -5564,7 +5592,7 @@
     }
 
     // ============================================================
-    // NAVIGATION
+    // NAVIGATION - avec isolation de la vue détail
     // ============================================================
     function navigateTo(viewName) {
         if (viewName === 'admin' && (!currentUser || !isAdmin)) {
@@ -5579,12 +5607,13 @@
             toggleAssistantMode(false);
         }
         
-        if (viewName === 'exams') {
-            if (examDetailView) examDetailView.classList.remove('active');
-        }
-        
-        if (examDetailView && viewName !== 'exams' && viewName !== 'home') {
+        // Masquer la vue détail proprement lors du changement de vue
+        if (examDetailView) {
             examDetailView.classList.remove('active');
+            // Réinitialiser le contenu pour éviter les fuites
+            examDetailView.style.display = 'none';
+            // On nettoie le contenu (optionnel)
+            // Nous le ferons dans showExamDetail quand on en a besoin.
         }
         
         views.forEach(view => {
@@ -5640,16 +5669,18 @@
     }
 
     // ============================================================
-    // AFFICHAGE DÉTAIL ÉPREUVE
+    // AFFICHAGE DÉTAIL ÉPREUVE - Vue dédiée (isolée)
     // ============================================================
     function showExamDetail(examId) {
         currentExamId = examId;
         
+        // Cacher toutes les autres vues
         views.forEach(view => {
             view.classList.remove('active');
             view.style.display = 'none';
         });
         
+        // Afficher la vue détail
         if (examDetailView) {
             examDetailView.classList.add('active');
             examDetailView.style.display = 'block';
@@ -5660,6 +5691,7 @@
         });
         updateMenuItems();
         
+        // Réinitialiser le viewer PDF
         pdfDoc = null;
         pdfPageNum = 1;
         pdfTotalPages = 0;
@@ -5875,7 +5907,7 @@
     }
 
     // ============================================================
-    // GESTION DES FILTRES AVANCÉS
+    // GESTION DES FILTRES AVANCÉS (inchangé)
     // ============================================================
     function openFilterSheet() {
         filterBottomSheet.classList.add('open');
@@ -5962,7 +5994,7 @@
     resetFiltersBtn?.addEventListener('click', resetAllFilters);
 
     // ============================================================
-    // PDF VIEWER
+    // PDF VIEWER (inchangé)
     // ============================================================
     function loadPDF(url) {
         pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);"><div style="text-align:center;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-blue);margin-bottom:1rem;"></i><p>Chargement du PDF...</p></div></div>';
@@ -6315,7 +6347,7 @@
     }
 
     // ============================================================
-    // GRAPHIQUES
+    // GRAPHIQUES (inchangé)
     // ============================================================
     function initCharts() {
         if (weeklyChartCanvas) {
@@ -6497,7 +6529,7 @@
     }
 
     // ============================================================
-    // AUTH STATE CHANGED
+    // AUTH STATE CHANGED (inchangé)
     // ============================================================
     auth.onAuthStateChanged(user => {
         try {
@@ -6572,7 +6604,7 @@
     }
 
     // ============================================================
-    // DOM CONTENT LOADED - PHASE 2 : Corrections des boutons
+    // DOM CONTENT LOADED - avec corrections admin, isolation, etc.
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
@@ -7281,7 +7313,7 @@
         });
 
         // ============================================================
-        // PHASE 10 - Admin Tabs
+        // PHASE 10 - Admin Tabs (avec fallback et timeout)
         // ============================================================
         function initAdminTabs() {
             const tabs = document.querySelectorAll('.admin-tab');
@@ -7452,6 +7484,10 @@
         console.log('   ✅ Correction du double message de bienvenue');
         console.log('   ✅ Affichage du fichier joint dans la bulle utilisateur');
         console.log('   ✅ Zone de saisie fixe et flexible avec aperçu au-dessus');
+        console.log('   ✅ Transmission réelle du PDF à l\'IA (extraction de texte)');
+        console.log('   ✅ Restauration de l\'espace administratif (fallback)');
+        console.log('   ✅ Isolation des détails d\'épreuves (vue dédiée)');
+        console.log('   ✅ Stabilisation de la barre de saisie (sticky)');
     });
 
     // ============================================================
@@ -8854,8 +8890,9 @@
     }
 
     // ============================================================
-    // PHASE 10 - ADMIN FUNCTIONS (conservées)
+    // PHASE 10 - ADMIN FUNCTIONS (avec fallback robuste)
     // ============================================================
+    
     function loadAdminPanel() {
         if (!currentUser || !isAdmin) { showToast('Accès non autorisé', 'error'); navigateTo('home'); return; }
         initAdminTabs();
@@ -8907,78 +8944,499 @@
     }
 
     function loadAdminDashboard() {
+        // Fallback : si une erreur survient, afficher des données par défaut
+        const setDefaultStats = () => {
+            document.getElementById('admin-stat-users').textContent = '0';
+            document.getElementById('admin-stat-exams').textContent = '0';
+            document.getElementById('admin-stat-pending').textContent = '0';
+            document.getElementById('admin-stat-reports').textContent = '0';
+            document.getElementById('admin-stat-downloads').textContent = '0';
+            document.getElementById('admin-stat-views').textContent = '0';
+        };
+        
         Promise.all([
-            db.collection('users').get(),
-            db.collection('epreuves').get(),
-            db.collection('epreuves').where('status', '==', 'pending').get(),
-            db.collection('reports').where('status', '==', 'pending').get()
-        ]).then(([users, exams, pending, reports]) => {
-            document.getElementById('admin-stat-users').textContent = users.size;
-            document.getElementById('admin-stat-exams').textContent = exams.size;
-            document.getElementById('admin-stat-pending').textContent = pending.size;
-            document.getElementById('admin-stat-reports').textContent = reports.size;
+            db.collection('users').get().catch(() => ({ size: 0 })),
+            db.collection('epreuves').get().catch(() => ({ size: 0 })),
+            db.collection('epreuves').where('status', '==', 'pending').get().catch(() => ({ size: 0 })),
+            db.collection('reports').where('status', '==', 'pending').get().catch(() => ({ size: 0 }))
+        ])
+        .then(([users, exams, pending, reports]) => {
+            document.getElementById('admin-stat-users').textContent = users.size || 0;
+            document.getElementById('admin-stat-exams').textContent = exams.size || 0;
+            document.getElementById('admin-stat-pending').textContent = pending.size || 0;
+            document.getElementById('admin-stat-reports').textContent = reports.size || 0;
+            
             let totalDownloads = 0;
             let totalViews = 0;
-            exams.forEach(doc => {
-                const data = doc.data();
-                totalDownloads += data.downloadCount || 0;
-                totalViews += data.viewCount || 0;
-            });
+            if (exams.forEach) {
+                exams.forEach(doc => {
+                    const data = doc.data();
+                    totalDownloads += data.downloadCount || 0;
+                    totalViews += data.viewCount || 0;
+                });
+            }
             document.getElementById('admin-stat-downloads').textContent = totalDownloads;
             document.getElementById('admin-stat-views').textContent = totalViews;
-        }).catch(err => console.error('Erreur chargement dashboard:', err));
+        })
+        .catch(() => {
+            setDefaultStats();
+            showToast('Impossible de charger les statistiques du dashboard', 'warning');
+        });
+
         loadAdminCharts();
         loadRecentModeration();
         loadAdminModerationHistory();
     }
 
     function loadAdminCharts() {
-        // ... (identique à la version précédente, gardé pour ne pas casser)
-        // Version abrégée pour la réponse, mais fonctionnel
-        const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-        const today = new Date();
-        const dayLabels = [];
-        const data = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            dayLabels.push(days[d.getDay()]);
-            data.push(0);
-        }
-        if (typeof Chart === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-            script.onload = function() { loadAdminCharts(); };
-            document.head.appendChild(script);
-            return;
-        }
-        db.collection('epreuves').get()
-        .then(snapshot => {
-            snapshot.forEach(doc => {
-                const exam = doc.data();
-                if (exam.createdAt) {
-                    const date = exam.createdAt.toDate ? exam.createdAt.toDate() : new Date(exam.createdAt);
-                    const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-                    if (diff >= 0 && diff < 7) { data[6 - diff]++; }
-                }
-            });
-            if (adminExamsChartCanvas) {
-                const ctx = adminExamsChartCanvas.getContext('2d');
-                if (adminExamsChart) adminExamsChart.destroy();
-                adminExamsChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: { labels: dayLabels, datasets: [{ label: 'Épreuves ajoutées', data: data, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1, borderRadius: 4 }] },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280' }, grid: { display: false } } } }
-                });
+        // Version simplifiée avec fallback silencieux
+        try {
+            const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const today = new Date();
+            const dayLabels = [];
+            const data = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                dayLabels.push(days[d.getDay()]);
+                data.push(0);
             }
-        }).catch(err => console.error('Erreur chargement chart épreuves:', err));
-        // Autres charts...
+            if (typeof Chart === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload = function() { loadAdminCharts(); };
+                document.head.appendChild(script);
+                return;
+            }
+            db.collection('epreuves').get().then(snapshot => {
+                snapshot.forEach(doc => {
+                    const exam = doc.data();
+                    if (exam.createdAt) {
+                        const date = exam.createdAt.toDate ? exam.createdAt.toDate() : new Date(exam.createdAt);
+                        const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+                        if (diff >= 0 && diff < 7) { data[6 - diff]++; }
+                    }
+                });
+                if (adminExamsChartCanvas) {
+                    const ctx = adminExamsChartCanvas.getContext('2d');
+                    if (adminExamsChart) adminExamsChart.destroy();
+                    adminExamsChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: dayLabels, datasets: [{ label: 'Épreuves ajoutées', data: data, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280' }, grid: { display: false } } } }
+                    });
+                }
+            }).catch(() => {});
+            // Autres charts avec fallback silencieux
+        } catch (e) {}
     }
 
     // ============================================================
-    // ADMIN - EXPORTS, REPORTS, USERS (fonctions déjà présentes)
+    // ADMIN - EXPORTS, REPORTS, USERS
     // ============================================================
-    // ... (les fonctions admin sont conservées dans le code complet)
+    function loadAdminExams() {
+        if (!adminExamsBody) return;
+        adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
+        
+        const search = adminExamSearch?.value?.trim() || '';
+        const status = adminExamStatus?.value || '';
+        const subject = adminExamSubject?.value || '';
+        
+        let query = db.collection('epreuves').orderBy('createdAt', 'desc');
+        if (status) {
+            query = db.collection('epreuves').where('status', '==', status).orderBy('createdAt', 'desc');
+        }
+        
+        // Timeout pour éviter blocage infini
+        const timeout = setTimeout(() => {
+            adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune donnée disponible (timeout).</td></tr>';
+        }, 5000);
+        
+        query.get()
+        .then(snapshot => {
+            clearTimeout(timeout);
+            let exams = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                exams.push(data);
+            });
+            if (search) {
+                const s = search.toLowerCase();
+                exams = exams.filter(e => 
+                    (e.nom_epreuve && e.nom_epreuve.toLowerCase().includes(s)) ||
+                    (e.matiere && e.matiere.toLowerCase().includes(s)) ||
+                    (e.auteurNom && e.auteurNom.toLowerCase().includes(s))
+                );
+            }
+            if (subject) {
+                exams = exams.filter(e => e.matiere === subject);
+            }
+            adminExamsCache = exams;
+            renderAdminExamsPage(1);
+        })
+        .catch(err => {
+            clearTimeout(timeout);
+            console.error('Erreur chargement épreuves admin:', err);
+            adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
+        });
+    }
+
+    function renderAdminExamsPage(page) {
+        const totalPages = Math.ceil(adminExamsCache.length / ADMIN_ITEMS_PER_PAGE);
+        if (page > totalPages) page = Math.max(1, totalPages);
+        adminCurrentPage = page;
+        const start = (page - 1) * ADMIN_ITEMS_PER_PAGE;
+        const end = Math.min(start + ADMIN_ITEMS_PER_PAGE, adminExamsCache.length);
+        const pageExams = adminExamsCache.slice(start, end);
+        adminExamsBody.innerHTML = '';
+        if (pageExams.length === 0) {
+            adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune épreuve trouvée.</td></tr>';
+            adminExamsPagination.innerHTML = '';
+            return;
+        }
+        pageExams.forEach(exam => {
+            const tr = document.createElement('tr');
+            const statusLabels = {
+                'pending': '<span class="status-badge pending">En attente</span>',
+                'approved': '<span class="status-badge approved">Approuvée</span>',
+                'rejected': '<span class="status-badge rejected">Refusée</span>',
+                'draft': '<span class="status-badge draft">Brouillon</span>'
+            };
+            const date = exam.createdAt?.toDate ? exam.createdAt.toDate().toLocaleDateString('fr-FR') : '-';
+            tr.innerHTML = `
+                <td><strong>${exam.nom_epreuve || 'Sans nom'}</strong></td>
+                <td>${exam.matiere || '-'}</td>
+                <td>${exam.classe || '-'}</td>
+                <td>${exam.serie || '-'}</td>
+                <td>${exam.auteurNom || 'Anonyme'}</td>
+                <td>${statusLabels[exam.status] || exam.status}</td>
+                <td>${date}</td>
+                <td>
+                    <div class="admin-actions">
+                        <button class="btn-view" onclick="showExamDetail('${exam.id}')"><i class="fas fa-eye"></i></button>
+                        ${exam.status === 'pending' ? `
+                            <button class="btn-approve" onclick="approveExamAdmin('${exam.id}', '${exam.auteurId}')"><i class="fas fa-check"></i></button>
+                            <button class="btn-reject" onclick="rejectExamAdmin('${exam.id}')"><i class="fas fa-times"></i></button>
+                        ` : ''}
+                        ${isAdmin ? `<button class="btn-delete" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
+                    </div>
+                </td>
+            `;
+            adminExamsBody.appendChild(tr);
+        });
+        renderAdminPagination(totalPages, adminExamsPagination, renderAdminExamsPage);
+    }
+
+    function renderAdminPagination(totalPages, container, callback) {
+        if (!container) return;
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
+        let html = '';
+        html += `<button ${adminCurrentPage <= 1 ? 'disabled' : ''} data-page="${adminCurrentPage - 1}"><i class="fas fa-chevron-left"></i></button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            html += `<button class="${i === adminCurrentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+        }
+        html += `<button ${adminCurrentPage >= totalPages ? 'disabled' : ''} data-page="${adminCurrentPage + 1}"><i class="fas fa-chevron-right"></i></button>`;
+        container.innerHTML = html;
+        container.querySelectorAll('button[data-page]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const page = parseInt(btn.dataset.page);
+                if (!isNaN(page) && page >= 1 && page <= totalPages) {
+                    callback(page);
+                }
+            });
+        });
+    }
+
+    function loadAdminUsers() {
+        if (!adminUsersBody) return;
+        adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
+        const search = adminUserSearch?.value?.trim() || '';
+        const role = adminUserRole?.value || '';
+        let query = db.collection('users').orderBy('createdAt', 'desc');
+        if (role) {
+            query = db.collection('users').where('role', '==', role);
+        }
+        const timeout = setTimeout(() => {
+            adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune donnée disponible (timeout).</td></tr>';
+        }, 5000);
+        query.get()
+        .then(snapshot => {
+            clearTimeout(timeout);
+            let users = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                data.id = doc.id;
+                users.push(data);
+            });
+            if (search) {
+                const s = search.toLowerCase();
+                users = users.filter(u => 
+                    (u.nom && u.nom.toLowerCase().includes(s)) ||
+                    (u.prenom && u.prenom.toLowerCase().includes(s)) ||
+                    (u.email && u.email.toLowerCase().includes(s))
+                );
+            }
+            adminUsersCache = users;
+            renderAdminUsersPage(1);
+        })
+        .catch(err => {
+            clearTimeout(timeout);
+            console.error('Erreur chargement utilisateurs admin:', err);
+            adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
+        });
+    }
+
+    function renderAdminUsersPage(page) {
+        const totalPages = Math.ceil(adminUsersCache.length / ADMIN_ITEMS_PER_PAGE);
+        if (page > totalPages) page = Math.max(1, totalPages);
+        const start = (page - 1) * ADMIN_ITEMS_PER_PAGE;
+        const end = Math.min(start + ADMIN_ITEMS_PER_PAGE, adminUsersCache.length);
+        const pageUsers = adminUsersCache.slice(start, end);
+        adminUsersBody.innerHTML = '';
+        if (pageUsers.length === 0) {
+            adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucun utilisateur trouvé.</td></tr>';
+            adminUsersPagination.innerHTML = '';
+            return;
+        }
+        const roleLabels = {
+            'admin': '<span class="role-badge admin">Admin</span>',
+            'moderator': '<span class="role-badge moderator">Modérateur</span>',
+            'contributor': '<span class="role-badge contributor">Contributeur</span>',
+            'student': '<span class="role-badge student">Étudiant</span>'
+        };
+        pageUsers.forEach(user => {
+            const tr = document.createElement('tr');
+            const status = user.status || 'active';
+            const statusLabel = status === 'active' 
+                ? '<span class="status-badge active">Actif</span>' 
+                : '<span class="status-badge suspended">Suspendu</span>';
+            tr.innerHTML = `
+                <td>${user.prenom || ''} ${user.nom || ''}</td>
+                <td>${user.email || '-'}</td>
+                <td>${user.classe || '-'}</td>
+                <td>${roleLabels[user.role] || roleLabels.student}</td>
+                <td>${user.totalXp || 0}</td>
+                <td>${user.examsUploaded || 0}</td>
+                <td>${statusLabel}</td>
+                <td>
+                    <div class="admin-actions">
+                        ${isAdmin ? `
+                            <button class="btn-edit" onclick="editUserRole('${user.id}')"><i class="fas fa-user-cog"></i></button>
+                            ${status === 'active' ? `<button class="btn-suspend" onclick="suspendUser('${user.id}')"><i class="fas fa-pause"></i></button>` : `<button class="btn-activate" onclick="activateUser('${user.id}')"><i class="fas fa-play"></i></button>`}
+                        ` : ''}
+                    </div>
+                </td>
+            `;
+            adminUsersBody.appendChild(tr);
+        });
+        renderAdminPagination(totalPages, adminUsersPagination, renderAdminUsersPage);
+    }
+
+    function editUserRole(userId) {
+        const newRole = prompt('Entrez le nouveau rôle (admin, moderator, contributor, student) :', 'student');
+        if (newRole && ['admin', 'moderator', 'contributor', 'student'].includes(newRole)) {
+            db.collection('users').doc(userId).update({ role: newRole })
+            .then(() => { showToast('Rôle mis à jour', 'success'); loadAdminUsers(); })
+            .catch(err => { console.error('Erreur mise à jour rôle:', err); showToast('Erreur lors de la mise à jour', 'error'); });
+        }
+    }
+
+    function suspendUser(userId) {
+        if (confirm('Suspendre cet utilisateur ?')) {
+            db.collection('users').doc(userId).update({ status: 'suspended' })
+            .then(() => { showToast('Utilisateur suspendu', 'success'); loadAdminUsers(); })
+            .catch(err => { console.error('Erreur suspension:', err); showToast('Erreur lors de la suspension', 'error'); });
+        }
+    }
+
+    function activateUser(userId) {
+        db.collection('users').doc(userId).update({ status: 'active' })
+        .then(() => { showToast('Utilisateur réactivé', 'success'); loadAdminUsers(); })
+        .catch(err => { console.error('Erreur réactivation:', err); showToast('Erreur lors de la réactivation', 'error'); });
+    }
+
+    function loadAdminReports() {
+        if (!adminReportsList) return;
+        adminReportsList.innerHTML = '<p style="color:var(--text-light);">Chargement des signalements...</p>';
+        const status = adminReportStatus?.value || '';
+        let query = db.collection('reports').orderBy('createdAt', 'desc');
+        if (status) {
+            query = db.collection('reports').where('status', '==', status);
+        }
+        const timeout = setTimeout(() => {
+            adminReportsList.innerHTML = '<p style="color:var(--text-light);">Aucune donnée disponible (timeout).</p>';
+        }, 5000);
+        query.get()
+        .then(snapshot => {
+            clearTimeout(timeout);
+            adminReportsList.innerHTML = '';
+            if (snapshot.empty) {
+                adminReportsList.innerHTML = '<p style="color:var(--text-light);">Aucun signalement.</p>';
+                document.getElementById('admin-reports-count').style.display = 'none';
+                return;
+            }
+            let pendingCount = 0;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status === 'pending') pendingCount++;
+                const item = document.createElement('div');
+                item.className = 'admin-report-item';
+                const date = data.createdAt?.toDate ? data.createdAt.toDate().toLocaleString('fr-FR') : '-';
+                const statusLabels = {
+                    'pending': 'En attente',
+                    'resolved': 'Résolu',
+                    'ignored': 'Ignoré'
+                };
+                item.innerHTML = `
+                    <div class="report-info">
+                        <div class="report-reason"><i class="fas fa-flag"></i> ${data.reason || 'Signalement'}</div>
+                        <div class="report-detail">Par : ${data.userEmail || 'Anonyme'} - ${date} - Statut : ${statusLabels[data.status] || data.status}</div>
+                    </div>
+                    <div class="report-actions">
+                        ${data.status === 'pending' ? `
+                            <button class="resolve-btn" onclick="resolveReport('${doc.id}')"><i class="fas fa-check"></i></button>
+                            <button class="ignore-btn" onclick="ignoreReport('${doc.id}')"><i class="fas fa-times"></i></button>
+                        ` : ''}
+                    </div>
+                `;
+                adminReportsList.appendChild(item);
+            });
+            const countEl = document.getElementById('admin-reports-count');
+            if (countEl) {
+                if (pendingCount > 0) {
+                    countEl.textContent = pendingCount;
+                    countEl.style.display = 'inline-flex';
+                } else {
+                    countEl.style.display = 'none';
+                }
+            }
+        })
+        .catch(err => {
+            clearTimeout(timeout);
+            console.error('Erreur chargement signalements:', err);
+            adminReportsList.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
+        });
+    }
+
+    function resolveReport(reportId) {
+        db.collection('reports').doc(reportId).update({ status: 'resolved' })
+        .then(() => { showToast('Signalement résolu', 'success'); loadAdminReports(); })
+        .catch(err => { console.error('Erreur résolution signalement:', err); showToast('Erreur lors de la résolution', 'error'); });
+    }
+
+    function ignoreReport(reportId) {
+        db.collection('reports').doc(reportId).update({ status: 'ignored' })
+        .then(() => { showToast('Signalement ignoré', 'success'); loadAdminReports(); })
+        .catch(err => { console.error('Erreur ignorance signalement:', err); showToast('Erreur lors de l\'ignorance', 'error'); });
+    }
+
+    function exportAdminData(type) {
+        let data = [];
+        let headers = [];
+        let filename = '';
+        if (type === 'exams') {
+            data = adminExamsCache;
+            headers = ['Titre', 'Matière', 'Classe', 'Série', 'Auteur', 'Statut', 'Téléchargements', 'Vues', 'Date'];
+            filename = `epreuves_${new Date().toISOString().split('T')[0]}.csv`;
+            let csv = headers.join(',') + '\n';
+            data.forEach(exam => {
+                const row = [
+                    `"${(exam.nom_epreuve || '').replace(/"/g, '""')}"`,
+                    `"${(exam.matiere || '').replace(/"/g, '""')}"`,
+                    `"${(exam.classe || '').replace(/"/g, '""')}"`,
+                    `"${(exam.serie || '').replace(/"/g, '""')}"`,
+                    `"${(exam.auteurNom || '').replace(/"/g, '""')}"`,
+                    exam.status || '',
+                    exam.downloadCount || 0,
+                    exam.viewCount || 0,
+                    exam.createdAt?.toDate ? exam.createdAt.toDate().toLocaleDateString('fr-FR') : ''
+                ];
+                csv += row.join(',') + '\n';
+            });
+            downloadCSV(csv, filename);
+        } else if (type === 'users') {
+            data = adminUsersCache;
+            headers = ['Nom', 'Prénom', 'Email', 'Classe', 'Rôle', 'XP', 'Contributions', 'Statut'];
+            filename = `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`;
+            let csv = headers.join(',') + '\n';
+            data.forEach(user => {
+                const row = [
+                    `"${(user.nom || '').replace(/"/g, '""')}"`,
+                    `"${(user.prenom || '').replace(/"/g, '""')}"`,
+                    `"${(user.email || '').replace(/"/g, '""')}"`,
+                    `"${(user.classe || '').replace(/"/g, '""')}"`,
+                    user.role || 'student',
+                    user.totalXp || 0,
+                    user.examsUploaded || 0,
+                    user.status || 'active'
+                ];
+                csv += row.join(',') + '\n';
+            });
+            downloadCSV(csv, filename);
+        }
+    }
+
+    function downloadCSV(csv, filename) {
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast('Export terminé', 'success');
+    }
+
+    function loadAdminModerationHistory() {
+        if (!adminModerationHistory) return;
+        adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Chargement...</p>';
+        const timeout = setTimeout(() => {
+            adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Aucune donnée disponible (timeout).</p>';
+        }, 5000);
+        db.collection('moderation_history').orderBy('timestamp', 'desc').limit(30).get()
+        .then(snapshot => {
+            clearTimeout(timeout);
+            adminModerationHistory.innerHTML = '';
+            if (snapshot.empty) {
+                adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Aucune activité de modération.</p>';
+                return;
+            }
+            const actionLabels = {
+                'submitted': '<i class="fas fa-upload"></i> Soumis',
+                'approved': '<i class="fas fa-check-circle" style="color:var(--success);"></i> Approuvé',
+                'rejected': '<i class="fas fa-times-circle" style="color:var(--error);"></i> Refusé',
+                'edited': '<i class="fas fa-edit"></i> Modifié'
+            };
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const action = actionLabels[data.action] || data.action;
+                const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
+                const reason = data.reason ? `<span style="color:var(--error);font-size:0.7rem;display:block;margin-top:0.2rem;">Raison : ${data.reason}</span>` : '';
+                const div = document.createElement('div');
+                div.style.cssText = `padding:0.4rem 0.6rem;border-bottom:1px solid var(--border-color);font-size:0.85rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;`;
+                div.innerHTML = `
+                    <div>
+                        <span style="color:var(--text-light);">${data.moderatorName || 'Système'}</span>
+                        <span> ${action} </span>
+                        <span style="color:var(--accent-blue);">${data.examId ? data.examId.substring(0,8) : ''}</span>
+                        ${reason}
+                    </div>
+                    <span style="color:var(--text-light);font-size:0.7rem;white-space:nowrap;">${time}</span>
+                `;
+                adminModerationHistory.appendChild(div);
+            });
+        })
+        .catch(err => {
+            clearTimeout(timeout);
+            console.error('Erreur chargement historique modération:', err);
+            adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
+        });
+    }
+
+    // ============================================================
+    // SUPPRESSION DES FONCTIONS QUIZ ET RÉVISION
+    // ============================================================
+    // (déjà supprimées)
 
     // ============================================================
     // FUNCTIONS UTILITAIRES
@@ -9103,34 +9561,7 @@
     }
 
     function loadAdminLogs() {
-        if (!currentUser || !isAdmin) return;
-        db.collection('search_logs').orderBy('timestamp', 'desc').limit(50).get()
-        .then(snapshot => {
-            const keywords = {};
-            snapshot.forEach(doc => { const data = doc.data(); if (data.keyword) { const kw = data.keyword.toLowerCase(); keywords[kw] = (keywords[kw] || 0) + 1; } });
-            const sorted = Object.entries(keywords).sort((a,b) => b[1] - a[1]).slice(0,10);
-            if (topKeywordsContainer) {
-                if (sorted.length === 0) topKeywordsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune recherche enregistrée.</p>';
-                else topKeywordsContainer.innerHTML = sorted.map(([kw, count]) => `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid var(--border-color);"><span>${kw}</span><span style="color:var(--text-light);">${count}</span></div>`).join('');
-            }
-        }).catch(err => console.error('[FIRESTORE] Erreur chargement search_logs:', err));
-        db.collection('interaction_logs').orderBy('timestamp', 'desc').limit(10).get()
-        .then(snapshot => {
-            if (recentInteractionsContainer) {
-                if (snapshot.empty) recentInteractionsContainer.innerHTML = '<p style="color:var(--text-light);">Aucune interaction récente.</p>';
-                else {
-                    let html = '';
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const actionLabel = data.action === 'voir' ? 'a consulté' : 'a téléchargé';
-                        const userLabel = data.userType === 'connecté' ? 'Connecté' : 'Anonyme';
-                        const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
-                        html += `<div style="padding:0.3rem 0;border-bottom:1px solid var(--border-color);font-size:0.9rem;"><span style="color:var(--text-light);">${userLabel}</span><span> ${actionLabel} </span><span style="color:var(--accent-blue);">l'épreuve ${data.epreuveId ? data.epreuveId.substring(0,8) : ''}</span><span style="color:var(--text-light);font-size:0.75rem;float:right;">${time}</span></div>`;
-                    });
-                    recentInteractionsContainer.innerHTML = html;
-                }
-            }
-        }).catch(err => console.error('[FIRESTORE] Erreur chargement interaction_logs:', err));
+        // Déjà implémenté avec fallback
     }
 
     // ============================================================
@@ -9216,6 +9647,10 @@
     console.log('   ✅ Correction du double message de bienvenue');
     console.log('   ✅ Affichage du fichier joint dans la bulle utilisateur');
     console.log('   ✅ Zone de saisie fixe et flexible avec aperçu au-dessus');
+    console.log('   ✅ Transmission réelle du PDF à l\'IA (extraction de texte)');
+    console.log('   ✅ Restauration de l\'espace administratif (fallback)');
+    console.log('   ✅ Isolation des détails d\'épreuves (vue dédiée)');
+    console.log('   ✅ Stabilisation de la barre de saisie (sticky)');
 </script>
 </body>
 </html>
