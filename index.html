@@ -5269,7 +5269,7 @@
     }
 
     // ============================================================
-    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK 10 API + PDF
+    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK ET CORRECTION PDF
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
@@ -5278,16 +5278,21 @@
             // MÉMOIRE COURTE : On prend les 10 derniers messages uniquement
             const recentHistory = chatHistory.slice(-10);
 
-            // Construire le message utilisateur : si un fichier PDF est joint, on ajoute son contenu extrait
+            // Construire le message utilisateur : si un fichier PDF est joint, on extrait son contenu
             let finalUserMessage = userMessage || '';
             let extractedText = '';
 
             if (fileData && fileData.type === 'application/pdf') {
                 // Tenter d'extraire le texte du PDF via PDF.js (côté client)
                 try {
-                    // Le fichier est envoyé en base64, on le charge
-                    const pdfData = atob(fileData.data);
-                    const loadingTask = pdfjsLib.getDocument({ data: pdfData });
+                    // Convertir la chaîne base64 (sans préfixe) en Uint8Array
+                    const binaryString = atob(fileData.data);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const loadingTask = pdfjsLib.getDocument({ data: bytes });
                     const pdf = await loadingTask.promise;
                     let textContent = '';
                     for (let i = 1; i <= pdf.numPages; i++) {
@@ -5297,9 +5302,12 @@
                         textContent += strings.join(' ') + '\n';
                     }
                     extractedText = textContent.trim();
+                    if (!extractedText) {
+                        extractedText = "Le PDF ne contient pas de texte lisible (peut-être une image). Le nom du fichier : " + (fileData.name || 'fichier.pdf');
+                    }
                 } catch (err) {
                     console.warn('Erreur extraction texte PDF:', err);
-                    extractedText = "Impossible d'extraire le texte du PDF. Voici le nom du fichier : " + (fileData.name || 'fichier.pdf');
+                    extractedText = "Impossible d'extraire le texte du PDF. Le nom du fichier : " + (fileData.name || 'fichier.pdf');
                 }
             }
 
@@ -5323,7 +5331,7 @@
                 ]
             };
 
-            // Si on a un fichier (image) mais pas de texte extrait, on l'injecte en inline_data
+            // Si on a un fichier (image) mais pas de texte extrait (ou image), on l'injecte en inline_data
             if (fileData && fileData.type !== 'application/pdf') {
                 const last = payload.contents[payload.contents.length - 1];
                 if (last && last.role === 'user') {
@@ -7478,7 +7486,8 @@
         console.log('   ✅ Bouton corbeille pour vider la conversation');
         console.log('   ✅ Appel vocal avec Web Speech API');
         console.log('   ✅ Redesign des bulles de messages (compactes et modernes)');
-        console.log('   ✅ Correction du traitement des fichiers PDF (transmission base64)');
+        console.log('   ✅ Correction du traitement des fichiers PDF (conversion base64 → Uint8Array)');
+        console.log('   ✅ Injection du texte extrait du PDF dans le prompt de l\'IA');
         console.log('   ✅ Suppression des pages Quiz et Révision');
         console.log('   ✅ Bouton "Ajouter" fonctionnel dans la vue Examens');
         console.log('   ✅ Correction du double message de bienvenue');
@@ -9641,7 +9650,8 @@
     console.log('   ✅ Bouton corbeille pour vider la conversation');
     console.log('   ✅ Appel vocal avec Web Speech API');
     console.log('   ✅ Redesign des bulles de messages (compactes et modernes)');
-    console.log('   ✅ Correction du traitement des fichiers PDF (transmission base64)');
+    console.log('   ✅ Correction du traitement des fichiers PDF (conversion base64 → Uint8Array)');
+    console.log('   ✅ Injection du texte extrait du PDF dans le prompt de l\'IA');
     console.log('   ✅ Suppression des pages Quiz et Révision');
     console.log('   ✅ Bouton "Ajouter" fonctionnel dans la vue Examens');
     console.log('   ✅ Correction du double message de bienvenue');
