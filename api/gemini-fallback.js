@@ -79,7 +79,7 @@ const PROVIDERS = [
     name: 'HuggingFace',
     baseURL: 'https://api-inference.huggingface.co/v1',
     apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: 'deepseek-ai/DeepSeek-V4-Flash-0731',
+    model: 'unsloth/Qwen3.8-27B-GGUF',
   },
   {
     name: 'Cohere',
