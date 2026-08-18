@@ -37,26 +37,27 @@ const PROVIDERS = [
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-2.5-flash',
+    model: 'gemini-1.5-flash', // ✅ Modifié (gemini-2.5 n'existe pas)
   },
   {
     name: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY,
-    model: 'llama-3.3-70b-versatile',
+    model: 'llama-3.1-8b-instant', // ✅ Modifié avec un modèle ultra stable chez Groq
   },
   {
     name: 'OpenRouter',
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
-    model: 'meta-llama/llama-3.3-70b-instruct:free',
+    model: 'meta-llama/llama-3-8b-instruct:free', // ✅ Modifié avec une version gratuite active
   },
   {
     name: 'Cerebras',
     baseURL: 'https://api.cerebras.ai/v1',
     apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'llama3.3-70b',
+    model: 'llama3.1-8b', // ✅ Modifié avec le nom de modèle standard chez Cerebras
   },
+
   {
     name: 'Mistral',
     baseURL: 'https://api.mistral.ai/v1',
