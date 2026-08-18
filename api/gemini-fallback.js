@@ -34,29 +34,31 @@ const db = admin.apps.length ? admin.firestore() : null;
 // ============================================================
 const PROVIDERS = [
   {
+    {
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-1.5-flash', // ✅ Modifié (gemini-2.5 n'existe pas)
+    model: 'gemini-1.5-flash',
   },
   {
     name: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY,
-    model: 'llama-3.1-8b-instant', // ✅ Modifié avec un modèle ultra stable chez Groq
+    model: 'llama-3.1-8b-instant',
   },
   {
     name: 'OpenRouter',
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
-    model: 'meta-llama/llama-3-8b-instruct:free', // ✅ Modifié avec une version gratuite active
+    model: 'deepseek/deepseek-chat:free',
   },
   {
     name: 'Cerebras',
     baseURL: 'https://api.cerebras.ai/v1',
     apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'llama3.1-8b', // ✅ Modifié avec le nom de modèle standard chez Cerebras
+    model: 'llama3.1-8b',
   },
+
 
   {
     name: 'Mistral',
