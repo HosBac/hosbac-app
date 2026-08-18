@@ -73,7 +73,7 @@ const PROVIDERS = [
     name: 'SambaNova',
     baseURL: 'https://api.sambanova.ai/v1',
     apiKey: process.env.SAMBANOVA_API_KEY,
-    model: '​DeepSeek-V3.1',
+    model: '​​gpt-oss-120b',
   },
   {
     name: 'HuggingFace',
