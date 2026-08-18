@@ -79,7 +79,7 @@ const PROVIDERS = [
     name: 'HuggingFace',
     baseURL: 'https://api-inference.huggingface.co/v1',
     apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: 'meta-llama/Llama-3.3-70B-Instruct',
+    model: '​Qwen/Qwen3.8-27B',
   },
   {
     name: 'Cohere',
