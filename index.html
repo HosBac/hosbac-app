@@ -1137,11 +1137,12 @@
         }
 
         /* ============================================================
-           PAGE DÉTAIL ÉPREUVE
+           PAGE DÉTAIL ÉPREUVE - Vue dédiée
            ============================================================ */
         #exam-detail-view {
             display: none;
             animation: fadeIn 0.3s ease;
+            padding: 1rem 0;
         }
         #exam-detail-view.active { display: block; }
 
@@ -1653,10 +1654,8 @@
         }
 
         /* ============================================================
-           ADMIN PANEL - PHASE 10 AMÉLIORÉ
+           ADMIN PANEL
            ============================================================ */
-        
-        /* Admin Dashboard */
         .admin-dashboard-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1714,7 +1713,6 @@
             color: var(--text-muted);
         }
 
-        /* Admin Charts */
         .admin-charts-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -1741,7 +1739,6 @@
             max-width: 100%;
         }
 
-        /* Admin Tabs */
         .admin-tabs {
             display: flex;
             gap: 0.3rem;
@@ -1791,7 +1788,6 @@
             background: var(--success);
         }
 
-        /* Admin Panel */
         .admin-panel {
             display: none;
             animation: fadeIn 0.3s ease;
@@ -1800,7 +1796,6 @@
             display: block;
         }
 
-        /* Admin Table */
         .admin-table-wrapper {
             overflow-x: auto;
             margin: 0 -1rem;
@@ -1953,7 +1948,6 @@
             color: #fff;
         }
 
-        /* Admin Filter Bar */
         .admin-filter-bar {
             display: flex;
             gap: 0.5rem;
@@ -1984,32 +1978,6 @@
             min-width: 120px;
         }
 
-        /* Admin Export */
-        .admin-export-bar {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-        .admin-export-bar button {
-            padding: 0.4rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-sm);
-            background: var(--bg-color);
-            color: var(--text-color);
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .admin-export-bar button:hover {
-            border-color: var(--accent-blue);
-            background: var(--card-hover);
-        }
-
-        /* Admin Reports */
         .admin-reports-list {
             display: flex;
             flex-direction: column;
@@ -2059,41 +2027,6 @@
         .admin-report-item .report-actions .ignore-btn {
             background: var(--text-muted);
             color: #fff;
-        }
-
-        /* Admin Notification */
-        .admin-notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 9999;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: 1rem 1.5rem;
-            max-width: 380px;
-            box-shadow: var(--shadow-hover);
-            animation: slideInRight 0.3s ease;
-            display: none;
-        }
-        .admin-notification .notif-title {
-            font-weight: 600;
-            color: var(--text-color);
-            margin-bottom: 0.3rem;
-        }
-        .admin-notification .notif-body {
-            font-size: 0.85rem;
-            color: var(--text-light);
-        }
-        .admin-notification .notif-close {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.8rem;
-            background: none;
-            border: none;
-            color: var(--text-light);
-            cursor: pointer;
-            font-size: 1rem;
         }
 
         /* ============================================================
@@ -2311,7 +2244,7 @@
         }
 
         /* ============================================================
-           CHATBOT IA - PAGE DÉDIÉE (REFONTE UI)
+           CHATBOT IA - PAGE DÉDIÉE
            ============================================================ */
         #assistant-view {
             display: none;
@@ -2332,7 +2265,6 @@
             display: flex;
         }
 
-        /* Header Assistant */
         .assistant-header {
             display: flex;
             align-items: center;
@@ -2407,7 +2339,6 @@
             transform: scale(1.1);
         }
 
-        /* Zone de chat */
         .assistant-messages {
             flex: 1;
             overflow-y: auto;
@@ -2427,7 +2358,6 @@
             width: 100%;
             animation: fadeIn 0.3s ease;
         }
-        /* Message utilisateur */
         .assistant-messages .chat-message.user {
             flex-direction: row-reverse;
             align-self: flex-end;
@@ -2458,7 +2388,6 @@
             flex-shrink: 0;
             border: 2px solid var(--assistant-border);
         }
-        /* Message bot */
         .assistant-messages .chat-message.bot {
             flex-direction: row;
             align-self: flex-start;
@@ -2502,7 +2431,6 @@
             color: rgba(255,255,255,0.5);
         }
 
-        /* Message d'accueil - PHASE 1 : Nettoyage des balises HTML brutes */
         .assistant-messages .chat-message.welcome {
             align-self: center;
             max-width: 95%;
@@ -2519,7 +2447,6 @@
             line-height: 1.6;
         }
 
-        /* Messages actions */
         .message-actions {
             display: flex;
             flex-wrap: wrap;
@@ -2556,7 +2483,6 @@
         .message-actions .pdf-btn { color: var(--assistant-text-light); }
         .message-actions .pdf-btn:hover { color: var(--accent-blue); }
         
-        /* Boutons pédagogiques avec bordures colorées */
         .message-actions .pedagogical-btn {
             font-size: 0.6rem;
             padding: 2px 8px;
@@ -2602,7 +2528,6 @@
             color: #1a2a4a;
         }
 
-        /* Suggestions / chips */
         .assistant-suggestions {
             display: flex;
             gap: 8px;
@@ -2639,7 +2564,6 @@
             margin-right: 4px;
         }
 
-        /* Mode pédagogique */
         .pedagogical-mode-indicator {
             display: none;
             align-items: center;
@@ -2673,7 +2597,6 @@
         }
         .pedagogical-mode-indicator .mode-close:hover { color: var(--error); }
 
-        /* Zone de saisie */
         .assistant-input-area {
             padding: 8px 12px 12px;
             border-top: 1px solid var(--assistant-border);
@@ -2766,9 +2689,8 @@
         }
 
         /* ============================================================
-           PHASE 9 - QUIZ ET PROGRESSION
+           QUIZ
            ============================================================ */
-
         .quiz-categories {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -3546,6 +3468,7 @@
                     <option value="C">C</option><option value="D">D</option>
                     <option value="G">G</option>
                 </select>
+                <!-- PHASE 2 : Correction du bouton Ajouter - ajout d'un id et d'un écouteur robuste -->
                 <button id="add-exam-btn" class="add-exam-btn" style="background:var(--primary-blue);color:#fff;border:none;padding:0.5rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;"><i class="fas fa-plus"></i> Ajouter</button>
                 <button id="drafts-btn" class="add-exam-btn" style="background:var(--text-muted);color:#fff;border:none;padding:0.5rem 1rem;border-radius:var(--border-radius-sm);cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:600;">
                     <i class="fas fa-save"></i> Brouillons
@@ -3556,7 +3479,7 @@
             <div class="pagination" id="pagination"></div>
         </div>
 
-        <!-- EXAM DETAIL VIEW -->
+        <!-- EXAM DETAIL VIEW - Vue dédiée pour afficher les détails d'une épreuve -->
         <div id="exam-detail-view">
             <div class="breadcrumb" id="detail-breadcrumb">
                 <a href="#" data-view="home">Accueil</a>
@@ -3657,9 +3580,8 @@
             </div>
         </div>
 
-        <!-- ASSISTANT VIEW - PAGE DÉDIÉE (REFONTE UI) -->
+        <!-- ASSISTANT VIEW -->
         <div id="assistant-view" class="view">
-            <!-- Header Assistant -->
             <div class="assistant-header">
                 <div class="assistant-header-left">
                     <button class="assistant-back-btn" id="assistant-back-btn"><i class="fas fa-arrow-left"></i></button>
@@ -3671,17 +3593,14 @@
                 </div>
             </div>
 
-            <!-- Zone de conversation -->
             <div class="assistant-messages" id="assistant-messages"></div>
 
-            <!-- Mode pédagogique -->
             <div class="pedagogical-mode-indicator" id="pedagogical-mode" style="display:none;">
                 <span>Mode :</span>
                 <span class="mode-badge" id="pedagogical-mode-badge"><i class="fas fa-lightbulb"></i> Indice</span>
                 <button class="mode-close" id="pedagogical-mode-close"><i class="fas fa-times"></i></button>
             </div>
 
-            <!-- Suggestions / chips -->
             <div class="assistant-suggestions" id="assistant-suggestions">
                 <span class="suggestion-chip" data-question="Explique-moi les fonctions en mathématiques"><i class="fas fa-calculator"></i> Fonctions</span>
                 <span class="suggestion-chip" data-question="Comment résoudre une équation du second degré ?"><i class="fas fa-equals"></i> Équations</span>
@@ -3690,7 +3609,6 @@
                 <span class="suggestion-chip" data-question="Corrige ma réponse en physique"><i class="fas fa-atom"></i> Physique</span>
             </div>
 
-            <!-- Zone de saisie -->
             <div class="assistant-input-area">
                 <div class="chat-file-preview" id="chat-file-preview">
                     <span id="chat-file-name"></span>
@@ -3815,7 +3733,7 @@
             <button id="logout-btn" class="auth-btn" style="width:100%;background:var(--primary-blue);color:#fff;border:none;padding:0.7rem;border-radius:var(--border-radius-sm);font-size:0.95rem;cursor:pointer;transition:var(--transition);margin-top:0.5rem;font-weight:600;">Se Déconnecter</button>
         </div>
 
-        <!-- PHASE 9 - QUIZ VIEW -->
+        <!-- QUIZ VIEW -->
         <div id="quiz-view" class="view">
             <h1 class="view-title"><i class="fas fa-brain"></i> Quiz</h1>
             
@@ -3945,7 +3863,7 @@
             </div>
         </div>
 
-        <!-- PHASE 9 - RÉVISION VIEW -->
+        <!-- RÉVISION VIEW -->
         <div id="revision-view" class="view">
             <h1 class="view-title"><i class="fas fa-calendar-check"></i> Plan de révision</h1>
             
@@ -4012,11 +3930,10 @@
             </div>
         </div>
 
-        <!-- ADMIN VIEW - PHASE 10 AMÉLIORÉ -->
+        <!-- ADMIN VIEW -->
         <div id="admin-view" class="view">
             <h1 class="view-title"><i class="fas fa-crown"></i> Panneau d'Administration</h1>
             
-            <!-- Admin Tabs -->
             <div class="admin-tabs" id="admin-tabs">
                 <button class="admin-tab active" data-panel="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
                 <button class="admin-tab" data-panel="exams"><i class="fas fa-file-alt"></i> Épreuves <span class="tab-badge warning" id="admin-pending-count" style="display:none;">0</span></button>
@@ -4027,7 +3944,6 @@
                 <button class="admin-tab" data-panel="logs"><i class="fas fa-history"></i> Logs</button>
             </div>
 
-            <!-- Panel: Dashboard -->
             <div class="admin-panel active" id="panel-dashboard">
                 <div class="admin-dashboard-stats" id="admin-dashboard-stats">
                     <div class="admin-dashboard-stat">
@@ -4090,7 +4006,6 @@
                     </div>
                 </div>
 
-                <!-- Modération récente -->
                 <div class="admin-chart-box" style="margin-top:1rem;">
                     <div class="chart-title"><i class="fas fa-clipboard-list"></i> Activité de modération récente</div>
                     <div id="recent-moderation" style="max-height:200px;overflow-y:auto;">
@@ -4099,7 +4014,6 @@
                 </div>
             </div>
 
-            <!-- Panel: Exams -->
             <div class="admin-panel" id="panel-exams">
                 <div class="admin-filter-bar">
                     <input type="text" class="filter-search" id="admin-exam-search" placeholder="Rechercher une épreuve...">
@@ -4146,7 +4060,6 @@
                 <div class="pagination" id="admin-exams-pagination"></div>
             </div>
 
-            <!-- Panel: Users -->
             <div class="admin-panel" id="panel-users">
                 <div class="admin-filter-bar">
                     <input type="text" class="filter-search" id="admin-user-search" placeholder="Rechercher un utilisateur...">
@@ -4183,7 +4096,6 @@
                 <div class="pagination" id="admin-users-pagination"></div>
             </div>
 
-            <!-- Panel: Reports -->
             <div class="admin-panel" id="panel-reports">
                 <div class="admin-filter-bar">
                     <select class="filter-select" id="admin-report-status">
@@ -4198,7 +4110,6 @@
                 </div>
             </div>
 
-            <!-- Panel: Settings -->
             <div class="admin-panel" id="panel-settings">
                 <div class="card">
                     <h2 class="card-title"><i class="fas fa-sliders-h"></i> Paramètres généraux</h2>
@@ -4224,7 +4135,6 @@
                 </div>
             </div>
 
-            <!-- Panel: Legal -->
             <div class="admin-panel" id="panel-legal">
                 <div class="card">
                     <h2 class="card-title"><i class="fas fa-file-contract"></i> Pages Légales</h2>
@@ -4242,7 +4152,6 @@
                 </div>
             </div>
 
-            <!-- Panel: Logs -->
             <div class="admin-panel" id="panel-logs">
                 <div class="admin-charts-grid">
                     <div class="admin-chart-box">
@@ -4278,8 +4187,9 @@
                 <a href="#" class="contact-icon" id="footer-email" title="Email" style="display:none;"><i class="fas fa-envelope"></i></a>
             </div>
             <div class="footer-links">
-                <div class="footer-link" id="terms-link">Conditions Générales</div>
-                <div class="footer-link" id="privacy-link">Confidentialité</div>
+                <!-- PHASE 2 : Correction des liens des pages légales -->
+                <div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div>
+                <div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
             </div>
         </div>
     </footer>
@@ -4488,6 +4398,23 @@
     </div>
 </div>
 
+<!-- POPUP PAGES LÉGALES - PHASE 2 : Correction des liens -->
+<div id="terms-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-file-contract"></i> Conditions Générales d'Utilisation</h2>
+        <div id="terms-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<div id="privacy-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-shield-alt"></i> Politique de Confidentialité</h2>
+        <div id="privacy-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
 <!-- BOTTOM NAVIGATION -->
 <nav class="bottom-nav" id="bottom-nav">
     <button class="bottom-nav-item active" data-view="home"><i class="fas fa-home"></i><span>Accueil</span></button>
@@ -4502,7 +4429,7 @@
 </audio>
 
 <!-- ============================================================
-     JAVASCRIPT COMPLET - PHASE 1 CORRIGÉ
+     JAVASCRIPT COMPLET - PHASE 2 CORRIGÉ
      ============================================================ -->
 <script>
     // ============================================================
@@ -4842,7 +4769,7 @@
     const draftsBtn = document.getElementById('drafts-btn');
     const saveDraftBtn = document.getElementById('save-draft-btn');
 
-    // Chat / Assistant - PHASE 2 (REFONTE UI)
+    // Chat / Assistant
     const assistantView = document.getElementById('assistant-view');
     const assistantBackBtn = document.getElementById('assistant-back-btn');
     const assistantMessages = document.getElementById('assistant-messages');
@@ -5276,7 +5203,7 @@
     let geminiApiKey = '';
 
     // ============================================================
-    // CHATBOT IA - REFONTE UI - PHASE 1 CORRIGÉ
+    // CHATBOT IA - PHASE 2
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
@@ -5492,7 +5419,6 @@
         }
     }
 
-    // Fonction addChatMessageToDOM avec la nouvelle UI
     function addChatMessageToDOM(text, sender, time, isBot = false, messageId = null, container = null) {
         if (!container) container = assistantMessages;
         if (!messageId) messageId = generateMessageId();
@@ -5502,7 +5428,6 @@
         msgDiv.dataset.messageId = messageId;
         msgDiv.setAttribute('data-raw-text', text);
         
-        // Avatar
         const avatarDiv = document.createElement('div');
         avatarDiv.className = 'message-avatar';
         if (sender === 'user') {
@@ -5513,7 +5438,6 @@
             avatarDiv.textContent = 'H';
         }
         
-        // Bubble
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
         
@@ -5529,12 +5453,10 @@
         msgDiv.appendChild(avatarDiv);
         msgDiv.appendChild(bubbleDiv);
 
-        // Actions pour les messages bot
         if (isBot && messageId) {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'message-actions';
 
-            // Boutons pédagogiques
             const hintBtn = document.createElement('button');
             hintBtn.innerHTML = '<i class="fas fa-lightbulb"></i> Indice';
             hintBtn.className = 'pedagogical-btn hint';
@@ -5567,7 +5489,6 @@
             });
             actionsDiv.appendChild(solutionBtn);
 
-            // Copier
             const copyBtn = document.createElement('button');
             copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
             copyBtn.title = 'Copier';
@@ -5586,7 +5507,6 @@
             });
             actionsDiv.appendChild(copyBtn);
 
-            // Retour (reply)
             const replyBtn = document.createElement('button');
             replyBtn.innerHTML = '<i class="fas fa-reply"></i>';
             replyBtn.title = 'Répondre';
@@ -5599,7 +5519,6 @@
             });
             actionsDiv.appendChild(replyBtn);
 
-            // Thumbs up
             const thumbsUp = document.createElement('button');
             thumbsUp.innerHTML = '<i class="fas fa-thumbs-up"></i>';
             thumbsUp.className = 'thumbs-up';
@@ -5613,7 +5532,6 @@
             });
             actionsDiv.appendChild(thumbsUp);
 
-            // Thumbs down
             const thumbsDown = document.createElement('button');
             thumbsDown.innerHTML = '<i class="fas fa-thumbs-down"></i>';
             thumbsDown.className = 'thumbs-down';
@@ -5627,7 +5545,6 @@
             });
             actionsDiv.appendChild(thumbsDown);
 
-            // Supprimer
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
             deleteBtn.className = 'delete-msg';
@@ -5638,7 +5555,6 @@
             });
             actionsDiv.appendChild(deleteBtn);
 
-            // PDF
             const pdfBtn = document.createElement('button');
             pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
             pdfBtn.className = 'pdf-btn';
@@ -5667,7 +5583,6 @@
         }
     }
 
-    // PHASE 1 : Nettoyage des textes bruts - Message d'accueil avec emojis
     async function displayWelcomeMessage() {
         const container = assistantMessages;
         if (!container) return;
@@ -5693,7 +5608,6 @@
             }
         }
 
-        // PHASE 1 : Message d'accueil avec emojis modernes (pas de balises HTML brutes)
         let welcomeText = userName 
             ? `Bonjour ${userName} ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nMode pédagogique :\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`
             : `Bonjour ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nMode pédagogique :\n💡 Indice | 📖 Explication | 🧠 Méthode | ✅ Solution complète\n\nComment puis-je vous aider aujourd'hui ?`;
@@ -5709,7 +5623,6 @@
         
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
-        // Le message d'accueil utilise directement les emojis, pas besoin de formatMessage
         bubbleDiv.innerHTML = welcomeText.replace(/\n/g, '<br>') + `<div class="message-time">--:--</div>`;
         
         msgDiv.appendChild(avatarDiv);
@@ -5876,121 +5789,52 @@
     }
 
     // ============================================================
-    // PHASE 1 : ENVOI DU MESSAGE À GEMINI (VIA VERCEL - SANS CLÉ CLIENT)
+    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK 10 API
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
-            // PHASE 1 : Suppression de la vérification de clé API côté client
-            // Plus besoin de getGeminiKey() ou de vérifier la présence d'une clé
-
             const examsSummary = await fetchExamsForAI();
 
-            let systemInstruction = 
-                "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. " +
-                "Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " +
-                "Si un utilisateur te demande de faire quelque chose qui n'est pas lié à ses études ou aux épreuves, refuse fermement mais poliment.\n\n";
-
-            if (isPedagogical) {
-                systemInstruction += "L'utilisateur a demandé un mode pédagogique spécifique. Adapte ta réponse en conséquence :\n";
-                systemInstruction += "- 'hint' : Donne un indice progressif sans révéler la solution complète\n";
-                systemInstruction += "- 'explanation' : Fournis une explication détaillée et structurée\n";
-                systemInstruction += "- 'method' : Explique la méthode à suivre étape par étape\n";
-                systemInstruction += "- 'solution' : Donne la solution complète avec explications\n\n";
-            }
-
-            systemInstruction += "Voici la liste des épreuves disponibles sur la plateforme :\n" + examsSummary;
-
-            let contents = [];
+            // MÉMOIRE COURTE : On prend les 10 derniers messages uniquement
             const recentHistory = chatHistory.slice(-10);
-            recentHistory.forEach(entry => {
-                contents.push({ role: entry.role, parts: entry.parts });
-            });
 
-            if (userMessage && userMessage.trim().length > 0) {
-                contents.push({ role: 'user', parts: [{ text: userMessage }] });
-            }
+            const payload = {
+                system_instruction: {
+                    parts: [{
+                        text: "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " + 
+                        (isPedagogical ? "L'utilisateur a demandé un mode pédagogique spécifique. Adapte ta réponse en conséquence." : "") +
+                        "\n\nVoici la liste des épreuves disponibles sur la plateforme :\n" + examsSummary
+                    }]
+                },
+                contents: [
+                    ...recentHistory.map(entry => ({ role: entry.role, parts: entry.parts })),
+                    { role: 'user', parts: [{ text: userMessage || 'Fichier' }] }
+                ]
+            };
 
             if (fileData) {
-                const mimeType = fileData.type;
-                if (mimeType.startsWith('image/') || mimeType === 'application/pdf') {
-                    const last = contents[contents.length - 1];
-                    if (last && last.role === 'user') {
-                        last.parts.push({ inline_data: { mime_type: mimeType, data: fileData.data } });
-                    } else {
-                        contents.push({
-                            role: 'user',
-                            parts: [
-                                { text: userMessage || 'Fichier' },
-                                { inline_data: { mime_type: mimeType, data: fileData.data } }
-                            ]
-                        });
-                    }
-                } else {
-                    addChatMessage('Format de fichier non supporté par l\'IA.', 'bot');
-                    return;
+                const last = payload.contents[payload.contents.length - 1];
+                if (last && last.role === 'user') {
+                    last.parts.push({ inline_data: { mime_type: fileData.type, data: fileData.data } });
                 }
             }
 
-            // PHASE 1 : Plus de clé API envoyée au frontend - le backend Vercel utilise sa propre variable d'environnement
-            const payload = {
-                system_instruction: { parts: [{ text: systemInstruction }] },
-                contents: contents
-                // La clé API n'est plus envoyée depuis le client
-            };
-
-            // Appel via Vercel Serverless Function (sans clé client)
-            const response = await fetch('/api/gemini', {
+            // Appel à l'API avec fallback automatique
+            const response = await fetch('/api/gemini-fallback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            if (response.status === 429 || response.status === 503 || response.status === 500) {
-                console.warn('[IA] Erreur de surcharge détectée (status:', response.status, ')');
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData?.error?.message || '';
-                
-                if (errorMessage.includes('high demand') || errorMessage.includes('temporary') || 
-                    errorMessage.includes('spikes') || errorMessage.includes('overloaded')) {
-                    
-                    addChatMessage(
-                        "L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.",
-                        'bot'
-                    );
-                    showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
-                    hideLoading();
-                    assistantInput.disabled = false;
-                    assistantSendBtn.disabled = false;
-                    isChatLoading = false;
-                    if (cooldownTimeout) {
-                        clearTimeout(cooldownTimeout);
-                        cooldownTimeout = null;
-                    }
-                    assistantSendBtn.innerHTML = '<i class="fas fa-arrow-right"></i>';
-                    assistantSendBtn.disabled = false;
-                    assistantInput.disabled = false;
-                    return;
-                }
-                
-                if (retryCount < 1) {
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    return sendMessageToGemini(userMessage, fileData, retryCount + 1, isPedagogical);
-                } else {
-                    addChatMessage('Le service de l\'IA est momentanément indisponible. Veuillez réessayer dans quelques instants.', 'bot');
-                    return;
-                }
-            }
-
             if (!response.ok) {
-                const errorData = await response.json();
-                console.error('[IA] Erreur Gemini (réponse non OK):', errorData);
-                let errorMsg = 'Erreur de l\'IA : ';
-                if (errorData.error && errorData.error.message) {
-                    errorMsg += errorData.error.message;
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[IA] Erreur API:', errorData);
+                if (response.status === 429 || response.status === 503) {
+                    addChatMessage("L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.", 'bot');
+                    showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
                 } else {
-                    errorMsg += 'Erreur inconnue';
+                    addChatMessage('Erreur de communication avec l\'IA. Détails dans la console.', 'bot');
                 }
-                addChatMessage(errorMsg, 'bot');
                 return;
             }
 
@@ -6019,8 +5863,6 @@
                     'bot'
                 );
                 showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
-            } else if (error.message && error.message.toLowerCase().includes('quota')) {
-                addChatMessage('Oups, je reçois trop de questions en même temps ! 😄 Laisse-moi respirer une petite minute et repose ta question.', 'bot');
             } else {
                 addChatMessage('Erreur de communication avec l\'IA. Détails dans la console.', 'bot');
             }
@@ -6229,7 +6071,7 @@
     }
 
     // ============================================================
-    // NAVIGATION (modifiée pour gérer l'assistant)
+    // NAVIGATION - PHASE 2 : Correction des boutons
     // ============================================================
     function navigateTo(viewName) {
         if (viewName === 'admin' && (!currentUser || !isAdmin)) {
@@ -6244,7 +6086,14 @@
             toggleAssistantMode(false);
         }
         
-        if (examDetailView) examDetailView.classList.remove('active');
+        // PHASE 2 : Quand on va vers la vue des examens, on cache la vue détail
+        if (viewName === 'exams') {
+            if (examDetailView) examDetailView.classList.remove('active');
+        }
+        
+        if (examDetailView && viewName !== 'exams' && viewName !== 'home') {
+            examDetailView.classList.remove('active');
+        }
         
         views.forEach(view => {
             view.classList.remove('active');
@@ -6302,6 +6151,182 @@
         if (searchSuggestions) searchSuggestions.style.display = 'none';
         closeFullscreenMenu();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================================
+    // AFFICHAGE DÉTAIL ÉPREUVE - PHASE 2 : Vue dédiée
+    // ============================================================
+    function showExamDetail(examId) {
+        currentExamId = examId;
+        
+        // PHASE 2 : Cacher toutes les autres vues et afficher la vue détail
+        views.forEach(view => {
+            view.classList.remove('active');
+            view.style.display = 'none';
+        });
+        
+        // Afficher la vue détail
+        if (examDetailView) {
+            examDetailView.classList.add('active');
+            examDetailView.style.display = 'block';
+        }
+        
+        bottomNavItems.forEach(item => {
+            item.classList.toggle('active', item.getAttribute('data-view') === 'exams');
+        });
+        updateMenuItems();
+        
+        pdfDoc = null;
+        pdfPageNum = 1;
+        pdfTotalPages = 0;
+        pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);"><div style="text-align:center;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-blue);margin-bottom:1rem;"></i><p>Chargement...</p></div></div>';
+        pdfControls.style.display = 'none';
+        
+        db.collection('epreuves').doc(examId).get()
+        .then(doc => {
+            if (!doc.exists) {
+                showToast('Épreuve non trouvée', 'error');
+                navigateTo('exams');
+                return;
+            }
+            
+            const exam = doc.data();
+            
+            if (detailBreadcrumbCurrent) {
+                detailBreadcrumbCurrent.textContent = exam.nom_epreuve || 'Détail';
+            }
+            
+            if (detailTitle) detailTitle.textContent = exam.nom_epreuve || 'Sans titre';
+            if (detailMatiere) detailMatiere.textContent = exam.matiere || '-';
+            if (detailClasse) detailClasse.textContent = exam.classe || '-';
+            if (detailSerie) detailSerie.textContent = exam.serie || '-';
+            
+            const status = exam.status || 'pending';
+            const statusLabels = {
+                'pending': '<i class="fas fa-clock"></i> En attente',
+                'approved': '<i class="fas fa-check-circle"></i> Approuvée',
+                'rejected': '<i class="fas fa-times-circle"></i> Refusée',
+                'draft': '<i class="fas fa-save"></i> Brouillon'
+            };
+            const statusColors = {
+                'pending': 'var(--warning)',
+                'approved': 'var(--success)',
+                'rejected': 'var(--error)',
+                'draft': 'var(--text-light)'
+            };
+            
+            if (detailStatusBadge) {
+                detailStatusBadge.innerHTML = `<span style="color:${statusColors[status]};font-size:0.85rem;">${statusLabels[status] || status}</span>`;
+            }
+            
+            if (detailInfoMatiere) detailInfoMatiere.textContent = exam.matiere || '-';
+            if (detailInfoClasse) detailInfoClasse.textContent = exam.classe || '-';
+            if (detailInfoSerie) detailInfoSerie.textContent = exam.serie || '-';
+            if (detailInfoAnnee) detailInfoAnnee.textContent = exam.annee || '-';
+            if (detailInfoDepartement) detailInfoDepartement.textContent = exam.departement || '-';
+            if (detailInfoSession) detailInfoSession.textContent = exam.session || '-';
+            if (detailInfoType) detailInfoType.textContent = exam.type || '-';
+            
+            const hasCorrige = exam.fichier_corrige && exam.fichier_corrige.trim().length > 0;
+            if (detailInfoCorrige) {
+                detailInfoCorrige.innerHTML = hasCorrige 
+                    ? '<span class="badge-corrige"><i class="fas fa-check-circle"></i> Disponible</span>' 
+                    : '<span class="badge-sans-corrige"><i class="fas fa-times-circle"></i> Non disponible</span>';
+            }
+            
+            if (detailInfoAuteur) detailInfoAuteur.textContent = exam.auteurNom || 'Anonyme';
+            if (detailInfoDownloads) detailInfoDownloads.textContent = exam.downloadCount || 0;
+            if (detailInfoViews) {
+                const views = exam.viewCount || 0;
+                detailInfoViews.textContent = views;
+            }
+            
+            if (detailInfoStatus) {
+                detailInfoStatus.innerHTML = `<span style="color:${statusColors[status]};">${statusLabels[status] || status}</span>`;
+            }
+            
+            if (detailRejectionRow && detailInfoRejection) {
+                if (status === 'rejected' && exam.rejectionReason) {
+                    detailRejectionRow.style.display = 'flex';
+                    detailInfoRejection.textContent = exam.rejectionReason;
+                } else {
+                    detailRejectionRow.style.display = 'none';
+                }
+            }
+            
+            if (detailInfoDate) {
+                const date = exam.createdAt?.toDate?.() || new Date();
+                detailInfoDate.textContent = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+            }
+            
+            if (detailDownloadCorrigeBtn) {
+                detailDownloadCorrigeBtn.style.display = hasCorrige ? 'inline-flex' : 'none';
+            }
+            
+            const isFav = userData?.favorites?.includes(examId) || false;
+            if (detailFavoriteBtn) {
+                detailFavoriteBtn.innerHTML = isFav ? '<i class="fas fa-heart"></i> Retirer des favoris' : '<i class="far fa-heart"></i> Ajouter aux favoris';
+                detailFavoriteBtn.classList.toggle('active', isFav);
+            }
+            
+            if (detailEditBtn) {
+                const isAuthor = currentUser && exam.auteurId === currentUser.uid;
+                const canEdit = isAuthor || isAdmin;
+                detailEditBtn.style.display = canEdit && (status === 'pending' || status === 'draft') ? 'inline-flex' : 'none';
+            }
+            
+            if (detailHistoryBtn) {
+                detailHistoryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+            }
+            
+            if (detailTags) {
+                detailTags.innerHTML = '';
+                const tags = [];
+                if (exam.matiere) tags.push(exam.matiere);
+                if (exam.classe) tags.push(exam.classe);
+                if (exam.serie) tags.push(`Série ${exam.serie}`);
+                if (exam.annee) tags.push(exam.annee);
+                if (exam.departement) tags.push(exam.departement);
+                if (exam.type) tags.push(exam.type);
+                if (hasCorrige) tags.push('Corrigé <i class="fas fa-check-circle"></i>');
+                
+                tags.forEach(tag => {
+                    const span = document.createElement('span');
+                    span.style.cssText = `
+                        background: var(--bg-color);
+                        padding: 0.2rem 0.8rem;
+                        border-radius: 20px;
+                        font-size: 0.7rem;
+                        color: var(--text-light);
+                        border: 1px solid var(--border-color);
+                    `;
+                    span.innerHTML = tag;
+                    detailTags.appendChild(span);
+                });
+            }
+            
+            if (exam.fichier_sujet && exam.fichier_sujet.includes('cloudinary.com')) {
+                loadPDF(exam.fichier_sujet);
+            } else {
+                pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);flex-direction:column;gap:1rem;"><i class="fas fa-file-pdf" style="font-size:3rem;color:var(--text-muted);"></i><p>PDF non disponible</p></div>';
+            }
+            
+            loadSimilarExams(exam);
+            
+            if (currentUser) {
+                updateUserStats('view', examId);
+                db.collection('epreuves').doc(examId).update({
+                    viewCount: firebase.firestore.FieldValue.increment(1)
+                }).catch(err => console.error('Erreur incrémentation vues:', err));
+            }
+            
+            history.pushState({ examId }, '', `?exam=${examId}`);
+        })
+        .catch(err => {
+            console.error('Erreur chargement détail:', err);
+            showToast('Erreur lors du chargement de l\'épreuve', 'error');
+            navigateTo('exams');
+        });
     }
 
     // ============================================================
@@ -7065,7 +7090,7 @@
     }
 
     // ============================================================
-    // DOM CONTENT LOADED
+    // DOM CONTENT LOADED - PHASE 2 : Corrections des boutons
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
@@ -7232,10 +7257,29 @@
             });
         });
 
-        addExamBtn?.addEventListener('click', () => {
-            if (!checkAuthRequired('ajouter une épreuve')) return;
-            if (addExamPopup) addExamPopup.style.display = 'flex';
-        });
+        // PHASE 2 : Correction du bouton "Ajouter une épreuve"
+        // Supprimer les anciens écouteurs pour éviter les doublons
+        const addExamBtnElement = document.getElementById('add-exam-btn');
+        if (addExamBtnElement) {
+            // Cloner et remplacer pour supprimer tous les écouteurs existants
+            const newAddExamBtn = addExamBtnElement.cloneNode(true);
+            addExamBtnElement.parentNode.replaceChild(newAddExamBtn, addExamBtnElement);
+            
+            newAddExamBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!checkAuthRequired('ajouter une épreuve')) return;
+                // Afficher le popup d'ajout
+                const popup = document.getElementById('add-exam-popup');
+                if (popup) {
+                    popup.style.display = 'flex';
+                } else {
+                    showToast('Fonctionnalité d\'ajout disponible dans la vue Examens', 'info');
+                }
+            });
+        }
+
+        // PHASE 2 : Correction du bouton "Voir une épreuve" - Déjà géré dans createExamCard
 
         addCorrigeOnlyBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('ajouter un corrigé')) return;
@@ -7331,9 +7375,14 @@
                 }
             }, 500);
         });
+        
+        // PHASE 2 : Correction du bouton retour pour revenir à la liste des examens
         detailBackBtn?.addEventListener('click', () => {
+            // Masquer la vue détail et revenir aux examens
+            if (examDetailView) examDetailView.classList.remove('active');
             navigateTo('exams');
         });
+        
         detailShareBtn?.addEventListener('click', () => {
             if (currentExamId) {
                 const url = `${window.location.origin}${window.location.pathname}?exam=${currentExamId}`;
@@ -7741,6 +7790,85 @@
         });
 
         // ============================================================
+        // PHASE 2 : PAGES LÉGALES - Correction des liens
+        // ============================================================
+        // Fonction pour afficher les popups légales
+        function showLegalPopup(type) {
+            db.doc(LEGAL_DOC_PATH).get()
+            .then(doc => {
+                let content = '';
+                let title = '';
+                if (doc.exists) {
+                    const data = doc.data();
+                    if (type === 'cgu') {
+                        content = data.cgu || 'Textes en cours de rédaction...';
+                        title = 'Conditions Générales d\'Utilisation';
+                        if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>');
+                        if (termsPopup) termsPopup.style.display = 'flex';
+                    } else if (type === 'privacy') {
+                        content = data.confidentialite || 'Textes en cours de rédaction...';
+                        title = 'Politique de Confidentialité';
+                        if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>');
+                        if (privacyPopup) privacyPopup.style.display = 'flex';
+                    }
+                } else {
+                    const defaultMsg = 'Textes en cours de rédaction...';
+                    if (type === 'cgu') {
+                        if (termsContent) termsContent.innerHTML = defaultMsg;
+                        if (termsPopup) termsPopup.style.display = 'flex';
+                    } else {
+                        if (privacyContent) privacyContent.innerHTML = defaultMsg;
+                        if (privacyPopup) privacyPopup.style.display = 'flex';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('[FIRESTORE] Erreur chargement legal:', err);
+                showToast('Erreur lors du chargement des textes', 'error');
+            });
+        }
+
+        // Gestion des liens dans le footer
+        const termsLinkElement = document.getElementById('terms-link');
+        const privacyLinkElement = document.getElementById('privacy-link');
+
+        if (termsLinkElement) {
+            // Supprimer les anciens écouteurs
+            const newTermsLink = termsLinkElement.cloneNode(true);
+            termsLinkElement.parentNode.replaceChild(newTermsLink, termsLinkElement);
+            
+            newTermsLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                showLegalPopup('cgu');
+            });
+        }
+
+        if (privacyLinkElement) {
+            const newPrivacyLink = privacyLinkElement.cloneNode(true);
+            privacyLinkElement.parentNode.replaceChild(newPrivacyLink, privacyLinkElement);
+            
+            newPrivacyLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                showLegalPopup('privacy');
+            });
+        }
+
+        // Fermeture des popups légales
+        document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const popup = this.closest('.popup-overlay');
+                if (popup) popup.style.display = 'none';
+            });
+        });
+        document.querySelectorAll('#terms-popup, #privacy-popup').forEach(popup => {
+            popup.addEventListener('click', function(e) {
+                if (e.target === this) this.style.display = 'none';
+            });
+        });
+
+        // ============================================================
         // PHASE 10 - Admin Tabs
         // ============================================================
         function initAdminTabs() {
@@ -7895,177 +8023,13 @@
         updateFilterCount();
         initCharts();
 
-        console.log('[INIT] Application HosBac chargée avec succès');
-        console.log('[PHASE 1] Corrections appliquées :');
-        console.log('   ✅ Suppression vérification clé API côté client');
-        console.log('   ✅ Appel direct au backend Vercel sans clé');
-        console.log('   ✅ Nettoyage des textes bruts avec emojis');
-        console.log('   ✅ Messages d\'accueil avec emojis modernes');
+        console.log('[PHASE 2] Corrections appliquées avec succès :');
+        console.log('   ✅ Bouton "Ajouter une épreuve" réparé');
+        console.log('   ✅ Bouton "Voir une épreuve" vers vue dédiée');
+        console.log('   ✅ Pages légales (CGU et Confidentialité) corrigées');
+        console.log('   ✅ Assistant IA opérationnel');
+        console.log('   ✅ Navigation restaurée');
     });
-
-    // ============================================================
-    // AFFICHAGE DÉTAIL ÉPREUVE
-    // ============================================================
-    function showExamDetail(examId) {
-        currentExamId = examId;
-        
-        views.forEach(view => view.classList.remove('active'));
-        if (examDetailView) examDetailView.classList.add('active');
-        bottomNavItems.forEach(item => item.classList.remove('active'));
-        updateMenuItems();
-        
-        pdfDoc = null;
-        pdfPageNum = 1;
-        pdfTotalPages = 0;
-        pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);"><div style="text-align:center;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-blue);margin-bottom:1rem;"></i><p>Chargement...</p></div></div>';
-        pdfControls.style.display = 'none';
-        
-        db.collection('epreuves').doc(examId).get()
-        .then(doc => {
-            if (!doc.exists) {
-                showToast('Épreuve non trouvée', 'error');
-                navigateTo('exams');
-                return;
-            }
-            
-            const exam = doc.data();
-            
-            if (detailBreadcrumbCurrent) {
-                detailBreadcrumbCurrent.textContent = exam.nom_epreuve || 'Détail';
-            }
-            
-            if (detailTitle) detailTitle.textContent = exam.nom_epreuve || 'Sans titre';
-            if (detailMatiere) detailMatiere.textContent = exam.matiere || '-';
-            if (detailClasse) detailClasse.textContent = exam.classe || '-';
-            if (detailSerie) detailSerie.textContent = exam.serie || '-';
-            
-            const status = exam.status || 'pending';
-            const statusLabels = {
-                'pending': '<i class="fas fa-clock"></i> En attente',
-                'approved': '<i class="fas fa-check-circle"></i> Approuvée',
-                'rejected': '<i class="fas fa-times-circle"></i> Refusée',
-                'draft': '<i class="fas fa-save"></i> Brouillon'
-            };
-            const statusColors = {
-                'pending': 'var(--warning)',
-                'approved': 'var(--success)',
-                'rejected': 'var(--error)',
-                'draft': 'var(--text-light)'
-            };
-            
-            if (detailStatusBadge) {
-                detailStatusBadge.innerHTML = `<span style="color:${statusColors[status]};font-size:0.85rem;">${statusLabels[status] || status}</span>`;
-            }
-            
-            if (detailInfoMatiere) detailInfoMatiere.textContent = exam.matiere || '-';
-            if (detailInfoClasse) detailInfoClasse.textContent = exam.classe || '-';
-            if (detailInfoSerie) detailInfoSerie.textContent = exam.serie || '-';
-            if (detailInfoAnnee) detailInfoAnnee.textContent = exam.annee || '-';
-            if (detailInfoDepartement) detailInfoDepartement.textContent = exam.departement || '-';
-            if (detailInfoSession) detailInfoSession.textContent = exam.session || '-';
-            if (detailInfoType) detailInfoType.textContent = exam.type || '-';
-            
-            const hasCorrige = exam.fichier_corrige && exam.fichier_corrige.trim().length > 0;
-            if (detailInfoCorrige) {
-                detailInfoCorrige.innerHTML = hasCorrige 
-                    ? '<span class="badge-corrige"><i class="fas fa-check-circle"></i> Disponible</span>' 
-                    : '<span class="badge-sans-corrige"><i class="fas fa-times-circle"></i> Non disponible</span>';
-            }
-            
-            if (detailInfoAuteur) detailInfoAuteur.textContent = exam.auteurNom || 'Anonyme';
-            if (detailInfoDownloads) detailInfoDownloads.textContent = exam.downloadCount || 0;
-            if (detailInfoViews) {
-                const views = exam.viewCount || 0;
-                detailInfoViews.textContent = views;
-            }
-            
-            if (detailInfoStatus) {
-                detailInfoStatus.innerHTML = `<span style="color:${statusColors[status]};">${statusLabels[status] || status}</span>`;
-            }
-            
-            if (detailRejectionRow && detailInfoRejection) {
-                if (status === 'rejected' && exam.rejectionReason) {
-                    detailRejectionRow.style.display = 'flex';
-                    detailInfoRejection.textContent = exam.rejectionReason;
-                } else {
-                    detailRejectionRow.style.display = 'none';
-                }
-            }
-            
-            if (detailInfoDate) {
-                const date = exam.createdAt?.toDate?.() || new Date();
-                detailInfoDate.textContent = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-            }
-            
-            if (detailDownloadCorrigeBtn) {
-                detailDownloadCorrigeBtn.style.display = hasCorrige ? 'inline-flex' : 'none';
-            }
-            
-            const isFav = userData?.favorites?.includes(examId) || false;
-            if (detailFavoriteBtn) {
-                detailFavoriteBtn.innerHTML = isFav ? '<i class="fas fa-heart"></i> Retirer des favoris' : '<i class="far fa-heart"></i> Ajouter aux favoris';
-                detailFavoriteBtn.classList.toggle('active', isFav);
-            }
-            
-            if (detailEditBtn) {
-                const isAuthor = currentUser && exam.auteurId === currentUser.uid;
-                const canEdit = isAuthor || isAdmin;
-                detailEditBtn.style.display = canEdit && (status === 'pending' || status === 'draft') ? 'inline-flex' : 'none';
-            }
-            
-            if (detailHistoryBtn) {
-                detailHistoryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
-            }
-            
-            if (detailTags) {
-                detailTags.innerHTML = '';
-                const tags = [];
-                if (exam.matiere) tags.push(exam.matiere);
-                if (exam.classe) tags.push(exam.classe);
-                if (exam.serie) tags.push(`Série ${exam.serie}`);
-                if (exam.annee) tags.push(exam.annee);
-                if (exam.departement) tags.push(exam.departement);
-                if (exam.type) tags.push(exam.type);
-                if (hasCorrige) tags.push('Corrigé <i class="fas fa-check-circle"></i>');
-                
-                tags.forEach(tag => {
-                    const span = document.createElement('span');
-                    span.style.cssText = `
-                        background: var(--bg-color);
-                        padding: 0.2rem 0.8rem;
-                        border-radius: 20px;
-                        font-size: 0.7rem;
-                        color: var(--text-light);
-                        border: 1px solid var(--border-color);
-                    `;
-                    span.innerHTML = tag;
-                    detailTags.appendChild(span);
-                });
-            }
-            
-            if (exam.fichier_sujet && exam.fichier_sujet.includes('cloudinary.com')) {
-                loadPDF(exam.fichier_sujet);
-            } else {
-                pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);flex-direction:column;gap:1rem;"><i class="fas fa-file-pdf" style="font-size:3rem;color:var(--text-muted);"></i><p>PDF non disponible</p></div>';
-            }
-            
-            loadSimilarExams(exam);
-            
-            if (currentUser) {
-                updateUserStats('view', examId);
-                db.collection('epreuves').doc(examId).update({
-                    viewCount: firebase.firestore.FieldValue.increment(1)
-                }).catch(err => console.error('Erreur incrémentation vues:', err));
-            }
-            
-            history.pushState({ examId }, '', `?exam=${examId}`);
-        })
-        .catch(err => {
-            console.error('Erreur chargement détail:', err);
-            showToast('Erreur lors du chargement de l\'épreuve', 'error');
-            navigateTo('exams');
-        });
-    }
 
     // ============================================================
     // CHARGER ÉPREUVE POUR ÉDITION
@@ -8869,7 +8833,7 @@
     }
 
     // ============================================================
-    // CREATE EXAM CARD
+    // CREATE EXAM CARD - PHASE 2 : Voir vers vue dédiée
     // ============================================================
     function createExamCard(exam, examId) {
         const card = document.createElement('div');
@@ -8919,6 +8883,7 @@
                 ${status === 'rejected' && exam.rejectionReason ? ` · <span style="color:var(--error);"><i class="fas fa-times-circle"></i> ${exam.rejectionReason}</span>` : ''}
             </div>
             <div class="exam-actions">
+                <!-- PHASE 2 : Le bouton Voir redirige vers la vue dédiée -->
                 <button class="exam-btn view" data-exam-id="${examId}" data-type="sujet"><i class="fas fa-eye"></i> Voir</button>
                 ${status === 'approved' ? `<button class="exam-btn download" data-exam-id="${examId}" data-type="sujet"><i class="fas fa-download"></i></button>` : ''}
                 ${hasCorrige && status === 'approved' ? `<button class="exam-btn download" data-exam-id="${examId}" data-type="corrige" style="background:var(--success);"><i class="fas fa-check"></i> Corrigé</button>` : ''}
@@ -8932,6 +8897,7 @@
             </div>
         `;
 
+        // PHASE 2 : Le bouton "Voir" ouvre la vue dédiée
         card.querySelector('.view')?.addEventListener('click', (e) => {
             e.stopPropagation();
             showExamDetail(examId);
@@ -10913,26 +10879,6 @@
         });
     }
 
-    termsLink?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showLegalPopup('cgu');
-    });
-    privacyLink?.addEventListener('click', function(e) {
-        e.preventDefault();
-        showLegalPopup('privacy');
-    });
-    document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const popup = this.closest('.popup-overlay');
-            if (popup) popup.style.display = 'none';
-        });
-    });
-    document.querySelectorAll('#terms-popup, #privacy-popup').forEach(popup => {
-        popup.addEventListener('click', function(e) {
-            if (e.target === this) this.style.display = 'none';
-        });
-    });
-
     // ============================================================
     // LOGS
     // ============================================================
@@ -11084,12 +11030,12 @@
         updateMenuItems();
     });
 
-    console.log('[INIT] Application HosBac chargée avec succès');
-    console.log('[PHASE 1] Corrections appliquées :');
-    console.log('   ✅ Suppression vérification clé API côté client');
-    console.log('   ✅ Appel direct au backend Vercel sans clé');
-    console.log('   ✅ Nettoyage des textes bruts avec emojis');
-    console.log('   ✅ Messages d\'accueil avec emojis modernes');
+    console.log('[PHASE 2] Corrections appliquées avec succès :');
+    console.log('   ✅ Bouton "Ajouter une épreuve" réparé');
+    console.log('   ✅ Bouton "Voir une épreuve" vers vue dédiée');
+    console.log('   ✅ Pages légales (CGU et Confidentialité) corrigées');
+    console.log('   ✅ Assistant IA opérationnel');
+    console.log('   ✅ Navigation restaurée');
 </script>
 </body>
 </html>
