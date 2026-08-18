@@ -33,11 +33,11 @@ const db = admin.apps.length ? admin.firestore() : null;
 // 1. CONFIGURATION DES FOURNISSEURS D'API
 // ============================================================
 const PROVIDERS = [
-  {
+    {
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash', // Modèle stable et officiel de la famille 2.5
   },
   {
     name: 'Groq',
