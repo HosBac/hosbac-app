@@ -85,7 +85,7 @@ const PROVIDERS = [
     name: 'Cohere',
     baseURL: 'https://api.cohere.com/v2',
     apiKey: process.env.COHERE_API_KEY,
-    model: 'command-r-plus',
+    model: 'command',
   },
   {
     name: 'Cloudflare',
