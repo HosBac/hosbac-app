@@ -1,0 +1,8 @@
+{
+  "name": "hosbac-app",
+  "version": "1.0.0",
+  "description": "HosBac Backend API",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
