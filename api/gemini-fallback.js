@@ -30,11 +30,10 @@ if (!admin.apps.length) {
 const db = admin.apps.length ? admin.firestore() : null;
 
 // ============================================================
-// 1. CONFIGURATION DES 10 FOURNISSEURS D'API
+// 1. CONFIGURATION DES FOURNISSEURS D'API
 // ============================================================
 const PROVIDERS = [
   {
-    {
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
@@ -160,7 +159,7 @@ async function callProvider(provider, payload) {
   }
 
   const contents = payload.contents || [];
-  const recentContents = contents.slice(-10); // Troncature à 10 messages
+  const recentContents = contents.slice(-10);
   for (const content of recentContents) {
     const role = content.role === 'user' ? 'user' : 'assistant';
     let contentText = '';
