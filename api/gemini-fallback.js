@@ -85,7 +85,7 @@ const PROVIDERS = [
     name: 'Cohere',
     baseURL: 'https://api.cohere.ai/v1/chat',
     apiKey: process.env.COHERE_API_KEY,
-    model: 'command A', // Mis à jour pour éviter l'erreur 404 de l'ancien 'command'
+    model: 'command-a', // Mis à jour pour éviter l'erreur 404 de l'ancien 'command'
   },
   {
     name: 'Cloudflare',
