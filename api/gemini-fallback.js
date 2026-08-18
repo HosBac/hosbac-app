@@ -37,7 +37,7 @@ const PROVIDERS = [
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-2.5-flash', // Modèle stable et officiel de la famille 2.5
+    model: 'gemini-3.6-flash', // Modèle stable et officiel de la famille 3.6
   },
   {
     name: 'Groq',
