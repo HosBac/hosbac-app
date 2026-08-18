@@ -49,7 +49,7 @@ const PROVIDERS = [
     name: 'OpenRouter',
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: process.env.OPENROUTER_API_KEY,
-    model: 'dots-studio/dots3-note:free',
+    model: 'nvidia/nemotron-3.5-lightning:free',
   },
     {
     name: 'Cerebras',
