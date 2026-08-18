@@ -58,8 +58,6 @@ const PROVIDERS = [
     apiKey: process.env.CEREBRAS_API_KEY,
     model: 'llama3.1-8b',
   },
-
-
   {
     name: 'Mistral',
     baseURL: 'https://api.mistral.ai/v1',
