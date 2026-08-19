@@ -114,7 +114,7 @@ async function verifyToken(authHeader) {
   }
 }
 
-// Rate limiting (20 requêtes par heure)
+// Rate limiting (20 requêtes par heure) – géré côté serveur
 async function checkRateLimit(uid) {
   if (!db) return true;
   const ref = db.collection('rate_limits').doc(uid);
