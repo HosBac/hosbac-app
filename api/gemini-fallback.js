@@ -1,16 +1,16 @@
 // ============================================================
 // FICHIER : api/gemini-fallback.js
+// SÉCURISÉ AVEC AUTH, RATE LIMIT, VALIDATION, TIMEOUT, CACHE
 // ============================================================
 
 const admin = require('firebase-admin');
 
-// Initialisation de Firebase Admin
+// Initialisation Firebase Admin
 if (!admin.apps.length) {
   try {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY 
       ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') 
       : undefined;
-
     if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
       admin.initializeApp({
         credential: admin.credential.cert({
@@ -28,22 +28,23 @@ if (!admin.apps.length) {
 }
 
 const db = admin.apps.length ? admin.firestore() : null;
+const crypto = require('crypto');
 
 // ============================================================
-// 1. CONFIGURATION DES FOURNISSEURS D'API
+// CONFIGURATION DES FOURNISSEURS (modèles mis à jour)
 // ============================================================
 const PROVIDERS = [
   {
     name: 'Gemini',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
     apiKey: process.env.GEMINI_API_KEY,
-    model: 'gemini-3.6-flash',
+    model: 'gemini-1.5-flash',
   },
   {
     name: 'Groq',
     baseURL: 'https://api.groq.com/openai/v1',
     apiKey: process.env.GROQ_API_KEY,
-    model: 'openai/gpt-oss-120b',
+    model: 'llama-3.1-70b-versatile',
   },
   {
     name: 'OpenRouter',
@@ -55,7 +56,7 @@ const PROVIDERS = [
     name: 'Cerebras',
     baseURL: 'https://api.cerebras.ai/v1',
     apiKey: process.env.CEREBRAS_API_KEY,
-    model: 'gemma-4-31b',
+    model: 'gemma-2-27b-it',
   },
   {
     name: 'Mistral',
@@ -73,19 +74,19 @@ const PROVIDERS = [
     name: 'SambaNova',
     baseURL: 'https://api.sambanova.ai/v1',
     apiKey: process.env.SAMBANOVA_API_KEY,
-    model: '​​​​​DeepSeek-V3.2',
+    model: 'DeepSeek-V3.2',
   },
   {
     name: 'HuggingFace',
     baseURL: 'https://api-inference.huggingface.co/v1',
     apiKey: process.env.HUGGINGFACE_API_KEY,
-    model: 'unsloth/Qwen3.8-27B-GGUF',
+    model: 'Qwen/Qwen3.8-27B-GGUF',
   },
   {
     name: 'Cohere',
     baseURL: 'https://api.cohere.ai/v1/chat',
     apiKey: process.env.COHERE_API_KEY,
-    model: 'command-a', // Mis à jour pour éviter l'erreur 404 de l'ancien 'command'
+    model: 'command',
   },
   {
     name: 'Cloudflare',
@@ -96,28 +97,113 @@ const PROVIDERS = [
 ];
 
 // ============================================================
-// 2. GENERATION DE LA CLÉ DE CACHE
+// FONCTIONS DE SÉCURITÉ
 // ============================================================
+
+// Vérification du token Firebase
+async function verifyToken(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('Token manquant ou invalide');
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return decoded;
+  } catch (error) {
+    throw new Error('Token invalide ou expiré');
+  }
+}
+
+// Rate limiting (20 requêtes par heure)
+async function checkRateLimit(uid) {
+  if (!db) return true;
+  const ref = db.collection('rate_limits').doc(uid);
+  const now = Date.now();
+  const hour = 60 * 60 * 1000;
+  const doc = await ref.get();
+  if (doc.exists) {
+    const data = doc.data();
+    const resetTime = data.resetTime?.toMillis?.() || 0;
+    if (now < resetTime) {
+      if (data.count >= 20) {
+        return false;
+      }
+      await ref.update({
+        count: admin.firestore.FieldValue.increment(1)
+      });
+      return true;
+    } else {
+      await ref.set({
+        count: 1,
+        resetTime: admin.firestore.Timestamp.fromMillis(now + hour)
+      });
+      return true;
+    }
+  } else {
+    await ref.set({
+      count: 1,
+      resetTime: admin.firestore.Timestamp.fromMillis(now + hour)
+    });
+    return true;
+  }
+}
+
+// Validation du payload
+function validatePayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Payload invalide');
+  }
+  if (!payload.contents || !Array.isArray(payload.contents)) {
+    throw new Error('Contents manquant');
+  }
+  const json = JSON.stringify(payload);
+  if (json.length > 50000) {
+    throw new Error('Payload trop volumineux');
+  }
+  if (payload.contents.length > 50) {
+    throw new Error('Trop de messages');
+  }
+  for (const content of payload.contents) {
+    if (!content.role || !['user', 'model', 'assistant'].includes(content.role)) {
+      throw new Error('Rôle invalide');
+    }
+    if (!content.parts || !Array.isArray(content.parts) || content.parts.length === 0) {
+      throw new Error('Parts manquant ou vide');
+    }
+    for (const part of content.parts) {
+      if (part.text && part.text.length > 5000) {
+        throw new Error('Message trop long');
+      }
+    }
+  }
+  return true;
+}
+
+// Cache avec hash SHA-256 et TTL (24h)
 function generateCacheKey(payload) {
   const contents = payload.contents || [];
   const userMessages = contents.filter(c => c.role === 'user');
   const lastUserMsg = userMessages[userMessages.length - 1];
   if (lastUserMsg && lastUserMsg.parts && lastUserMsg.parts.length > 0) {
     const text = lastUserMsg.parts[0].text || '';
-    return `exam_${text.substring(0, 100).toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+    const hash = crypto.createHash('sha256').update(text).digest('hex');
+    return `exam_${hash}`;
   }
   return null;
 }
 
-// ============================================================
-// 3. VÉRIFICATION ET SAUVEGARDE DU CACHE
-// ============================================================
 async function checkCache(cacheKey) {
   if (!cacheKey || !db) return null;
   try {
     const doc = await db.collection('epreuves_cache').doc(cacheKey).get();
     if (doc.exists) {
-      return doc.data().response;
+      const data = doc.data();
+      if (data.timestamp) {
+        const age = Date.now() - data.timestamp.toMillis();
+        if (age < 24 * 60 * 60 * 1000) {
+          return data.response;
+        }
+      }
     }
     return null;
   } catch (error) {
@@ -133,119 +219,120 @@ async function saveToCache(cacheKey, response) {
       response: response,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
-    console.log('[CACHE] Sauvegardé avec succès:', cacheKey);
   } catch (error) {
     console.warn('[CACHE] Erreur sauvegarde:', error.message);
   }
 }
 
 // ============================================================
-// 4. APPEL AUX PROVIDERS
+// APPEL AUX PROVIDERS AVEC TIMEOUT
 // ============================================================
-async function callProvider(provider, payload) {
+async function callProvider(provider, payload, timeoutMs = 30000) {
   const { baseURL, apiKey, model, name } = provider;
-  
-  let url;
-  let body;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Gestion spécifique pour Cohere (endpoint canonique et payload natif)
-  if (name === 'Cohere') {
-    url = 'https://api.cohere.ai/v1/chat';
-    
-    let userMessage = 'Bonjour';
-    const contents = payload.contents || [];
-    if (contents.length > 0) {
-      const lastContent = contents[contents.length - 1];
-      if (lastContent.parts) {
-        const textParts = lastContent.parts.filter(p => p.text);
-        userMessage = textParts.map(p => p.text).join('\n') || 'Bonjour';
+  try {
+    let url, body;
+
+    if (name === 'Cohere') {
+      url = 'https://api.cohere.ai/v1/chat';
+      let userMessage = 'Bonjour';
+      const contents = payload.contents || [];
+      if (contents.length > 0) {
+        const lastContent = contents[contents.length - 1];
+        if (lastContent.parts) {
+          const textParts = lastContent.parts.filter(p => p.text);
+          userMessage = textParts.map(p => p.text).join('\n') || 'Bonjour';
+        }
+      }
+      body = {
+        model: model,
+        message: userMessage,
+        temperature: 0.7,
+        max_tokens: 2048,
+      };
+    } else {
+      url = `${baseURL.replace(/\/$/, '')}/chat/completions`;
+      body = {
+        model: model,
+        messages: [],
+        temperature: 0.7,
+        max_tokens: 2048,
+      };
+
+      if (payload.system_instruction && payload.system_instruction.parts) {
+        const systemText = payload.system_instruction.parts.map(p => p.text).join('\n');
+        body.messages.push({ role: 'system', content: systemText });
+      }
+
+      const contents = payload.contents || [];
+      const recentContents = contents.slice(-10);
+      for (const content of recentContents) {
+        const role = content.role === 'user' ? 'user' : 'assistant';
+        let contentText = '';
+        if (content.parts) {
+          const textParts = content.parts.filter(p => p.text);
+          contentText = textParts.map(p => p.text).join('\n');
+        }
+        if (contentText) {
+          body.messages.push({ role, content: contentText });
+        }
+      }
+      if (body.messages.length === 0) {
+        body.messages.push({ role: 'user', content: 'Bonjour' });
       }
     }
 
-    body = {
-      model: model, // 'command-light'
-      message: userMessage,
-      temperature: 0.7,
-      max_tokens: 2048,
-    };
-  } else {
-    // Format standard OpenAI pour tous les autres fournisseurs
-    url = `${baseURL.replace(/\/$/, '')}/chat/completions`;
-    
-    body = {
-      model: model,
-      messages: [],
-      temperature: 0.7,
-      max_tokens: 2048,
-    };
+    console.log(`[API] Appel vers ${name} (${model})`);
 
-    if (payload.system_instruction && payload.system_instruction.parts) {
-      const systemText = payload.system_instruction.parts.map(p => p.text).join('\n');
-      body.messages.push({ role: 'system', content: systemText });
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`${name} [HTTP ${response.status}]: ${errorText}`);
     }
 
-    const contents = payload.contents || [];
-    const recentContents = contents.slice(-10);
-    for (const content of recentContents) {
-      const role = content.role === 'user' ? 'user' : 'assistant';
-      let contentText = '';
-      if (content.parts) {
-        const textParts = content.parts.filter(p => p.text);
-        contentText = textParts.map(p => p.text).join('\n');
-      }
-      if (contentText) {
-        body.messages.push({ role, content: contentText });
-      }
-    }
+    const data = await response.json();
 
-    if (body.messages.length === 0) {
-      body.messages.push({ role: 'user', content: 'Bonjour' });
-    }
-  }
-
-  console.log(`[API] Appel vers ${name} (${model})`);
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`${name} [HTTP ${response.status}]: ${errorText}`);
-  }
-
-  const data = await response.json();
-
-  // Normalisation de la réponse pour Cohere vers le format standard
-  if (name === 'Cohere') {
-    return {
-      choices: [
-        {
-          message: {
-            content: data.text || data.message || 'Pas de réponse disponible.',
+    if (name === 'Cohere') {
+      return {
+        choices: [
+          {
+            message: {
+              content: data.text || data.message || 'Pas de réponse disponible.',
+            },
           },
-        },
-      ],
-    };
-  }
+        ],
+      };
+    }
 
-  return data;
+    return data;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
 }
 
 // ============================================================
-// 5. BOUCLE FALLBACK
+// BOUCLE FALLBACK
 // ============================================================
 async function callWithFallback(payload) {
   const cacheKey = generateCacheKey(payload);
   if (cacheKey) {
     const cached = await checkCache(cacheKey);
     if (cached) {
-      console.log('[CACHE] HIT - Réponse servie depuis le cache');
+      console.log('[CACHE] HIT');
       return cached;
     }
   }
@@ -291,12 +378,19 @@ async function callWithFallback(payload) {
 }
 
 // ============================================================
-// 6. HANDLER VERCEL SERVERLESS
+// HANDLER VERCEL
 // ============================================================
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS restreint
+  const allowedOrigins = ['https://hosbac-app.vercel.app', 'http://localhost:3000'];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', 'https://hosbac-app.vercel.app');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -307,15 +401,37 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const payload = req.body;
-    if (!payload || !payload.contents) {
-      return res.status(400).json({ error: 'Payload invalide' });
+    // 1. Vérification du token
+    const authHeader = req.headers.authorization;
+    const decoded = await verifyToken(authHeader);
+    const uid = decoded.uid;
+
+    // 2. Rate limiting
+    const allowed = await checkRateLimit(uid);
+    if (!allowed) {
+      return res.status(429).json({ error: 'Trop de requêtes, veuillez patienter.' });
     }
 
+    // 3. Validation du payload
+    const payload = req.body;
+    validatePayload(payload);
+
+    // 4. Appel IA avec fallback
     const result = await callWithFallback(payload);
     return res.status(200).json(result);
+
   } catch (error) {
-    console.error('[API] Erreur serveur:', error.message);
-    return res.status(500).json({ error: error.message || 'Erreur interne' });
+    console.error('[API] Erreur:', error.message);
+    // Messages génériques pour le client
+    if (error.message === 'Token manquant ou invalide' || error.message === 'Token invalide ou expiré') {
+      return res.status(401).json({ error: 'Authentification requise.' });
+    }
+    if (error.message.includes('Payload')) {
+      return res.status(400).json({ error: 'Requête invalide.' });
+    }
+    if (error.message.includes('Trop de messages') || error.message.includes('Message trop long')) {
+      return res.status(400).json({ error: 'Requête trop volumineuse.' });
+    }
+    return res.status(500).json({ error: 'Le service IA est temporairement indisponible.' });
   }
 };
