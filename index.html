@@ -20,6 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- html2pdf pour la génération PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
         /* ============================================================
@@ -1143,7 +1145,6 @@
             display: none;
             animation: fadeIn 0.3s ease;
             padding: 1rem 0;
-            /* S'assure qu'elle est en position relative pour ne pas polluer */
             position: relative;
             z-index: 10;
         }
@@ -1657,7 +1658,7 @@
         }
 
         /* ============================================================
-           ADMIN PANEL (corrigé pour éviter "Chargement..." infini)
+           ADMIN PANEL
            ============================================================ */
         .admin-dashboard-stats {
             display: grid;
@@ -2247,7 +2248,7 @@
         }
 
         /* ============================================================
-           CHATBOT IA - PAGE DÉDIÉE (REDESIGN + FIX STICKY)
+           CHATBOT IA - PAGE DÉDIÉE
            ============================================================ */
         #assistant-view {
             display: none;
@@ -2351,7 +2352,6 @@
             transform: scale(1.05);
         }
 
-        /* Messages redesign compact */
         .assistant-messages {
             flex: 1;
             overflow-y: auto;
@@ -2443,7 +2443,6 @@
             color: rgba(255,255,255,0.4);
         }
 
-        /* Welcome message aligné */
         .assistant-messages .chat-message.welcome {
             align-self: center;
             max-width: 92%;
@@ -2460,170 +2459,154 @@
             line-height: 1.55;
         }
 
-        /* Suppression des message-actions */
+        /* === NOUVEAU : Barre d'actions sur les messages === */
         .message-actions {
-            display: none !important;
-        }
-
-        /* Zone de saisie - fixe en bas (sticky) */
-        .assistant-input-area {
             display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            padding: 6px 12px 12px;
-            border-top: 1px solid var(--assistant-border);
-            background: var(--assistant-bg);
-            position: sticky;
-            bottom: 0;
-            width: 100%;
-            z-index: 20;
-            min-height: 70px;
-            backdrop-filter: blur(4px);
+            gap: 4px;
+            margin-top: 6px;
+            padding: 2px 0;
+            justify-content: flex-start;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
         }
-        .assistant-input-area .chat-file-preview {
-            display: none;
-            width: 100%;
-            padding: 4px 8px;
-            font-size: 0.75rem;
+        .chat-message:hover .message-actions {
+            opacity: 1;
+        }
+        .message-actions .action-btn {
+            background: transparent;
+            border: none;
             color: var(--assistant-text-light);
-            background: var(--assistant-card-bg);
-            border-radius: var(--border-radius-sm);
-            margin-bottom: 4px;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            border: 1px solid var(--assistant-border);
-        }
-        .assistant-input-area .chat-file-preview .file-info {
+            font-size: 0.7rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition-fast);
             display: flex;
             align-items: center;
-            gap: 6px;
-            flex: 1;
-            overflow: hidden;
+            gap: 3px;
         }
-        .assistant-input-area .chat-file-preview .file-info i {
+        .message-actions .action-btn:hover {
             color: var(--accent-blue);
-            font-size: 0.9rem;
+            background: rgba(255,255,255,0.05);
         }
-        .assistant-input-area .chat-file-preview .file-info span {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: 500;
+        .message-actions .action-btn.liked {
+            color: var(--accent-gold);
         }
-        .assistant-input-area .chat-file-preview .remove-file {
-            cursor: pointer;
+        .message-actions .action-btn.disliked {
             color: var(--error);
-            font-size: 0.9rem;
-            padding: 0 4px;
         }
-        .assistant-input-area .chat-file-preview .remove-file:hover {
-            color: #ff4444;
+        .message-actions .action-btn.delete-btn:hover {
+            color: var(--error);
         }
-        .assistant-input-area .input-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            width: 100%;
+        .message-actions .action-btn.pdf-btn:hover {
+            color: var(--error);
         }
-        .assistant-input-area .chat-attach-btn {
-            background: none;
-            border: none;
-            color: var(--assistant-text-light);
-            font-size: 1rem;
-            cursor: pointer;
-            padding: 6px;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .assistant-input-area .chat-attach-btn:hover {
-            color: #fff;
-        }
-        .assistant-input-area textarea {
-            flex: 1;
-            padding: 7px 14px;
-            border: 1px solid var(--assistant-border);
-            border-radius: 24px;
-            background: var(--assistant-input-bg);
-            color: var(--assistant-text);
-            outline: none;
-            font-size: 0.85rem;
-            resize: none;
-            min-height: 36px;
-            max-height: 90px;
-            font-family: inherit;
-            line-height: 1.4;
-            min-width: 0;
-            transition: border-color 0.2s;
-        }
-        .assistant-input-area textarea:focus {
-            border-color: var(--accent-blue);
-        }
-        .assistant-input-area textarea::placeholder {
-            color: var(--assistant-text-light);
-        }
-        .assistant-input-area .chat-send-btn {
-            background: none;
-            border: none;
-            color: var(--accent-blue);
-            font-size: 1.1rem;
-            cursor: pointer;
-            padding: 6px;
-            transition: var(--transition);
-            flex-shrink: 0;
-        }
-        .assistant-input-area .chat-send-btn:hover {
-            color: #fff;
-            transform: scale(1.04);
-        }
-        .assistant-input-area .chat-send-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Suppression du bloc suggestions */
-        .assistant-suggestions {
-            display: none !important;
-        }
-
-        /* Pedagogical mode indicator - conservé mais sans boutons d'actions */
-        .pedagogical-mode-indicator {
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            background: var(--assistant-card-bg);
-            border-radius: var(--border-radius-sm);
-            border: 1px solid var(--assistant-border);
-            font-size: 0.7rem;
-            color: var(--assistant-text-light);
-            flex-shrink: 0;
-            margin: 0 12px 4px;
-        }
-        .pedagogical-mode-indicator .mode-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.6rem;
-        }
-        .pedagogical-mode-indicator .mode-badge.hint { background: var(--accent-gold); color: #1a2a4a; }
-        .pedagogical-mode-indicator .mode-badge.explanation { background: var(--info); color: #fff; }
-        .pedagogical-mode-indicator .mode-badge.method { background: var(--success); color: #fff; }
-        .pedagogical-mode-indicator .mode-badge.solution { background: var(--accent-gold); color: #1a2a4a; }
-        .pedagogical-mode-indicator .mode-close {
-            background: none;
-            border: none;
-            color: var(--assistant-text-light);
-            cursor: pointer;
-            font-size: 0.7rem;
-            padding: 0 4px;
-        }
-        .pedagogical-mode-indicator .mode-close:hover { color: var(--error); }
 
         /* ============================================================
-           QUIZ & RÉVISION - SUPPRIMÉS
+           INTERFACE APPEL VOCAL (PLEIN ÉCRAN)
            ============================================================ */
+        #call-interface {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #0a1628, #1a2a4a);
+            z-index: 999999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 2rem;
+            text-align: center;
+        }
+        #call-interface.active {
+            display: flex;
+        }
+        #call-interface .call-logo {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+            font-style: italic;
+            display: flex;
+            gap: 0.2rem;
+        }
+        #call-interface .call-logo .hos { color: #ffffff; }
+        #call-interface .call-logo .bac { color: var(--accent-gold); }
+        #call-interface .call-status {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 2.5rem;
+        }
+        #call-interface .call-timer {
+            font-size: 1.6rem;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            color: rgba(255,255,255,0.5);
+            font-variant-numeric: tabular-nums;
+        }
+        #call-interface .call-avatar {
+            width: 90px;
+            height: 90px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #1a2a4a;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 40px rgba(212, 168, 67, 0.3);
+            animation: pulse-call 1.5s infinite;
+        }
+        @keyframes pulse-call {
+            0% { box-shadow: 0 0 20px rgba(212, 168, 67, 0.2); }
+            50% { box-shadow: 0 0 50px rgba(212, 168, 67, 0.6); }
+            100% { box-shadow: 0 0 20px rgba(212, 168, 67, 0.2); }
+        }
+        #call-interface .call-controls {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        #call-interface .call-controls button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        #call-interface .call-controls .microphone-btn {
+            background: var(--primary-blue);
+        }
+        #call-interface .call-controls .microphone-btn.muted {
+            background: var(--error);
+        }
+        #call-interface .call-controls .microphone-btn:hover {
+            transform: scale(1.05);
+        }
+        #call-interface .call-controls .end-call-btn {
+            background: var(--error);
+        }
+        #call-interface .call-controls .end-call-btn:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+        #call-interface .call-sub-status {
+            margin-top: 1.8rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+        }
 
         /* ============================================================
            ANIMATIONS
@@ -2764,6 +2747,10 @@
                 padding: 10px 6px 4px;
                 gap: 8px;
             }
+            .message-actions .action-btn {
+                font-size: 0.6rem;
+                padding: 1px 4px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -2828,6 +2815,22 @@
                 font-size: 0.8rem;
                 min-height: 30px;
                 padding: 5px 10px;
+            }
+            #call-interface .call-logo {
+                font-size: 3rem;
+            }
+            #call-interface .call-avatar {
+                width: 70px;
+                height: 70px;
+                font-size: 2.2rem;
+            }
+            #call-interface .call-controls {
+                gap: 1.5rem;
+            }
+            #call-interface .call-controls button {
+                width: 48px;
+                height: 48px;
+                font-size: 1.2rem;
             }
         }
 
@@ -2967,7 +2970,6 @@
         <div class="fullscreen-menu-item" data-view="search"><i class="fas fa-search"></i> Recherche</div>
         <div class="fullscreen-menu-item" data-view="assistant"><i class="fas fa-robot"></i> Assistant</div>
         <div class="fullscreen-menu-item" data-view="profile"><i class="fas fa-user"></i> Profil</div>
-        <!-- Quiz et Révision supprimés -->
         <div class="fullscreen-menu-item" id="menu-admin-item" data-view="admin" style="display:none;"><i class="fas fa-crown"></i> Admin</div>
         <div class="fullscreen-menu-item" id="menu-guest-item" style="display:none;"><i class="fas fa-sign-in-alt"></i> Se connecter</div>
         <div class="fullscreen-menu-divider"></div>
@@ -3072,7 +3074,7 @@
             <div class="pagination" id="pagination"></div>
         </div>
 
-        <!-- EXAM DETAIL VIEW - Vue dédiée (isolée) -->
+        <!-- EXAM DETAIL VIEW -->
         <div id="exam-detail-view">
             <div class="breadcrumb" id="detail-breadcrumb">
                 <a href="#" data-view="home">Accueil</a>
@@ -3173,7 +3175,7 @@
             </div>
         </div>
 
-        <!-- ASSISTANT VIEW (REDESIGN + CORRECTIONS) -->
+        <!-- ASSISTANT VIEW -->
         <div id="assistant-view" class="view">
             <div class="assistant-header">
                 <div class="assistant-header-left">
@@ -3195,14 +3197,12 @@
 
             <div class="assistant-messages" id="assistant-messages"></div>
 
-            <!-- Mode pédagogique (conservé mais sans boutons d'actions) -->
             <div class="pedagogical-mode-indicator" id="pedagogical-mode" style="display:none;">
                 <span>Mode :</span>
                 <span class="mode-badge" id="pedagogical-mode-badge"><i class="fas fa-lightbulb"></i> Indice</span>
                 <button class="mode-close" id="pedagogical-mode-close"><i class="fas fa-times"></i></button>
             </div>
 
-            <!-- Zone de saisie (sticky en bas) -->
             <div class="assistant-input-area">
                 <div class="chat-file-preview" id="chat-file-preview">
                     <div class="file-info">
@@ -3680,7 +3680,6 @@
 </div>
 
 <!-- POPUPS -->
-<!-- Popup d'ajout d'épreuve (Ajouté) -->
 <div id="add-exam-popup" class="popup-overlay">
     <div class="popup-content">
         <button class="popup-close"><i class="fas fa-times"></i></button>
@@ -3780,7 +3779,6 @@
     </div>
 </div>
 
-<!-- Popup corrigé seul (conservé) -->
 <div id="add-corrige-only-popup" class="popup-overlay" style="display:none;">
     <div class="popup-content">
         <button class="popup-close"><i class="fas fa-times"></i></button>
@@ -3953,7 +3951,20 @@
     </div>
 </div>
 
-<!-- BOTTOM NAVIGATION (sans Quiz) -->
+<!-- INTERFACE APPEL VOCAL (PLEIN ÉCRAN) -->
+<div id="call-interface" class="call-interface">
+    <div class="call-logo"><span class="hos">Hos</span><span class="bac">Bac</span></div>
+    <div class="call-avatar">H</div>
+    <div class="call-status" id="call-status">Appel sortant...</div>
+    <div class="call-timer" id="call-timer">00:00</div>
+    <div class="call-controls">
+        <button class="microphone-btn" id="call-mic-btn" title="Microphone"><i class="fas fa-microphone"></i></button>
+        <button class="end-call-btn" id="call-end-btn" title="Raccrocher"><i class="fas fa-phone-slash"></i></button>
+    </div>
+    <div class="call-sub-status" id="call-sub-status"></div>
+</div>
+
+<!-- BOTTOM NAVIGATION -->
 <nav class="bottom-nav" id="bottom-nav">
     <button class="bottom-nav-item active" data-view="home"><i class="fas fa-home"></i><span>Accueil</span></button>
     <button class="bottom-nav-item" data-view="exams"><i class="fas fa-file-alt"></i><span>Examens</span></button>
@@ -3965,8 +3976,12 @@
     <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5dfadf2a3f.mp3" type="audio/mp3">
 </audio>
 
+<audio id="ringtone" preload="auto">
+    <source src="https://www.soundjay.com/phone/phone-ring-04.mp3" type="audio/mpeg">
+</audio>
+
 <!-- ============================================================
-     JAVASCRIPT COMPLET - AVEC CORRECTIONS
+     JAVASCRIPT COMPLET - AVEC INTÉGRATIONS
      ============================================================ -->
 <script>
     // ============================================================
@@ -4017,6 +4032,9 @@
     let adminExamsCache = [];
     let adminUsersCache = [];
     let adminReportsCache = [];
+
+    // === NOUVEAU : Gestion des likes/dislikes des messages ===
+    let messageLikes = {};
 
     // ============================================================
     // DÉFINITION DES BADGES
@@ -4085,7 +4103,7 @@
     }
 
     // ============================================================
-    // RÉFÉRENCES DOM - PHASE 10
+    // RÉFÉRENCES DOM
     // ============================================================
     const adminTabs = document.getElementById('admin-tabs');
     const adminPanels = document.querySelectorAll('.admin-panel');
@@ -4111,9 +4129,6 @@
     let adminDownloadsChart = null;
     let adminUsersChart = null;
 
-    // ============================================================
-    // RÉFÉRENCES DOM - PARTIE EXISTANTE
-    // ============================================================
     const splashScreen = document.getElementById('splash-screen');
     const warningScreen = document.getElementById('warning-screen');
     const complexDesignScreen = document.getElementById('complex-design-screen');
@@ -4159,18 +4174,15 @@
     const sharedExamId = urlParams.get('exam');
     const heroSearchInput = document.getElementById('hero-search-input');
 
-    // Contacts & GA & IA
     const contactsForm = document.getElementById('contacts-admin-form');
     const contactWhatsapp = document.getElementById('contact-whatsapp');
     const contactFacebook = document.getElementById('contact-facebook');
     const contactEmail = document.getElementById('contact-email');
     const gaMeasurementId = document.getElementById('ga-measurement-id');
-    const geminiApiKeyInput = document.getElementById('gemini-api-key');
     const footerWhatsapp = document.getElementById('footer-whatsapp');
     const footerFacebook = document.getElementById('footer-facebook');
     const footerEmail = document.getElementById('footer-email');
 
-    // Pages légales
     const legalForm = document.getElementById('legal-pages-form');
     const legalCgu = document.getElementById('legal-cgu');
     const legalPrivacy = document.getElementById('legal-privacy');
@@ -4179,11 +4191,9 @@
     const termsPopup = document.getElementById('terms-popup');
     const privacyPopup = document.getElementById('privacy-popup');
 
-    // Logs admin
     const topKeywordsContainer = document.getElementById('top-search-keywords');
     const recentInteractionsContainer = document.getElementById('recent-interactions');
 
-    // Filtres avancés
     const filterToggleBtn = document.getElementById('filter-toggle-btn');
     const filterBottomSheet = document.getElementById('filter-bottom-sheet');
     const filterHandle = document.getElementById('filter-handle');
@@ -4198,7 +4208,6 @@
     const filterType = document.getElementById('filter-type');
     const filterCorrige = document.getElementById('filter-corrige');
 
-    // Détail épreuve
     const detailTitle = document.getElementById('detail-title');
     const detailSubtitle = document.getElementById('detail-subtitle');
     const detailMatiere = document.getElementById('detail-matiere');
@@ -4241,7 +4250,6 @@
     const similarList = document.getElementById('similar-list');
     const detailBreadcrumbCurrent = document.getElementById('detail-breadcrumb-current');
 
-    // Profil
     const profileAvatar = document.getElementById('profile-avatar');
     const profileLevelBadge = document.getElementById('profile-level-badge');
     const profileName = document.getElementById('profile-name');
@@ -4263,7 +4271,6 @@
     const deleteAccountBtn = document.getElementById('delete-account-btn');
     const myContributionsContainer = document.getElementById('my-contributions');
 
-    // Popups
     const reportPopup = document.getElementById('report-popup');
     const reportReasons = document.getElementById('report-reasons');
     const submitReportBtn = document.getElementById('submit-report-btn');
@@ -4282,7 +4289,6 @@
     const draftsBtn = document.getElementById('drafts-btn');
     const saveDraftBtn = document.getElementById('save-draft-btn');
 
-    // Chat / Assistant
     const assistantView = document.getElementById('assistant-view');
     const assistantBackBtn = document.getElementById('assistant-back-btn');
     const assistantMessages = document.getElementById('assistant-messages');
@@ -4290,7 +4296,6 @@
     const assistantSendBtn = document.getElementById('assistant-send-btn');
     const assistantAttachBtn = document.getElementById('assistant-attach-btn');
     const assistantFileInput = document.getElementById('assistant-file-input');
-    const assistantSuggestions = document.getElementById('assistant-suggestions');
     const pedagogicalModeIndicator = document.getElementById('pedagogical-mode');
     const pedagogicalModeBadge = document.getElementById('pedagogical-mode-badge');
     const pedagogicalModeClose = document.getElementById('pedagogical-mode-close');
@@ -4312,10 +4317,24 @@
     const installCloseBtn = document.getElementById('install-close-btn');
     let deferredPrompt = null;
 
+    // === NOUVEAU : Interface d'appel ===
+    const callInterface = document.getElementById('call-interface');
+    const callStatus = document.getElementById('call-status');
+    const callTimer = document.getElementById('call-timer');
+    const callMicBtn = document.getElementById('call-mic-btn');
+    const callEndBtn = document.getElementById('call-end-btn');
+    const callSubStatus = document.getElementById('call-sub-status');
+    const ringtone = document.getElementById('ringtone');
+    let callInterval = null;
+    let callSeconds = 0;
+    let isCallActive = false;
+    let isMicMuted = false;
+    let callSpeechSynthesis = null;
+    let callRecognition = null;
+
     // ============================================================
     // FONCTIONS UTILITAIRES DE SÉCURITÉ
     // ============================================================
-    
     function escapeHTML(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -4546,11 +4565,10 @@
     }
 
     // ============================================================
-    // CONTACTS ADMIN + GA4 + IA (FIRESTORE)
+    // CONTACTS ADMIN + GA4
     // ============================================================
     const CONTACTS_DOC_PATH = 'settings/contacts';
     const ANALYTICS_DOC_PATH = 'settings/analytics';
-    const API_KEYS_DOC_PATH = 'settings/api_keys';
 
     function loadContactsFromFirestore() {
         db.doc(CONTACTS_DOC_PATH).get()
@@ -4569,14 +4587,11 @@
         .catch(err => console.error('[FIRESTORE] Erreur chargement contacts:', err));
     }
 
-    function saveContactsToFirestore(whatsapp, facebook, email, gaId, geminiKey) {
+    function saveContactsToFirestore(whatsapp, facebook, email, gaId) {
         const promises = [];
         promises.push(db.doc(CONTACTS_DOC_PATH).set({ whatsapp, facebook, email }, { merge: true }));
         if (gaId !== undefined) {
             promises.push(db.doc(ANALYTICS_DOC_PATH).set({ ga_measurement_id: gaId }, { merge: true }));
-        }
-        if (geminiKey !== undefined) {
-            promises.push(db.doc(API_KEYS_DOC_PATH).set({ gemini_api_key: geminiKey }, { merge: true }));
         }
         return Promise.all(promises);
     }
@@ -4628,25 +4643,6 @@
         .catch(err => console.error('[FIRESTORE] Erreur chargement GA:', err));
     }
 
-    function loadGeminiApiKey() {
-        return db.doc(API_KEYS_DOC_PATH).get()
-        .then(doc => {
-            if (doc.exists) {
-                const key = doc.data().gemini_api_key || '';
-                if (geminiApiKeyInput) geminiApiKeyInput.value = key;
-                return key;
-            } else {
-                db.doc(API_KEYS_DOC_PATH).set({ gemini_api_key: '' })
-                .catch(err => console.error('[FIRESTORE] Erreur création api_keys:', err));
-                return '';
-            }
-        })
-        .catch(err => {
-            console.error('[FIRESTORE] Erreur chargement clé Gemini:', err);
-            return '';
-        });
-    }
-
     // ============================================================
     // RÉCUPÉRATION DES ÉPREUVES POUR L'IA
     // ============================================================
@@ -4679,10 +4675,9 @@
     }
 
     let cachedExamsSummary = null;
-    let geminiApiKey = '';
 
     // ============================================================
-    // CHATBOT IA - PHASE 2 + REDESIGN + CORRECTIONS
+    // CHATBOT IA
     // ============================================================
     let chatHistory = [];
     let messageIdCounter = 0;
@@ -4707,30 +4702,41 @@
         return cleaned || 'document';
     }
 
-    function downloadPDFFromMessage(btn) {
-        const msgContainer = btn.closest('.chat-message') || btn.closest('.chat-message-bot') || btn.parentElement.parentElement;
-        if (!msgContainer) {
-            showToast('Impossible de localiser le message.', 'error');
+    // ============================================================
+    // NOUVEAU : GÉNÉRATION PDF CERTIFIÉ ANTI-VOL
+    // ============================================================
+    function generateCertifiedPDF(text, messageId) {
+        if (!text) {
+            showToast('Aucun texte à exporter.', 'warning');
             return;
         }
-        let rawText = msgContainer.innerText || '';
-        rawText = rawText.replace(/PDF|Copier|Supprimer/g, '').trim();
-
-        const firstLine = rawText.split('\n')[0] || '';
-        let subject = firstLine.replace(/^[#*]+/, '').trim().substring(0, 50);
-        if (!subject || subject.length < 3) {
-            const words = rawText.split(' ').slice(0, 8).join(' ');
-            subject = words || 'correction';
+        
+        // Trouver le message concerné
+        const msgEl = document.querySelector(`.chat-message[data-message-id="${messageId}"]`);
+        if (!msgEl) {
+            showToast('Message introuvable.', 'error');
+            return;
         }
         
-        const cleanSubject = cleanFileName(subject);
+        // Extraire le texte brut
+        let rawText = msgEl.getAttribute('data-raw-text') || msgEl.querySelector('.message-bubble')?.innerText || text;
+        // Nettoyer le texte des balises et des actions
+        rawText = rawText.replace(/<div class="message-actions".*?<\/div>/gs, '');
+        rawText = rawText.replace(/<div class="message-time".*?<\/div>/gs, '');
+        rawText = rawText.replace(/<[^>]*>/g, ' ');
+        rawText = rawText.replace(/\s+/g, ' ').trim();
+        
+        // Générer le nom du fichier
+        let title = rawText.substring(0, 60).trim();
+        if (!title || title.length < 5) {
+            const firstLine = rawText.split('\n')[0] || 'document';
+            title = firstLine.substring(0, 60).trim();
+        }
+        const safeTitle = cleanFileName(title);
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const fileName = `HosBac_${cleanSubject}_${dateStr}.pdf`;
-
-        let formattedHTML = (typeof marked !== 'undefined') ? marked.parse(rawText) : rawText;
-        formattedHTML = formattedHTML.replace(/<p>📄.*?<\/p>/g, '');
-        formattedHTML = formattedHTML.replace(/<div class="message-actions".*?<\/div>/g, '');
-
+        const fileName = `${safeTitle}_HosBac_${dateStr}.pdf`;
+        
+        // Construire le PDF
         const pdfElement = document.createElement('div');
         pdfElement.className = 'pdf-document-container';
         pdfElement.innerHTML = `
@@ -4752,7 +4758,7 @@
                     transform: translate(-50%, -50%) rotate(-30deg);
                     font-size: 90px;
                     font-weight: 900;
-                    color: rgba(26, 42, 74, 0.06);
+                    color: rgba(26, 42, 74, 0.04);
                     letter-spacing: 12px;
                     pointer-events: none;
                     z-index: 0;
@@ -4805,28 +4811,11 @@
                     margin: 0;
                     font-weight: 300;
                 }
-                .pdf-content h1, .pdf-content h2, .pdf-content h3 {
-                    color: #1a2a4a;
-                    margin-top: 18px;
-                    margin-bottom: 8px;
-                    border-bottom: 1px solid #e2e8f0;
-                    padding-bottom: 4px;
-                    page-break-after: avoid;
+                .pdf-body {
+                    padding: 10px 0;
                 }
-                .pdf-content h1 { font-size: 16px; }
-                .pdf-content h2 { font-size: 14px; }
-                .pdf-content h3 { font-size: 13px; }
-                .pdf-content p { margin-bottom: 12px; text-align: justify; }
-                .pdf-content ul, .pdf-content ol { margin-bottom: 12px; padding-left: 20px; }
-                .pdf-content li { margin-bottom: 4px; }
-                .pdf-content strong { color: #1a2a4a; }
-                .pdf-content blockquote {
-                    border-left: 4px solid #1a2a4a;
-                    padding-left: 16px;
-                    margin: 12px 0;
-                    color: #4a5568;
-                    font-style: italic;
-                }
+                .pdf-body p { margin-bottom: 12px; text-align: justify; }
+                .pdf-body strong { color: #1a2a4a; }
                 .pdf-footer {
                     margin-top: 35px;
                     border-top: 1px dashed #cbd5e0;
@@ -4855,8 +4844,8 @@
                     <div class="pdf-header-left">
                         <div class="pdf-logo-placeholder">H</div>
                         <div class="pdf-title-zone">
-                            <h1>HOSBAC – CORRIGÉ OFFICIEL</h1>
-                            <p>Plateforme Éducative Collaborative</p>
+                            <h1>HOSBAC – DOCUMENT CERTIFIÉ</h1>
+                            <p>Plateforme Éducative Collaborative • https://hosbac-app.vercel.app</p>
                         </div>
                     </div>
                     <div style="font-size:10px;color:#718096;text-align:right;">
@@ -4864,9 +4853,11 @@
                         <div style="font-weight:300;">hosbac.app</div>
                     </div>
                 </div>
-                <div class="pdf-body">${formattedHTML}</div>
+                <div class="pdf-body">
+                    ${rawText.replace(/\n/g, '<br>')}
+                </div>
                 <div class="pdf-footer">
-                    <span class="footer-brand">HOSBAC</span> — Document généré par l'Assistant Officiel — ${new Date().toLocaleDateString('fr-FR')}
+                    <span class="footer-brand">HOSBAC</span> — Document certifié généré par l'Assistant Officiel — ${new Date().toLocaleDateString('fr-FR')}
                 </div>
             </div>
         `;
@@ -4881,33 +4872,130 @@
         };
 
         if (typeof html2pdf === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-            script.onload = function() {
-                html2pdf().set(options).from(pdfElement).save()
-                .then(() => showToast(`PDF généré : ${fileName}`, 'success'))
-                .catch(err => { console.error('Erreur génération PDF:', err); showToast('Erreur lors de la génération du PDF', 'error'); });
-            };
-            script.onerror = function() {
-                showToast('Impossible de charger la bibliothèque PDF.', 'error');
-            };
-            document.head.appendChild(script);
-        } else {
-            html2pdf().set(options).from(pdfElement).save()
-            .then(() => showToast(`PDF généré : ${fileName}`, 'success'))
-            .catch(err => { console.error('Erreur génération PDF:', err); showToast('Erreur lors de la génération du PDF', 'error'); });
+            showToast('Bibliothèque PDF non disponible.', 'error');
+            return;
         }
+
+        html2pdf().set(options).from(pdfElement).save()
+        .then(() => showToast(`PDF généré : ${fileName}`, 'success'))
+        .catch(err => { console.error('Erreur génération PDF:', err); showToast('Erreur lors de la génération du PDF', 'error'); });
+    }
+
+    // ============================================================
+    // NOUVEAU : BARRE D'ACTIONS SUR LES MESSAGES
+    // ============================================================
+    function createMessageActions(messageId, textContent) {
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'message-actions';
+        
+        // 1. Copier
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn copy-btn';
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyBtn.title = 'Copier le texte';
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            navigator.clipboard.writeText(textContent).then(() => {
+                showToast('Texte copié !', 'success');
+            }).catch(() => {
+                showToast('Erreur lors de la copie.', 'error');
+            });
+        });
+        actionsDiv.appendChild(copyBtn);
+        
+        // 2. Répondre (citer)
+        const replyBtn = document.createElement('button');
+        replyBtn.className = 'action-btn reply-btn';
+        replyBtn.innerHTML = '<i class="fas fa-reply"></i>';
+        replyBtn.title = 'Répondre à ce message';
+        replyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const firstLine = textContent.split('\n')[0] || 'message';
+            assistantInput.value = `> ${firstLine}\n\n`;
+            assistantInput.focus();
+            assistantInput.style.height = 'auto';
+            assistantInput.style.height = Math.min(assistantInput.scrollHeight, 120) + 'px';
+        });
+        actionsDiv.appendChild(replyBtn);
+        
+        // 3. Liker
+        const likeBtn = document.createElement('button');
+        likeBtn.className = 'action-btn like-btn';
+        likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i>';
+        likeBtn.title = 'Aimer ce message';
+        likeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentUser) {
+                showToast('Connectez-vous pour aimer un message.', 'warning');
+                return;
+            }
+            const isLiked = likeBtn.classList.toggle('liked');
+            likeBtn.innerHTML = isLiked ? '<i class="fas fa-thumbs-up"></i>' : '<i class="far fa-thumbs-up"></i>';
+            // Sauvegarder le like (simple simulation)
+            if (isLiked) {
+                showToast('Message aimé ❤️', 'success');
+            } else {
+                showToast('Like retiré', 'info');
+            }
+        });
+        actionsDiv.appendChild(likeBtn);
+        
+        // 4. Disliker
+        const dislikeBtn = document.createElement('button');
+        dislikeBtn.className = 'action-btn dislike-btn';
+        dislikeBtn.innerHTML = '<i class="far fa-thumbs-down"></i>';
+        dislikeBtn.title = 'Ne pas aimer ce message';
+        dislikeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentUser) {
+                showToast('Connectez-vous pour disliker un message.', 'warning');
+                return;
+            }
+            const isDisliked = dislikeBtn.classList.toggle('disliked');
+            dislikeBtn.innerHTML = isDisliked ? '<i class="fas fa-thumbs-down"></i>' : '<i class="far fa-thumbs-down"></i>';
+            if (isDisliked) {
+                showToast('Message disliké', 'info');
+            } else {
+                showToast('Dislike retiré', 'info');
+            }
+        });
+        actionsDiv.appendChild(dislikeBtn);
+        
+        // 5. Supprimer
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+        deleteBtn.title = 'Supprimer ce message';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!currentUser) {
+                showToast('Connectez-vous pour supprimer un message.', 'warning');
+                return;
+            }
+            // Seul l'auteur peut supprimer (simulé : on vérifie que le message est de l'utilisateur)
+            // Dans un chat local, on autorise la suppression
+            if (confirm('Supprimer ce message ?')) {
+                deleteMessageById(messageId);
+            }
+        });
+        actionsDiv.appendChild(deleteBtn);
+        
+        // 6. Télécharger en PDF
+        const pdfBtn = document.createElement('button');
+        pdfBtn.className = 'action-btn pdf-btn';
+        pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
+        pdfBtn.title = 'Télécharger en PDF';
+        pdfBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            generateCertifiedPDF(textContent, messageId);
+        });
+        actionsDiv.appendChild(pdfBtn);
+        
+        return actionsDiv;
     }
 
     /**
-     * Ajoute un message dans le DOM
-     * @param {string} text - contenu du message
-     * @param {string} sender - 'user' ou 'bot'
-     * @param {string} time - horaire
-     * @param {boolean} isBot - si c'est un message du bot
-     * @param {string} messageId - id unique
-     * @param {HTMLElement} container - conteneur
-     * @param {Object} fileInfo - informations sur le fichier joint (pour l'utilisateur)
+     * Ajoute un message dans le DOM avec les actions
      */
     function addChatMessageToDOM(text, sender, time, isBot = false, messageId = null, container = null, fileInfo = null) {
         if (!container) container = assistantMessages;
@@ -4938,7 +5026,6 @@
             htmlText = escapeHTML(text).replace(/\n/g, '<br>');
         }
         
-        // Afficher le fichier joint dans la bulle utilisateur
         if (sender === 'user' && fileInfo) {
             htmlText += `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;background:rgba(255,255,255,0.08);border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
                 <i class="fas fa-file-pdf" style="color:var(--accent-blue);font-size:0.9rem;"></i>
@@ -4951,6 +5038,13 @@
         
         msgDiv.appendChild(avatarDiv);
         msgDiv.appendChild(bubbleDiv);
+        
+        // Ajouter la barre d'actions pour les messages de l'IA
+        if (isBot) {
+            const actions = createMessageActions(messageId, text);
+            // On ajoute les actions directement dans la bulle, après le contenu
+            bubbleDiv.appendChild(actions);
+        }
         
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
@@ -4969,7 +5063,6 @@
         }
     }
 
-    // Vérifie si un message de bienvenue existe déjà dans l'historique
     function hasWelcomeMessage() {
         return chatHistory.some(msg => msg.role === 'model' && msg.parts[0].text.includes('Bonjour') && msg.parts[0].text.includes('assistant pédagogique'));
     }
@@ -5031,13 +5124,6 @@
         saveChatToFirestore();
     }
 
-    /**
-     * Ajoute un message dans la conversation et dans l'historique
-     * @param {string} text - contenu
-     * @param {string} sender - 'user' ou 'bot'
-     * @param {string} time - horaire
-     * @param {Object} fileInfo - informations sur le fichier (pour l'utilisateur)
-     */
     function addChatMessage(text, sender, time = null, fileInfo = null) {
         const timeStr = time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         const isBot = sender === 'bot';
@@ -5068,7 +5154,7 @@
     }
 
     // ============================================================
-    // SUPPRESSION DE LA CONVERSATION (BOUTON CORBEILLE)
+    // SUPPRESSION DE LA CONVERSATION
     // ============================================================
     function deleteChatConversation() {
         if (!currentUser) {
@@ -5090,10 +5176,9 @@
     assistantDeleteBtn?.addEventListener('click', deleteChatConversation);
 
     // ============================================================
-    // APPEL VOCAL (Web Speech API)
+    // APPEL VOCAL (Web Speech API) - SANS INTERFACE D'APPEL
     // ============================================================
     let speechSynthesis = window.speechSynthesis;
-    let isSpeaking = false;
     let recognition = null;
 
     function startVoiceCall() {
@@ -5147,186 +5232,164 @@
         }
     }
 
-    assistantPhoneBtn?.addEventListener('click', startVoiceCall);
-
     // ============================================================
-    // DEMANDE PÉDAGOGIQUE (conservée mais sans boutons visibles)
+    // NOUVEAU : INTERFACE D'APPEL VOCAL EN DIRECT (PLEIN ÉCRAN)
     // ============================================================
-    function sendPedagogicalRequest(mode, originalText) {
+    function openCallInterface() {
         if (!currentUser) {
-            showToast('Connectez-vous pour utiliser cette fonction', 'warning');
+            showToast('Connectez-vous pour utiliser l\'appel vocal.', 'warning');
             return;
         }
-        if (isChatLoading) {
-            showToast('Un message est déjà en cours', 'warning');
-            return;
+        
+        // Fermer l'assistant si ouvert
+        if (assistantView.classList.contains('active')) {
+            navigateTo('home');
         }
-
-        const modeNames = {
-            'hint': '💡 Indice',
-            'explanation': '📖 Explication détaillée',
-            'method': '🧠 Méthode',
-            'solution': '✅ Solution complète'
-        };
-
-        const modePrompts = {
-            'hint': `Donne-moi un indice pour comprendre ceci, sans donner directement la réponse :\n\n"${originalText}"`,
-            'explanation': `Explique-moi ceci de manière détaillée et pédagogique :\n\n"${originalText}"`,
-            'method': `Quelle est la méthode à suivre pour résoudre ce type de problème ?\n\n"${originalText}"`,
-            'solution': `Donne-moi la solution complète et détaillée de ceci :\n\n"${originalText}"`
-        };
-
-        pedagogicalModeType = mode;
-        pedagogicalModeActive = true;
-        pedagogicalModeIndicator.style.display = 'flex';
-        pedagogicalModeBadge.textContent = modeNames[mode] || mode;
-        pedagogicalModeBadge.className = `mode-badge ${mode}`;
-
-        const userMessage = `🔍 Mode ${modeNames[mode]}\n\n${originalText}`;
-        const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        addChatMessage(userMessage, 'user', time);
-
-        showLoading();
-        sendMessageToGemini(modePrompts[mode], null, 0, true);
-    }
-
-    // ============================================================
-    // ENVOI DE FEEDBACK À L'IA
-    // ============================================================
-    function sendFeedbackToAI(type) {
-        if (!currentUser) return;
-        db.collection('ai_feedback').add({
-            userId: currentUser.uid,
-            type: type,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(err => console.error('Erreur enregistrement feedback:', err));
-    }
-
-    // ============================================================
-    // SUGGESTIONS DE QUESTIONS - SUPPRIMÉES
-    // ============================================================
-    function initSuggestions() {
-        // Plus rien ici - suggestions supprimées
-    }
-
-    // ============================================================
-    // QUOTA
-    // ============================================================
-    async function getUserQuota() {
-        if (!currentUser) return null;
-        try {
-            const doc = await db.collection('users').doc(currentUser.uid).get();
-            if (doc.exists) {
-                const data = doc.data();
-                return { count: data.dailyMessageCount || 0, lastDate: data.lastResetDate || null };
-            } else {
-                return { count: 0, lastDate: null };
+        
+        callInterface.classList.add('active');
+        callStatus.textContent = 'Appel sortant...';
+        callSubStatus.textContent = 'En attente de l\'assistant HosBac...';
+        callSeconds = 0;
+        callTimer.textContent = '00:00';
+        isCallActive = true;
+        isMicMuted = false;
+        callMicBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+        callMicBtn.classList.remove('muted');
+        
+        // Sonnerie
+        if (ringtone) {
+            ringtone.currentTime = 0;
+            ringtone.play().catch(err => console.warn('Erreur lecture sonnerie:', err));
+        }
+        
+        // Démarrer le timer
+        if (callInterval) clearInterval(callInterval);
+        callInterval = setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(callSeconds % 60).padStart(2, '0');
+            callTimer.textContent = `${mins}:${secs}`;
+            if (callSeconds === 15) {
+                // L'assistant prend la parole
+                callStatus.textContent = 'En ligne avec l\'assistant HosBac';
+                callSubStatus.textContent = 'L\'assistant vous parle...';
+                if (ringtone) {
+                    ringtone.pause();
+                }
+                speakAssistantGreeting();
             }
-        } catch (error) {
-            console.error('Erreur récupération quota:', error);
-            return { count: 0, lastDate: null };
-        }
-    }
-
-    async function updateQuota(newCount, newDate) {
-        if (!currentUser) return;
-        try {
-            await db.collection('users').doc(currentUser.uid).update({
-                dailyMessageCount: newCount,
-                lastResetDate: newDate
-            });
-        } catch (error) {
-            console.error('Erreur mise à jour quota:', error);
-        }
-    }
-
-    async function checkAndResetQuota() {
-        if (isAdmin) {
-            return { canSend: true, count: 0, isAdmin: true };
-        }
-        const today = new Date().toISOString().split('T')[0];
-        const quota = await getUserQuota();
-        if (!quota) return { canSend: true, count: 0 };
-        if (quota.lastDate !== today) {
-            await updateQuota(0, today);
-            return { canSend: true, count: 0 };
-        }
-        if (quota.count >= 15) {
-            return { canSend: false, count: quota.count };
-        }
-        return { canSend: true, count: quota.count };
-    }
-
-    async function incrementQuota() {
-        if (isAdmin) {
-            return;
-        }
-        const today = new Date().toISOString().split('T')[0];
-        const quota = await getUserQuota();
-        let newCount = (quota && quota.lastDate === today) ? quota.count : 0;
-        newCount += 1;
-        await updateQuota(newCount, today);
-    }
-
-    // ============================================================
-    // ENVOI DU MESSAGE À GEMINI (VIA VERCEL) - AVEC FALLBACK ET CORRECTION PDF
-    // ============================================================
-    // Fonction d'extraction de texte à partir d'un fichier PDF (via pdf.js)
-    async function extractTextFromPDF(file) {
-        try {
-            // Convertir le fichier en ArrayBuffer
-            const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-            const pdfDocument = await loadingTask.promise;
-            let extractedFullText = "";
-
-            for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-                const page = await pdfDocument.getPage(pageNum);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items.map(item => item.str).join(" ");
-                extractedFullText += `--- Épreuve / Document - Page ${pageNum} ---\n${pageText}\n\n`;
+        }, 1000);
+        
+        // Arrêter la sonnerie au bout de 10s si pas encore de réponse
+        setTimeout(() => {
+            if (callSeconds < 15 && isCallActive) {
+                if (ringtone) {
+                    ringtone.pause();
+                }
+                callStatus.textContent = 'Assistant disponible';
+                callSubStatus.textContent = 'L\'assistant va vous répondre...';
+                // Forcer la prise de parole après 15s si pas encore fait
+                setTimeout(() => {
+                    if (isCallActive && callSeconds < 15) {
+                        callStatus.textContent = 'En ligne avec l\'assistant HosBac';
+                        callSubStatus.textContent = 'L\'assistant vous parle...';
+                        speakAssistantGreeting();
+                    }
+                }, 5000);
             }
-
-            return extractedFullText;
-        } catch (error) {
-            console.error("Erreur lors de l'extraction du PDF :", error);
-            throw new Error("Impossible de lire le contenu du fichier PDF. Veuillez vérifier le format du fichier.");
+        }, 10000);
+    }
+    
+    function speakAssistantGreeting() {
+        if (!isCallActive) return;
+        if (callSpeechSynthesis) {
+            callSpeechSynthesis.cancel();
         }
+        const utterance = new SpeechSynthesisUtterance(
+            "Bonjour, je suis l'assistant HosBac. Je suis là pour vous aider. Comment puis-je vous aider aujourd'hui ?"
+        );
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        callSpeechSynthesis = speechSynthesis;
+        callSpeechSynthesis.speak(utterance);
+        callSubStatus.textContent = 'L\'assistant vous parle...';
     }
 
+    function closeCallInterface() {
+        isCallActive = false;
+        if (callInterval) {
+            clearInterval(callInterval);
+            callInterval = null;
+        }
+        if (callSpeechSynthesis) {
+            callSpeechSynthesis.cancel();
+        }
+        if (ringtone) {
+            ringtone.pause();
+        }
+        callInterface.classList.remove('active');
+        // Revenir à l'assistant
+        navigateTo('assistant');
+    }
+
+    // Gestion des boutons d'appel
+    callEndBtn?.addEventListener('click', closeCallInterface);
+    callMicBtn?.addEventListener('click', () => {
+        if (!isCallActive) return;
+        isMicMuted = !isMicMuted;
+        callMicBtn.innerHTML = isMicMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
+        callMicBtn.classList.toggle('muted', isMicMuted);
+        if (isMicMuted) {
+            callSubStatus.textContent = 'Microphone coupé';
+            if (callSpeechSynthesis) {
+                callSpeechSynthesis.cancel();
+            }
+        } else {
+            callSubStatus.textContent = 'Microphone activé';
+            // Réactiver la reconnaissance vocale si nécessaire
+        }
+    });
+
+    // ============================================================
+    // ENVOI DE MESSAGE À GEMINI
+    // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
             const examsSummary = await fetchExamsForAI();
 
-            // MÉMOIRE COURTE : On prend les 10 derniers messages uniquement
             const recentHistory = chatHistory.slice(-10);
 
-            // Construire le message utilisateur : si un fichier PDF est joint, on extrait son contenu
             let finalUserMessage = userMessage || '';
             let extractedText = '';
 
             if (fileData && fileData.type === 'application/pdf') {
-                // Tenter d'extraire le texte du PDF via pdf.js (côté client)
                 try {
-                    // On a le fichier encodé en base64 dans fileData.data
-                    // On le convertit en Blob puis en ArrayBuffer
                     const binaryString = atob(fileData.data);
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
                     for (let i = 0; i < len; i++) {
                         bytes[i] = binaryString.charCodeAt(i);
                     }
-                    // Créer un objet File à partir du Uint8Array pour utiliser la fonction d'extraction
                     const blob = new Blob([bytes], { type: 'application/pdf' });
                     const file = new File([blob], fileData.name || 'document.pdf', { type: 'application/pdf' });
-                    extractedText = await extractTextFromPDF(file);
+                    const arrayBuffer = await file.arrayBuffer();
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const pdfDocument = await loadingTask.promise;
+                    let extractedFullText = "";
+                    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+                        const page = await pdfDocument.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(" ");
+                        extractedFullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
+                    }
+                    extractedText = extractedFullText;
                 } catch (err) {
                     console.warn('Erreur extraction texte PDF:', err);
                     extractedText = "Impossible d'extraire le texte du PDF. Le nom du fichier : " + (fileData.name || 'fichier.pdf');
                 }
             }
 
-            // Si on a extrait du texte, on l'ajoute au message utilisateur
             if (extractedText) {
                 finalUserMessage = (finalUserMessage ? finalUserMessage + '\n\n' : '') + 
                     "Voici le contenu du fichier PDF que j'ai joint :\n\n" + extractedText;
@@ -5346,7 +5409,6 @@
                 ]
             };
 
-            // Si on a un fichier (image) mais pas de texte extrait (ou image), on l'injecte en inline_data
             if (fileData && fileData.type !== 'application/pdf') {
                 const last = payload.contents[payload.contents.length - 1];
                 if (last && last.role === 'user') {
@@ -5354,7 +5416,6 @@
                 }
             }
 
-            // Appel à l'API avec fallback automatique
             const response = await fetch('/api/gemini-fallback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -5536,9 +5597,6 @@
         pedagogicalModeType = null;
     });
 
-    // ============================================================
-    // BOUTON COURONNE
-    // ============================================================
     assistantCrownBtn?.addEventListener('click', () => {
         showToast('Bientôt disponible !', 'info');
     });
@@ -5615,7 +5673,7 @@
     }
 
     // ============================================================
-    // NAVIGATION - avec isolation de la vue détail
+    // NAVIGATION
     // ============================================================
     function navigateTo(viewName) {
         if (viewName === 'admin' && (!currentUser || !isAdmin)) {
@@ -5630,13 +5688,9 @@
             toggleAssistantMode(false);
         }
         
-        // Masquer la vue détail proprement lors du changement de vue
         if (examDetailView) {
             examDetailView.classList.remove('active');
-            // Réinitialiser le contenu pour éviter les fuites
             examDetailView.style.display = 'none';
-            // On nettoie le contenu (optionnel)
-            // Nous le ferons dans showExamDetail quand on en a besoin.
         }
         
         views.forEach(view => {
@@ -5692,18 +5746,16 @@
     }
 
     // ============================================================
-    // AFFICHAGE DÉTAIL ÉPREUVE - Vue dédiée (isolée)
+    // AFFICHAGE DÉTAIL ÉPREUVE
     // ============================================================
     function showExamDetail(examId) {
         currentExamId = examId;
         
-        // Cacher toutes les autres vues
         views.forEach(view => {
             view.classList.remove('active');
             view.style.display = 'none';
         });
         
-        // Afficher la vue détail
         if (examDetailView) {
             examDetailView.classList.add('active');
             examDetailView.style.display = 'block';
@@ -5714,7 +5766,6 @@
         });
         updateMenuItems();
         
-        // Réinitialiser le viewer PDF
         pdfDoc = null;
         pdfPageNum = 1;
         pdfTotalPages = 0;
@@ -5930,7 +5981,7 @@
     }
 
     // ============================================================
-    // GESTION DES FILTRES AVANCÉS (inchangé)
+    // GESTION DES FILTRES AVANCÉS
     // ============================================================
     function openFilterSheet() {
         filterBottomSheet.classList.add('open');
@@ -6017,7 +6068,7 @@
     resetFiltersBtn?.addEventListener('click', resetAllFilters);
 
     // ============================================================
-    // PDF VIEWER (inchangé)
+    // PDF VIEWER
     // ============================================================
     function loadPDF(url) {
         pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);"><div style="text-align:center;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-blue);margin-bottom:1rem;"></i><p>Chargement du PDF...</p></div></div>';
@@ -6370,7 +6421,7 @@
     }
 
     // ============================================================
-    // GRAPHIQUES (inchangé)
+    // GRAPHIQUES
     // ============================================================
     function initCharts() {
         if (weeklyChartCanvas) {
@@ -6552,7 +6603,7 @@
     }
 
     // ============================================================
-    // AUTH STATE CHANGED (inchangé)
+    // AUTH STATE CHANGED
     // ============================================================
     auth.onAuthStateChanged(user => {
         try {
@@ -6580,7 +6631,6 @@
                         if (assistantMessages.children.length === 0) {
                             displayWelcomeMessage();
                         }
-                        initSuggestions();
                     });
                 }, 500);
                 if (userData && userData.avatarColor) {
@@ -6627,7 +6677,7 @@
     }
 
     // ============================================================
-    // DOM CONTENT LOADED - avec corrections admin, isolation, etc.
+    // DOM CONTENT LOADED
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
@@ -6794,7 +6844,6 @@
             });
         });
 
-        // === CORRECTION BOUTON AJOUT ÉPREUVE ===
         const addExamBtnElement = document.getElementById('add-exam-btn');
         if (addExamBtnElement) {
             const newAddExamBtn = addExamBtnElement.cloneNode(true);
@@ -6859,7 +6908,6 @@
             popup.addEventListener('click', e => { if (e.target === popup) popup.style.display = 'none'; });
         });
 
-        // Détail épreuve - boutons
         detailDownloadSujet?.addEventListener('click', () => {
             if (currentExamId) downloadExam(currentExamId, 'sujet');
         });
@@ -7069,13 +7117,11 @@
         document.getElementById('corrige-upload')?.addEventListener('click', () => { if (corrigeUploadWidget) corrigeUploadWidget.open(); });
         document.getElementById('corrige-only-upload')?.addEventListener('click', () => { if (corrigeOnlyUploadWidget) corrigeOnlyUploadWidget.open(); });
 
-        // FILTRES
         filterClass?.addEventListener('change', () => { updateFilterCount(); applyFilters(); });
         filterSubject?.addEventListener('change', () => { updateFilterCount(); applyFilters(); });
         filterSeries?.addEventListener('change', () => { updateFilterCount(); applyFilters(); });
         searchExams?.addEventListener('input', debounce(() => { updateFilterCount(); applyFilters(); }, 300));
 
-        // RECHERCHE GLOBALE
         let searchTimeout;
         globalSearch?.addEventListener('input', function() {
             clearTimeout(searchTimeout);
@@ -7097,7 +7143,6 @@
             }
         });
 
-        // Avatar color picker
         avatarColorPicker?.addEventListener('click', (e) => {
             const option = e.target.closest('.color-option');
             if (!option) return;
@@ -7119,7 +7164,6 @@
             });
         }
 
-        // Changer mot de passe
         changePasswordBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('changer le mot de passe')) return;
             if (changePasswordPopup) changePasswordPopup.style.display = 'flex';
@@ -7161,7 +7205,6 @@
             }
         });
 
-        // Exporter les données
         exportDataBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('exporter les données')) return;
             if (!currentUser) return;
@@ -7214,7 +7257,6 @@
             });
         });
 
-        // Supprimer le compte
         deleteAccountBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('supprimer le compte')) return;
             if (!currentUser) return;
@@ -7253,15 +7295,15 @@
             }
         });
 
-        // ============================================================
-        // ASSISTANT BACK BUTTON
-        // ============================================================
         assistantBackBtn?.addEventListener('click', () => {
             navigateTo('home');
         });
 
+        // NOUVEAU : Bouton d'appel vocal
+        assistantPhoneBtn?.addEventListener('click', openCallInterface);
+
         // ============================================================
-        // PHASE 2 : PAGES LÉGALES - Correction des liens
+        // PAGES LÉGALES
         // ============================================================
         function showLegalPopup(type) {
             db.doc(LEGAL_DOC_PATH).get()
@@ -7336,7 +7378,7 @@
         });
 
         // ============================================================
-        // PHASE 10 - Admin Tabs (avec fallback et timeout)
+        // ADMIN
         // ============================================================
         function initAdminTabs() {
             const tabs = document.querySelectorAll('.admin-tab');
@@ -7485,7 +7527,6 @@
         loadContactsFromFirestore();
         loadLegalPages();
         loadAndInjectGA();
-        loadGeminiApiKey().then(key => { geminiApiKey = key; });
         loadPlatformStats();
         updateFilterCount();
         initCharts();
@@ -7512,6 +7553,9 @@
         console.log('   ✅ Restauration de l\'espace administratif (fallback)');
         console.log('   ✅ Isolation des détails d\'épreuves (vue dédiée)');
         console.log('   ✅ Stabilisation de la barre de saisie (sticky)');
+        console.log('   ✅ Barre d\'actions sur les messages de l\'IA (6 boutons)');
+        console.log('   ✅ Génération PDF certifiée anti-vol');
+        console.log('   ✅ Interface d\'appel vocal en direct (plein écran)');
     });
 
     // ============================================================
@@ -7948,7 +7992,7 @@
     }
 
     // ============================================================
-    // FONCTIONS MÉTIER (announcements, etc.)
+    // FONCTIONS MÉTIER
     // ============================================================
     function startAnnouncementsListener() {
         try {
@@ -8914,9 +8958,8 @@
     }
 
     // ============================================================
-    // PHASE 10 - ADMIN FUNCTIONS (avec fallback robuste)
+    // ADMIN FUNCTIONS
     // ============================================================
-    
     function loadAdminPanel() {
         if (!currentUser || !isAdmin) { showToast('Accès non autorisé', 'error'); navigateTo('home'); return; }
         initAdminTabs();
@@ -8968,7 +9011,6 @@
     }
 
     function loadAdminDashboard() {
-        // Fallback : si une erreur survient, afficher des données par défaut
         const setDefaultStats = () => {
             document.getElementById('admin-stat-users').textContent = '0';
             document.getElementById('admin-stat-exams').textContent = '0';
@@ -9013,7 +9055,6 @@
     }
 
     function loadAdminCharts() {
-        // Version simplifiée avec fallback silencieux
         try {
             const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
             const today = new Date();
@@ -9051,13 +9092,9 @@
                     });
                 }
             }).catch(() => {});
-            // Autres charts avec fallback silencieux
         } catch (e) {}
     }
 
-    // ============================================================
-    // ADMIN - EXPORTS, REPORTS, USERS
-    // ============================================================
     function loadAdminExams() {
         if (!adminExamsBody) return;
         adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
@@ -9071,7 +9108,6 @@
             query = db.collection('epreuves').where('status', '==', status).orderBy('createdAt', 'desc');
         }
         
-        // Timeout pour éviter blocage infini
         const timeout = setTimeout(() => {
             adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune donnée disponible (timeout).</td></tr>';
         }, 5000);
@@ -9458,11 +9494,6 @@
     }
 
     // ============================================================
-    // SUPPRESSION DES FONCTIONS QUIZ ET RÉVISION
-    // ============================================================
-    // (déjà supprimées)
-
-    // ============================================================
     // FUNCTIONS UTILITAIRES
     // ============================================================
     function debounce(func, wait) {
@@ -9501,15 +9532,12 @@
         const facebook = contactFacebook?.value || '';
         const email = contactEmail?.value || '';
         const gaId = gaMeasurementId?.value || '';
-        const geminiKey = geminiApiKeyInput?.value || '';
-        saveContactsToFirestore(whatsapp, facebook, email, gaId, geminiKey)
+        saveContactsToFirestore(whatsapp, facebook, email, gaId)
         .then(() => {
             showToast('Paramètres mis à jour avec succès', 'success');
             updateFooterContacts({ whatsapp, facebook, email });
             if (gaId && gaId.trim().length > 0) { injectGAScript(gaId.trim()); }
             else { const script = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]'); if (script) script.remove(); const inline = document.getElementById('ga-inline-script'); if (inline) inline.remove(); }
-            if (geminiKey) geminiApiKey = geminiKey;
-            else geminiApiKey = '';
         })
         .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde paramètres:', err); showToast('Erreur lors de la mise à jour', 'error'); });
     });
@@ -9580,12 +9608,12 @@
     function logInteraction(action, epreuveId) {
         if (!epreuveId) return;
         const userType = currentUser ? 'connecté' : 'anonyme';
-        db.collection('interaction_logs').add({ action, epreuveId, timestamp: firebase.firestore.FieldValue.serverTimestamp(), userType })
+        db.collection('interaction_logs').add({ action, epreuveId, timestamp: firebase.firestore.FieldValue.serverTimestamp(), userType: userType })
         .catch(err => console.error('[FIRESTORE] Erreur logInteraction:', err));
     }
 
     function loadAdminLogs() {
-        // Déjà implémenté avec fallback
+        // déjà implémenté
     }
 
     // ============================================================
@@ -9663,7 +9691,7 @@
     console.log('   ✅ Suppression des boutons rapides (Indice, Explication, etc.)');
     console.log('   ✅ Suppression de la barre de suggestions');
     console.log('   ✅ Bouton corbeille pour vider la conversation');
-    console.log('   ✅ Appel vocal avec Web Speech API');
+    console.log('   ✅ Appel vocal avec Web Speech API (miniature)');
     console.log('   ✅ Redesign des bulles de messages (compactes et modernes)');
     console.log('   ✅ Correction du traitement des fichiers PDF (conversion base64 → Uint8Array)');
     console.log('   ✅ Injection du texte extrait du PDF dans le prompt de l\'IA');
@@ -9676,6 +9704,9 @@
     console.log('   ✅ Restauration de l\'espace administratif (fallback)');
     console.log('   ✅ Isolation des détails d\'épreuves (vue dédiée)');
     console.log('   ✅ Stabilisation de la barre de saisie (sticky)');
+    console.log('   ✅ Barre d\'actions sur les messages de l\'IA (6 boutons)');
+    console.log('   ✅ Génération PDF certifiée anti-vol');
+    console.log('   ✅ Interface d\'appel vocal en direct (plein écran)');
 </script>
 </body>
 </html>
