@@ -5516,17 +5516,33 @@
                 }
             }
 
-            // Route sécurisée : les clés sont exclusivement côté serveur
+            // Récupérer le token Firebase
+            const user = auth.currentUser;
+            if (!user) {
+                addChatMessage('Vous devez être connecté pour utiliser l\'assistant.', 'bot');
+                return;
+            }
+            const token = await user.getIdToken();
+
             const response = await fetch('/api/gemini-fallback', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('[IA] Erreur API:', errorData);
-                if (response.status === 429 || response.status === 503) {
+                if (response.status === 401) {
+                    addChatMessage("Votre session a expiré. Veuillez vous reconnecter.", 'bot');
+                    showToast('Session expirée, reconnectez-vous', 'error');
+                } else if (response.status === 429) {
+                    addChatMessage("Trop de requêtes. Veuillez patienter.", 'bot');
+                    showToast('Limite de requêtes atteinte', 'warning');
+                } else if (response.status === 429 || response.status === 503) {
                     addChatMessage("L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.", 'bot');
                     showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
                 } else {
