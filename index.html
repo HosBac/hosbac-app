@@ -20,6 +20,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},svg:{fontCache:"global"}};</script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <style>
         /* ============================================================
@@ -201,6 +204,13 @@
             margin-bottom: -2px;
         }
         .auth-form { display: none; }
+        .password-input-wrap { position: relative; display: flex; align-items: center; }
+        .password-input-wrap input { width: 100%; padding-right: 46px; }
+        .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-light); cursor: pointer; width: 36px; height: 36px; border-radius: 8px; }
+        .password-toggle:hover { background: rgba(255,255,255,.08); color: var(--text-color); }
+        .google-auth-btn { width: 100%; margin-top: 10px; border: 1px solid var(--border-color); background: #fff; color: #202124; border-radius: 10px; padding: 12px 14px; font-weight: 700; cursor: pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .google-auth-btn:hover { filter: brightness(.96); }
+
         .auth-form.active { display: block; }
         .form-group { margin-bottom: 1.2rem; }
         .form-group label {
@@ -2981,8 +2991,9 @@
         </div>
         <form id="login-form" class="auth-form active">
             <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="votre@email.com" required></div>
-            <div class="form-group"><label for="login-password">Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" required></div>
+            <div class="form-group password-field"><label for="login-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password"><button type="button" class="password-toggle" data-target="login-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <button type="submit" class="auth-btn">Se connecter</button>
+            <button type="button" class="google-auth-btn" id="google-login-btn"><i class="fab fa-google"></i> Continuer avec Google</button>
             <div class="forgot-password">Mot de passe oublié ?</div>
             <div class="auth-switch-link">Vous n'avez pas de compte ? <span id="switch-to-signup">S'inscrire</span></div>
         </form>
@@ -2991,13 +3002,14 @@
             <div class="form-group"><label for="signup-prenom">Prénom</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
             <div class="form-group"><label for="signup-ecole">École</label><input type="text" id="signup-ecole" placeholder="Votre établissement" required></div>
             <div class="form-group"><label for="signup-email">Email</label><input type="email" id="signup-email" placeholder="votre@email.com" required></div>
-            <div class="form-group"><label for="signup-password">Mot de passe</label><input type="password" id="signup-password" placeholder="••••••••" required></div>
+            <div class="form-group password-field"><label for="signup-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <div class="form-group" id="confirm-password-group">
                 <label for="signup-confirm-password">Confirmer le mot de passe</label>
-                <input type="password" id="signup-confirm-password" placeholder="••••••••" required>
+                <div class="password-input-wrap"><input type="password" id="signup-confirm-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-confirm-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div>
                 <div class="password-match-error">Les mots de passe ne correspondent pas</div>
             </div>
             <button type="submit" class="auth-btn">S'inscrire</button>
+            <button type="button" class="google-auth-btn" id="google-signup-btn"><i class="fab fa-google"></i> S’inscrire avec Google</button>
             <div class="auth-switch-link">Déjà un compte ? <span id="switch-to-login">Se connecter</span></div>
         </form>
     </div>
@@ -3972,11 +3984,11 @@
 </nav>
 
 <audio id="notification-sound" preload="auto">
-    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_5dfadf2a3f.mp3" type="audio/mp3">
+    
 </audio>
 
 <audio id="ringtone" preload="auto">
-    <source src="https://www.soundjay.com/phone/phone-ring-04.mp3" type="audio/mpeg">
+    
 </audio>
 
 <!-- ============================================================
@@ -4398,24 +4410,31 @@
 
     function formatMessage(text) {
         if (!text) return '';
-        let safeText = escapeHTML(text);
-        safeText = safeText.replace(/\n/g, '<br>');
-        safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        safeText = safeText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        const iconRegex = /fa-([a-z0-9-]+)(?:\s+fa-([a-z0-9-]+))?(?:\s+fa-([a-z0-9-]+))?/g;
-        safeText = safeText.replace(iconRegex, (match, icon1, icon2, icon3) => {
-            let classes = 'fas';
-            let icons = [icon1, icon2, icon3].filter(Boolean);
-            if (icons.length === 0) return match;
-            const brandIcons = ['whatsapp', 'facebook-f'];
-            const regularIcons = ['heart', 'bell', 'clock'];
-            let style = 'fas';
-            if (brandIcons.includes(icons[0])) style = 'fab';
-            else if (regularIcons.includes(icons[0])) style = 'far';
-            const iconClasses = `${style} fa-${icons.join(' fa-')}`;
-            return `<i class="${iconClasses}"></i>`;
+        let safe = escapeHTML(String(text));
+        // Protect LaTeX blocks from markdown processing.
+        const math = [];
+        safe = safe.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => { math.push({display:true, text:m}); return `@@MATH${math.length-1}@@`; });
+        safe = safe.replace(/\$([^$\n]+)\$/g, (_, m) => { math.push({display:false, text:m}); return `@@MATH${math.length-1}@@`; });
+        safe = safe.replace(/^#{1,6}\s*(.+)$/gm, '<h4>$1</h4>');
+        safe = safe.replace(/^[-*]\s+(.+)$/gm, '• $1');
+        safe = safe.replace(/^\d+\.\s+(.+)$/gm, '$&');
+        safe = safe.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+        safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        safe = safe.replace(/__(.*?)__/g, '<strong>$1</strong>');
+        safe = safe.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+        safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+        safe = safe.replace(/\n/g, '<br>');
+        math.forEach((m, i) => {
+            const value = escapeHTML(m.text);
+            safe = safe.replace(`@@MATH${i}@@`, m.display ? `\\[${value}\\]` : `\\(${value}\\)`);
         });
-        return safeText;
+        return safe;
+    }
+
+    function typesetMath(element) {
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+            window.MathJax.typesetPromise([element]).catch(err => console.warn('[MATH] Typeset:', err));
+        }
     }
 
     function stopAllListeners() {
@@ -4708,7 +4727,13 @@
         rawText = rawText.replace(/<div class="message-actions".*?<\/div>/gs, '');
         rawText = rawText.replace(/<div class="message-time".*?<\/div>/gs, '');
         rawText = rawText.replace(/<[^>]*>/g, ' ');
-        rawText = rawText.replace(/\s+/g, ' ').trim();
+        rawText = rawText.replace(/^#{1,6}\s*/gm, '');
+        rawText = rawText.replace(/\*\*(.*?)\*\*/gs, '$1');
+        rawText = rawText.replace(/__(.*?)__/gs, '$1');
+        rawText = rawText.replace(/```[a-zA-Z0-9_-]*\n?/g, '').replace(/```/g, '');
+        rawText = rawText.replace(/^[-*]\s+/gm, '• ');
+        rawText = rawText.replace(/^>\s?/gm, '');
+        rawText = rawText.replace(/\n{3,}/g, '\n\n').trim();
         
         let title = rawText.substring(0, 60).trim();
         if (!title || title.length < 5) {
@@ -4836,7 +4861,7 @@
                     </div>
                 </div>
                 <div class="pdf-body">
-                    ${rawText.replace(/\n/g, '<br>')}
+                    ${formatMessage(rawText)}
                 </div>
                 <div class="pdf-footer">
                     <span class="footer-brand">HOSBAC</span> — Document certifié généré par l'Assistant Officiel — ${new Date().toLocaleDateString('fr-FR')}
@@ -4858,7 +4883,7 @@
             return;
         }
 
-        html2pdf().set(options).from(pdfElement).save()
+        Promise.resolve(window.MathJax?.typesetPromise ? window.MathJax.typesetPromise([pdfElement]) : null).then(() => html2pdf().set(options).from(pdfElement).save())
         .then(() => showToast(`PDF généré : ${fileName}`, 'success'))
         .catch(err => { console.error('Erreur génération PDF:', err); showToast('Erreur lors de la génération du PDF', 'error'); });
     }
@@ -5015,6 +5040,7 @@
         }
         
         container.appendChild(msgDiv);
+        if (isBot) typesetMath(bubbleDiv);
         container.scrollTop = container.scrollHeight;
     }
 
@@ -5316,9 +5342,12 @@
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
-            const examsSummary = cachedExamsSummary || await fetchExamsForAI();
+            const examsSummary = (cachedExamsSummary || await fetchExamsForAI()).slice(0, 6000);
 
-            const recentHistory = chatHistory.slice(-10);
+            const recentHistory = chatHistory.slice(-4).map(entry => ({
+                ...entry,
+                parts: (entry.parts || []).map(p => ({ ...p, text: typeof p.text === 'string' ? p.text.slice(0, 6000) : p.text }))
+            }));
 
             let finalUserMessage = userMessage || '';
             let extractedText = '';
@@ -5328,31 +5357,49 @@
                     const binaryString = atob(fileData.data);
                     const len = binaryString.length;
                     const bytes = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    const blob = new Blob([bytes], { type: 'application/pdf' });
-                    const file = new File([blob], fileData.name || 'document.pdf', { type: 'application/pdf' });
-                    const arrayBuffer = await file.arrayBuffer();
-                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+                    const loadingTask = pdfjsLib.getDocument({ data: bytes.buffer });
                     const pdfDocument = await loadingTask.promise;
-                    let extractedFullText = "";
-                    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+                    let pages = [];
+                    let totalChars = 0;
+                    const MAX_PDF_TEXT = 60000;
+                    const OCR_MAX_PAGES = Math.min(pdfDocument.numPages, 10);
+                    for (let pageNum = 1; pageNum <= pdfDocument.numPages && totalChars < MAX_PDF_TEXT; pageNum++) {
                         const page = await pdfDocument.getPage(pageNum);
                         const textContent = await page.getTextContent();
-                        const pageText = textContent.items.map(item => item.str).join(" ");
-                        extractedFullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
+                        const pageText = textContent.items.map(item => item.str || '').join(' ').replace(/\s+/g, ' ').trim();
+                        pages.push({ pageNum, text: pageText });
+                        totalChars += pageText.length;
                     }
-                    const MAX_PDF_TEXT = 100000;
-                    if (extractedFullText.length > MAX_PDF_TEXT) {
-                        extractedText = extractedFullText.slice(0, MAX_PDF_TEXT) +
-                            "\n\n[CONTENU PDF TRONQUÉ À 100 000 CARACTÈRES POUR RESPECTER LA LIMITE DE L'API. Demande à l'utilisateur de fournir les pages concernées si une partie manque.]";
+                    const usableText = pages.map(p => p.text).filter(Boolean).join('\n').trim();
+                    if (usableText.length < 80 && window.Tesseract) {
+                        const ocrPages = [];
+                        for (let pageNum = 1; pageNum <= OCR_MAX_PAGES && ocrPages.join('\n').length < MAX_PDF_TEXT; pageNum++) {
+                            const page = await pdfDocument.getPage(pageNum);
+                            const viewport = page.getViewport({ scale: 1.6 });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = Math.ceil(viewport.width);
+                            canvas.height = Math.ceil(viewport.height);
+                            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                            await page.render({ canvasContext: ctx, viewport }).promise;
+                            try {
+                                const result = await Tesseract.recognize(canvas, 'fra+eng', { logger: m => { if (m.status === 'recognizing text' && m.progress > 0.9) console.log(`[OCR] page ${pageNum}: ${Math.round(m.progress*100)}%`); } });
+                                const text = (result?.data?.text || '').replace(/\s+/g, ' ').trim();
+                                if (text) ocrPages.push(`--- Page ${pageNum} ---\n${text}`);
+                            } catch (ocrErr) {
+                                console.warn('[OCR] Page', pageNum, ocrErr);
+                            }
+                        }
+                        extractedText = ocrPages.join('\n\n').slice(0, MAX_PDF_TEXT);
                     } else {
-                        extractedText = extractedFullText;
+                        extractedText = pages.map(p => `--- Page ${p.pageNum} ---\n${p.text}`).join('\n\n').slice(0, MAX_PDF_TEXT);
+                    }
+                    if (!extractedText.trim()) {
+                        extractedText = `Le PDF « ${fileData.name || 'document.pdf'} » ne contient pas de texte extractible et l'OCR n'a pas réussi. Demande à l'utilisateur de fournir les pages sous forme d'images ou de texte.`;
                     }
                 } catch (err) {
-                    console.warn('Erreur extraction texte PDF:', err);
-                    extractedText = "Impossible d'extraire le texte du PDF. Le nom du fichier : " + (fileData.name || 'fichier.pdf');
+                    console.warn('Erreur extraction/OCR PDF:', err);
+                    extractedText = `Impossible d'extraire automatiquement le texte du PDF « ${fileData.name || 'fichier.pdf'} ».`;
                 }
             }
 
@@ -5371,9 +5418,15 @@
                 },
                 contents: [
                     ...recentHistory.map(entry => ({ role: entry.role, parts: entry.parts })),
-                    { role: 'user', parts: [{ text: finalUserMessage || 'Fichier' }] }
+                    { role: 'user', parts: [] }
                 ]
             };
+            // Une partie ne dépasse jamais 18 000 caractères : cela évite le rejet
+            // « Message trop long » du backend tout en conservant le contenu du PDF.
+            const chunks = [];
+            const sourceText = finalUserMessage || 'Fichier';
+            for (let i = 0; i < sourceText.length; i += 18000) chunks.push(sourceText.slice(i, i + 18000));
+            payload.contents[payload.contents.length - 1].parts = chunks.length ? chunks.map(text => ({ text })) : [{ text: 'Fichier' }];
 
             if (fileData && fileData.type !== 'application/pdf') {
                 const last = payload.contents[payload.contents.length - 1];
@@ -5420,8 +5473,11 @@
                     addChatMessage("Trop de requêtes. Veuillez patienter.", 'bot');
                     showToast('Limite de requêtes atteinte', 'warning');
                 } else if (response.status === 413) {
-                    addChatMessage("Le PDF est trop volumineux pour être traité en une seule demande. Réduisez le document ou envoyez les pages concernées.", 'bot');
-                    showToast('PDF trop volumineux pour l’IA', 'warning');
+                    addChatMessage("Le document est trop volumineux pour cette requête. J'ai besoin d'un document plus court ou de quelques pages à la fois.", 'bot');
+                    showToast('Document trop volumineux pour l’IA', 'warning');
+                } else if (response.status === 400) {
+                    addChatMessage("La requête IA a été rejetée par le serveur. Vérifiez que l'API HosBac déployée est bien la dernière version.", 'bot');
+                    showToast('API IA à mettre à jour', 'error');
                 } else if (response.status === 429 || response.status === 503) {
                     addChatMessage("L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.", 'bot');
                     showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
@@ -6496,6 +6552,68 @@
             if (authScreen) authScreen.style.display = 'none';
         });
 
+        function validatePasswordMatch() {
+            const password = document.getElementById('signup-password')?.value || '';
+            const confirm = document.getElementById('signup-confirm-password')?.value || '';
+            const errorEl = document.querySelector('.password-match-error');
+            const ok = password.length >= 6 && password === confirm;
+            if (errorEl) errorEl.style.display = confirm && !ok ? 'block' : 'none';
+            return ok;
+        }
+
+        document.querySelectorAll('.password-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.target);
+                if (!input) return;
+                const visible = input.type === 'text';
+                input.type = visible ? 'password' : 'text';
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = visible ? 'fas fa-eye' : 'fas fa-eye-slash';
+                btn.setAttribute('aria-label', visible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+            });
+        });
+
+        document.getElementById('signup-password')?.addEventListener('input', validatePasswordMatch);
+        document.getElementById('signup-confirm-password')?.addEventListener('input', validatePasswordMatch);
+
+        async function ensureGoogleUserProfile(user) {
+            const ref = db.collection('users').doc(user.uid);
+            const snap = await ref.get();
+            if (snap.exists) return snap.data();
+            const display = (user.displayName || '').trim().split(/\s+/);
+            const prenom = display.shift() || 'Utilisateur';
+            const nom = display.join(' ');
+            const data = {
+                nom, prenom, ecole:'', email:user.email || '', classe:'', points:0,
+                examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
+                dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+                totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
+                xpHistory:[], avatarColor:'#1a2a4a', aiConversations:0, quizTotal:0, quizPerfect:0,
+                revisionPlanCreated:0, status:'active'
+            };
+            await ref.set(data);
+            return data;
+        }
+
+        async function signInWithGoogle() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({ prompt: 'select_account' });
+                const credential = await auth.signInWithPopup(provider);
+                await ensureGoogleUserProfile(credential.user);
+                showToast('Connexion Google réussie', 'success');
+            } catch (error) {
+                console.error('[AUTH] Google:', error);
+                if (error.code === 'auth/popup-closed-by-user') return;
+                if (error.code === 'auth/operation-not-allowed') showToast('Activez Google dans Firebase Authentication.', 'error');
+                else if (error.code === 'auth/unauthorized-domain') showToast('Domaine non autorisé dans Firebase Authentication.', 'error');
+                else showToast('Connexion Google impossible.', 'error');
+            }
+        }
+
+        document.getElementById('google-login-btn')?.addEventListener('click', signInWithGoogle);
+        document.getElementById('google-signup-btn')?.addEventListener('click', signInWithGoogle);
+
         loginForm?.addEventListener('submit', e => {
             e.preventDefault();
             const email = document.getElementById('login-email')?.value || '';
@@ -6519,6 +6637,7 @@
             const ecole = document.getElementById('signup-ecole')?.value || '';
             const email = document.getElementById('signup-email')?.value || '';
             const password = document.getElementById('signup-password')?.value || '';
+            if (password.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'warning'); return; }
             auth.createUserWithEmailAndPassword(email, password)
             .then(userCredential => {
                 currentUser = userCredential.user;
@@ -6546,7 +6665,14 @@
             .then(() => showToast('Inscription réussie', 'success'))
             .catch(error => {
                 console.error('[AUTH] Erreur inscription:', error);
-                showToast('Erreur d\'inscription', 'error');
+                const messages = {
+                    'auth/email-already-in-use':'Cette adresse email est déjà utilisée.',
+                    'auth/invalid-email':'Adresse email invalide.',
+                    'auth/weak-password':'Mot de passe trop faible (6 caractères minimum).',
+                    'auth/network-request-failed':'Problème réseau. Vérifiez votre connexion.',
+                    'auth/operation-not-allowed':'Inscription email/mot de passe désactivée dans Firebase.'
+                };
+                showToast(messages[error.code] || "Erreur d'inscription. Consultez la console.", 'error');
             });
         });
 
@@ -7625,6 +7751,12 @@
     function checkUserRole() {
         if (!currentUser) return Promise.resolve(null);
         return db.collection('users').doc(currentUser.uid).get()
+            .catch(async error => {
+                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
+                    try { await currentUser.getIdToken(true); return db.collection('users').doc(currentUser.uid).get(); } catch (_) {}
+                }
+                throw error;
+            })
             .then(doc => {
                 if (!doc.exists) {
                     userData = null;
@@ -9112,7 +9244,7 @@
     // ============================================================
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('/sw.js?v=20260821-2')
                 .then(reg => console.log('Service Worker enregistré avec succès', reg))
                 .catch(err => console.warn('Échec de l\'enregistrement du Service Worker', err));
         });
