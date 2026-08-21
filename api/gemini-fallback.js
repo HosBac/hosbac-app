@@ -87,9 +87,11 @@ function normalizeMessages(payload) {
     const systemText = payload.system_instruction.parts.map(p => p.text || '').join('\n').trim();
     if (systemText) messages.push({ role:'system', content:systemText });
   }
-  for (const content of payload.contents.slice(-8)) {
+  const historyLimit = payload.mode === 'voice' ? 4 : 8;
+  const perMessageLimit = payload.mode === 'voice' ? 3000 : 70000;
+  for (const content of payload.contents.slice(-historyLimit)) {
     const role = content.role === 'user' ? 'user' : 'assistant';
-    const text = content.parts.filter(p => typeof p.text === 'string').map(p => p.text).join('\n').slice(0, 70000).trim();
+    const text = content.parts.filter(p => typeof p.text === 'string').map(p => p.text).join('\n').slice(0, perMessageLimit).trim();
     if (text) messages.push({ role, content:text });
   }
   if (!messages.some(m => m.role === 'user')) messages.push({ role:'user', content:'Bonjour' });
@@ -108,7 +110,7 @@ async function callProvider(provider, payload, timeoutMs=30000) {
       const response = await fetch(provider.baseURL, {
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${provider.apiKey}`},
-        body:JSON.stringify({ model:provider.model, message, max_tokens:2048, temperature:0.7 }),
+        body:JSON.stringify({ model:provider.model, message, max_tokens:payload.mode === 'voice' ? 550 : 2048, temperature:payload.mode === 'voice' ? 0.35 : 0.7 }),
         signal:controller.signal
       });
       if (!response.ok) throw new Error(`${provider.name} HTTP ${response.status}: ${await response.text()}`);
@@ -117,10 +119,16 @@ async function callProvider(provider, payload, timeoutMs=30000) {
     }
 
     const url = `${provider.baseURL.replace(/\/$/,'')}/chat/completions`;
+    const isVoice = payload.mode === 'voice';
     const response = await fetch(url, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${provider.apiKey}`},
-      body:JSON.stringify({ model:provider.model, messages:normalizeMessages(payload), temperature:0.7, max_tokens:2048 }),
+      body:JSON.stringify({
+        model:provider.model,
+        messages:normalizeMessages(payload),
+        temperature:isVoice ? 0.35 : 0.7,
+        max_tokens:isVoice ? 550 : 2048
+      }),
       signal:controller.signal
     });
     if (!response.ok) throw new Error(`${provider.name} HTTP ${response.status}: ${await response.text()}`);
@@ -159,7 +167,7 @@ module.exports = async (req, res) => {
     let lastError = null;
     for (const provider of PROVIDERS) {
       try {
-        const result = await callProvider(provider, req.body);
+        const result = await callProvider(provider, req.body, req.body?.mode === 'voice' ? 10000 : 20000);
         const text = extractText(result);
         if (!text) throw new Error(`${provider.name}: réponse vide`);
         return res.status(200).json({ candidates:[{ content:{ parts:[{ text }] } }] });
