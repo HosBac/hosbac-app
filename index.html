@@ -18,7 +18,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
@@ -4011,6 +4010,14 @@
     const pdfjsLib = window.pdfjsLib;
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
+    // Helper global: utilisé pendant l'initialisation du profil et par les contrôles avatar.
+    // Le rendre global évite une ReferenceError si l'ordre des blocs change.
+    window.updateAvatarColorPicker = function(selectedColor) {
+        document.querySelectorAll('.color-option').forEach(el => {
+            el.classList.toggle('selected', el.dataset.color === selectedColor);
+        });
+    };
+
     // ============================================================
     // ÉTAT GLOBAL
     // ============================================================
@@ -5336,7 +5343,13 @@
                         const pageText = textContent.items.map(item => item.str).join(" ");
                         extractedFullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
                     }
-                    extractedText = extractedFullText;
+                    const MAX_PDF_TEXT = 100000;
+                    if (extractedFullText.length > MAX_PDF_TEXT) {
+                        extractedText = extractedFullText.slice(0, MAX_PDF_TEXT) +
+                            "\n\n[CONTENU PDF TRONQUÉ À 100 000 CARACTÈRES POUR RESPECTER LA LIMITE DE L'API. Demande à l'utilisateur de fournir les pages concernées si une partie manque.]";
+                    } else {
+                        extractedText = extractedFullText;
+                    }
                 } catch (err) {
                     console.warn('Erreur extraction texte PDF:', err);
                     extractedText = "Impossible d'extraire le texte du PDF. Le nom du fichier : " + (fileData.name || 'fichier.pdf');
@@ -5406,6 +5419,9 @@
                 } else if (response.status === 429) {
                     addChatMessage("Trop de requêtes. Veuillez patienter.", 'bot');
                     showToast('Limite de requêtes atteinte', 'warning');
+                } else if (response.status === 413) {
+                    addChatMessage("Le PDF est trop volumineux pour être traité en une seule demande. Réduisez le document ou envoyez les pages concernées.", 'bot');
+                    showToast('PDF trop volumineux pour l’IA', 'warning');
                 } else if (response.status === 429 || response.status === 503) {
                     addChatMessage("L'intelligence artificielle est actuellement très sollicitée. Veuillez réessayer dans quelques instants.", 'bot');
                     showToast('L\'IA est surchargée, réessayez plus tard', 'warning');
@@ -6862,19 +6878,13 @@
             if (color) {
                 avatarColor = color;
                 if (profileAvatar) profileAvatar.style.background = color;
-                updateAvatarColorPicker(color);
+                window.updateAvatarColorPicker(color);
                 if (currentUser) {
                     db.collection('users').doc(currentUser.uid).update({ avatarColor: color })
                     .catch(err => console.error('Erreur sauvegarde couleur avatar:', err));
                 }
             }
         });
-
-        function updateAvatarColorPicker(selectedColor) {
-            document.querySelectorAll('.color-option').forEach(el => {
-                el.classList.toggle('selected', el.dataset.color === selectedColor);
-            });
-        }
 
         changePasswordBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('changer le mot de passe')) return;
@@ -7631,7 +7641,7 @@
                 if (userData.avatarColor) {
                     avatarColor = userData.avatarColor;
                     if (profileAvatar) profileAvatar.style.background = avatarColor;
-                    updateAvatarColorPicker(avatarColor);
+                    window.updateAvatarColorPicker(avatarColor);
                 }
                 updateMenuItems();
                 return userData;
