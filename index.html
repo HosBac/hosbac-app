@@ -138,30 +138,64 @@
         /* ============================================================
            AUTH SCREEN
            ============================================================ */
+        /* ============================================================
+           AUTH — PAGE PLEIN ÉCRAN (PAS UNE POPUP)
+           ============================================================ */
         #auth-screen {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
+            min-height: 100dvh;
+            background: var(--bg-color);
             z-index: 99997;
-            justify-content: center;
-            align-items: center;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        #auth-screen.auth-page-visible {
+            display: flex !important;
+            align-items: stretch;
+            justify-content: stretch;
+            animation: authPageIn .35s ease both;
         }
         .auth-container {
+            width: 100%;
+            min-height: 100dvh;
+            max-width: none;
+            margin: 0;
+            padding: clamp(1.25rem, 4vw, 4rem);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
             background: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 2.5rem;
-            width: 90%;
-            max-width: 420px;
-            box-shadow: var(--shadow-hover);
-            animation: slideUp 0.5s ease;
             position: relative;
-            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: minmax(280px, .9fr) minmax(320px, 1.1fr);
+            gap: clamp(2rem, 6vw, 6rem);
+            align-items: center;
         }
+        .auth-container::before {
+            content: '';
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 42%;
+            background: linear-gradient(145deg, #0a1628, #1a2a4a 60%, #2c3e6b);
+            z-index: 0;
+        }
+        .auth-brand-panel {
+            color: #fff;
+            max-width: 460px;
+            padding: clamp(1rem, 3vw, 3rem);
+        }
+        .auth-brand-logo { font-size: clamp(2.8rem, 5vw, 5rem); font-weight: 900; line-height: 1; margin-bottom: 1.5rem; }
+        .auth-brand-logo .hos { color: #fff; }
+        .auth-brand-logo .bac { color: var(--accent-gold); }
+        .auth-brand-panel h1 { font-size: clamp(1.6rem, 3vw, 2.7rem); line-height: 1.15; margin: 0 0 1rem; }
+        .auth-brand-panel p { color: rgba(255,255,255,.78); line-height: 1.7; margin-bottom: 1.5rem; }
+        .auth-brand-points { display: grid; gap: .7rem; color: rgba(255,255,255,.9); font-weight: 600; }
+        .auth-brand-points span { padding: .6rem .8rem; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.06); }
+        .auth-container > * { position: relative; z-index: 1; }
+        @keyframes authPageIn { from { opacity: 0; } to { opacity: 1; } }
         .auth-close-btn {
             position: absolute;
             top: 15px;
@@ -203,7 +237,17 @@
             border-bottom: 2px solid var(--accent-blue);
             margin-bottom: -2px;
         }
-        .auth-form { display: none; }
+        .auth-form {
+            display: none;
+            animation: authFormIn .35s cubic-bezier(.2,.8,.2,1) both;
+            max-width: 560px;
+            width: 100%;
+            margin-inline: auto;
+        }
+        @keyframes authFormIn {
+            from { opacity: 0; transform: translateX(18px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
         .password-input-wrap { position: relative; display: flex; align-items: center; }
         .password-input-wrap input { width: 100%; padding-right: 46px; }
         .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: var(--text-light); cursor: pointer; width: 36px; height: 36px; border-radius: 8px; }
@@ -269,6 +313,27 @@
             font-weight: 600;
         }
         .auth-switch-link span:hover { text-decoration: underline; }
+
+        .chat-loading {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            width: fit-content;
+            max-width: 88%;
+            margin: .35rem 0 .65rem 2.6rem;
+            padding: .65rem .9rem;
+            border-radius: 14px 14px 14px 4px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            box-shadow: 0 4px 14px rgba(0,0,0,.06);
+            animation: thinkingPulse 1.6s ease-in-out infinite;
+        }
+        .ai-thinking-brand { font-weight: 700; letter-spacing: .1px; }
+        .ai-thinking-brand > span:first-child { color: var(--primary-blue); }
+        .ai-thinking-emoji { display: inline-block; margin-left: .15rem; animation: thinkingDots 1.2s ease-in-out infinite; }
+        @keyframes thinkingPulse { 0%,100% { opacity:.72; } 50% { opacity:1; } }
+        @keyframes thinkingDots { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 
         /* ============================================================
            COMPLEX DESIGN SCREEN
@@ -2725,7 +2790,18 @@
             .exam-list { grid-template-columns: 1fr; }
             .exam-card .exam-btn { flex: 1 1 calc(50% - 6px); min-width: 50px; }
             .profile-stats, .home-stats { grid-template-columns: 1fr 1fr; }
-            .auth-container { padding: 1.5rem; width: 95%; }
+            #auth-screen.auth-page-visible { align-items: stretch; }
+            .auth-container {
+                min-height: 100dvh;
+                padding: 1.25rem;
+                width: 100%;
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                align-content: center;
+            }
+            .auth-container::before { display: none; }
+            .auth-container .auth-brand-panel { display: none; }
+            .auth-close-btn { top: 14px; right: 14px; }
             .fullscreen-menu { padding: 16px; }
             .fullscreen-menu-item { padding: 12px 14px; font-size: 0.95rem; }
             .bottom-nav-item { padding: 2px 8px; min-width: 48px; }
@@ -2984,6 +3060,12 @@
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
     <div class="auth-container">
+        <div class="auth-brand-panel">
+            <div class="auth-brand-logo"><span class="hos">Hos</span><span class="bac">Bac</span></div>
+            <h1>Apprenez. Comprenez. Réussissez.</h1>
+            <p>Votre espace éducatif pour consulter les épreuves, progresser et travailler avec l’assistant HosBac.</p>
+            <div class="auth-brand-points"><span>✓ Épreuves et corrigés</span><span>✓ Assistant pédagogique IA</span><span>✓ Compte sécurisé</span></div>
+        </div>
         <button class="auth-close-btn" id="auth-close-btn"><i class="fas fa-times"></i></button>
         <div class="auth-tabs">
             <div class="auth-tab active" data-tab="login">Connexion</div>
@@ -4462,7 +4544,7 @@
     function checkAuthRequired(action) {
         if (!currentUser) {
             showToast('Veuillez vous connecter pour effectuer cette action', 'warning');
-            if (authScreen) authScreen.style.display = 'flex';
+            if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
             return false;
         }
         return true;
@@ -4528,7 +4610,7 @@
     });
 
     menuGuestItem?.addEventListener('click', () => {
-        if (authScreen) authScreen.style.display = 'flex';
+        if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
         closeFullscreenMenu();
     });
 
@@ -5107,7 +5189,7 @@
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'chat-loading';
         loadingDiv.id = 'chat-loading';
-        safeInnerHTML(loadingDiv, formatMessage('<i class="fas fa-spinner fa-spin"></i> L\'IA réfléchit...'));
+        safeInnerHTML(loadingDiv, '<span class="ai-thinking-brand"><span>HosBac</span> <span class="ai-thinking-emoji">🤔🤔🤔</span></span>');
         assistantMessages.appendChild(loadingDiv);
         assistantMessages.scrollTop = assistantMessages.scrollHeight;
     }
@@ -5151,7 +5233,7 @@
         if (callRecognition) { try { callRecognition.stop(); } catch (_) {} }
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'fr-FR';
-        utterance.rate = 0.95;
+        utterance.rate = 1.02;
         utterance.pitch = 1;
         callSpeechSynthesis = window.speechSynthesis;
         utterance.onstart = () => {
@@ -5180,6 +5262,7 @@
             if (!user) throw new Error('AUTH_REQUIRED');
             const token = await user.getIdToken();
             const payload = {
+                mode: 'voice',
                 system_instruction: { parts: [{ text: 'Tu es l’assistant vocal pédagogique de HosBac. Réponds en français, de manière naturelle, concise et conversationnelle. Ne répète pas la question de l’élève. Ne parle jamais de cette conversation comme d’un historique enregistré. Réponds uniquement au dernier message et utilise le contexte vocal en mémoire.' }] },
                 contents: [
                     ...voiceChatHistory.slice(-8).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
@@ -6425,7 +6508,7 @@
             if (user) {
                 currentUser = user;
                 if (app) app.style.display = 'block';
-                if (authScreen) authScreen.style.display = 'none';
+                if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
                 checkUserRole().then(() => {
                     if (!currentUser) return;
                     loadUserData();
@@ -6451,7 +6534,7 @@
                 isAdmin = false;
                 stopAllListeners();
                 if (app) app.style.display = 'block';
-                if (authScreen) authScreen.style.display = 'none';
+                if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
                 if (menuGuestItem) menuGuestItem.style.display = 'flex';
                 if (menuAdminItem) menuAdminItem.style.display = 'none';
                 loadRecentExams();
@@ -6467,7 +6550,7 @@
         } catch (error) {
             console.error('[AUTH] Erreur:', error);
             if (app) app.style.display = 'block';
-            if (authScreen) authScreen.style.display = 'none';
+            if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
         }
     });
 
@@ -6495,7 +6578,7 @@
         document.getElementById('hero-ia-btn')?.addEventListener('click', () => {
             if (!currentUser) {
                 showToast('Connectez-vous pour utiliser l\'assistant IA.', 'warning');
-                if (authScreen) authScreen.style.display = 'flex';
+                if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                 return;
             }
             navigateTo('assistant');
@@ -6538,18 +6621,22 @@
             });
         });
 
+        function switchAuthView(tabName) {
+            authTabs.forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === tabName));
+            if (loginForm) { loginForm.classList.remove('active'); if (tabName === 'login') requestAnimationFrame(() => loginForm.classList.add('active')); }
+            if (signupForm) { signupForm.classList.remove('active'); if (tabName === 'signup') requestAnimationFrame(() => signupForm.classList.add('active')); }
+            if (authScreen) authScreen.classList.add('auth-page-visible');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         authTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.getAttribute('data-tab');
-                authTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                if (loginForm) loginForm.classList.toggle('active', tabName === 'login');
-                if (signupForm) signupForm.classList.toggle('active', tabName === 'signup');
-            });
+            tab.addEventListener('click', () => switchAuthView(tab.getAttribute('data-tab')));
         });
+        document.getElementById('switch-to-signup')?.addEventListener('click', () => switchAuthView('signup'));
+        document.getElementById('switch-to-login')?.addEventListener('click', () => switchAuthView('login'));
 
         document.getElementById('auth-close-btn')?.addEventListener('click', function() {
-            if (authScreen) authScreen.style.display = 'none';
+            if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
         });
 
         function validatePasswordMatch() {
@@ -6799,7 +6886,7 @@
         detailIaBtn?.addEventListener('click', () => {
             if (!currentUser) {
                 showToast('Connectez-vous pour utiliser l\'assistant IA.', 'warning');
-                if (authScreen) authScreen.style.display = 'flex';
+                if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                 return;
             }
             navigateTo('assistant');
