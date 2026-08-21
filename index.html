@@ -3524,13 +3524,13 @@
                         <i class="fas fa-download stat-icon"></i>
                         <div class="stat-number" id="admin-stat-downloads">0</div>
                         <div class="stat-label">Téléchargements</div>
-                        <div class="stat-change neutral"><i class="fas fa-minus"></i> Cette semaine</div>
+                        <div class="stat-change neutral"><i class="fas fa-database"></i> Total</div>
                     </div>
                     <div class="admin-dashboard-stat">
                         <i class="fas fa-eye stat-icon"></i>
                         <div class="stat-number" id="admin-stat-views">0</div>
                         <div class="stat-label">Vues</div>
-                        <div class="stat-change neutral"><i class="fas fa-minus"></i> Cette semaine</div>
+                        <div class="stat-change neutral"><i class="fas fa-database"></i> Total</div>
                     </div>
                     <div class="admin-dashboard-stat">
                         <i class="fas fa-clock stat-icon"></i>
@@ -4124,6 +4124,7 @@
     const HOSBAC_API_BASE = location.hostname.endsWith('github.io') ? 'https://hosbac-app.vercel.app' : '';
     const HOSBAC_GEMINI_ENDPOINT = `${HOSBAC_API_BASE}/api/gemini-fallback`;
     const HOSBAC_ADMIN_DELETE_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-delete-user`;
+    const HOSBAC_ADMIN_STATS_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-stats`;
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -8856,27 +8857,47 @@
     let adminStatsCache = null;
 
     async function loadAdminDashboard(force = false) {
-        if (!isAdmin) return;
+        if (!isAdmin || !currentUser) return;
         const now = Date.now();
         if (!force && adminDashboardCache.data && now - adminDashboardCache.timestamp < HOSBAC_CACHE_TTL) {
             updateAdminStatsUI(adminDashboardCache.data.stats);
             renderAdminChartsFromAggregate(adminDashboardCache.data);
             return;
         }
+
+        const getToken = async (forceRefresh = false) => currentUser.getIdToken(forceRefresh);
+        const requestStats = async (method = 'GET', forceRefresh = false) => {
+            const token = await getToken(forceRefresh);
+            const response = await fetch(HOSBAC_ADMIN_STATS_ENDPOINT, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            let body = {};
+            try { body = await response.json(); } catch (_) {}
+            if (response.status === 401 && !forceRefresh) return requestStats(method, true);
+            if (!response.ok) throw new Error(body.error || `HTTP_${response.status}`);
+            return body;
+        };
+
         try {
-            // Anti-quota : le dashboard ne lit plus /users ni /epreuves.
-            // Une seule lecture d'un document agrégé, alimenté côté serveur/admin.
-            const snap = await db.doc('admin_stats/overview').get();
-            if (!snap.exists) {
-                const empty = { stats:{users:0,exams:0,pending:0,reports:0,downloads:0,views:0},
-                    charts:{examsByDay:[],subjects:[],downloadsByMonth:[],usersByMonth:[]} };
-                adminDashboardCache = { data: empty, timestamp: now };
-                updateAdminStatsUI(empty.stats);
-                renderAdminChartsFromAggregate(empty);
-                showToast('Les statistiques agrégées ne sont pas encore configurées.', 'warning');
-                return;
+            // Le dashboard ne lit plus directement Firestore. Il consomme uniquement
+            // l'agrégat préparé par Vercel + Firebase Admin SDK.
+            let result = await requestStats('GET');
+
+            // Première installation : l'agrégat peut ne pas encore exister.
+            // Une seule génération est déclenchée par un administrateur, puis les
+            // ouvertures suivantes deviennent une lecture légère du document agrégé.
+            if (!result.configured || !result.data) {
+                showToast('Initialisation des statistiques HosBac...', 'info');
+                result = await requestStats('POST');
             }
-            const raw = snap.data() || {};
+
+            if (!result.data) throw new Error('AGGREGATE_EMPTY');
+
+            const raw = result.data || {};
             const statsRaw = raw.stats || raw;
             const data = {
                 stats: {
@@ -8894,13 +8915,14 @@
                     usersByMonth: raw.usersByMonth || []
                 }
             };
+
             adminDashboardCache = { data, timestamp: now };
             adminStatsCache = data.stats;
             updateAdminStatsUI(data.stats);
             renderAdminChartsFromAggregate(data);
             updatePendingExamsCount(data.stats.pending);
         } catch (err) {
-            console.error('[ADMIN_STATS] Erreur lecture agrégat:', err);
+            console.error('[ADMIN_STATS] Erreur API:', err);
             showToast('Impossible de charger les statistiques administratives.', 'warning');
         }
     }
