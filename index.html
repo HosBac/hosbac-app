@@ -1670,8 +1670,10 @@
             gap: 0.5rem;
         }
         .admin-chart-box canvas {
-            max-height: 200px;
+            width: 100% !important;
+            height: 220px !important;
             max-width: 100%;
+            display: block;
         }
 
         .admin-tabs {
@@ -3193,7 +3195,6 @@
                 <button class="action-btn gold" id="detail-ia-btn"><i class="fas fa-robot"></i> Résoudre avec HosBac IA</button>
                 <button class="action-btn danger" id="detail-report-btn"><i class="fas fa-flag"></i> Signaler</button>
                 <button class="action-btn edit" id="detail-edit-btn" style="display:none;"><i class="fas fa-edit"></i> Modifier</button>
-                <button class="action-btn outline" id="detail-history-btn" style="display:none;"><i class="fas fa-history"></i> Historique</button>
                 <button class="action-btn outline" id="detail-back-btn"><i class="fas fa-arrow-left"></i> Retour</button>
             </div>
 
@@ -3306,9 +3307,6 @@
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
             </div>
 
-            <!-- MES CONTRIBUTIONS SUPPRIMÉES -->
-            <!-- ACTIVITÉ RÉCENTE SUPPRIMÉE -->
-
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-award"></i> Badges</h2>
                 <div class="badges-container" id="badges-container">
@@ -3383,7 +3381,6 @@
                 <button class="admin-tab" data-panel="reports"><i class="fas fa-flag"></i> Signalements <span class="tab-badge" id="admin-reports-count" style="display:none;">0</span></button>
                 <button class="admin-tab" data-panel="settings"><i class="fas fa-cog"></i> Paramètres</button>
                 <button class="admin-tab" data-panel="legal"><i class="fas fa-file-contract"></i> Pages légales</button>
-                <button class="admin-tab" data-panel="logs"><i class="fas fa-history"></i> Logs</button>
             </div>
 
             <div class="admin-panel active" id="panel-dashboard">
@@ -3439,7 +3436,7 @@
 
                 <div class="admin-charts-grid">
                     <div class="admin-chart-box">
-                        <div class="chart-title"><i class="fas fa-download"></i> Téléchargements par mois</div>
+                        <div class="chart-title"><i class="fas fa-download"></i> Téléchargements cumulés</div>
                         <canvas id="admin-downloads-chart"></canvas>
                     </div>
                     <div class="admin-chart-box">
@@ -3448,12 +3445,6 @@
                     </div>
                 </div>
 
-                <div class="admin-chart-box" style="margin-top:1rem;">
-                    <div class="chart-title"><i class="fas fa-clipboard-list"></i> Activité de modération récente</div>
-                    <div id="recent-moderation" style="max-height:200px;overflow-y:auto;">
-                        <p style="color:var(--text-light);">Chargement...</p>
-                    </div>
-                </div>
             </div>
 
             <div class="admin-panel" id="panel-exams">
@@ -3594,23 +3585,6 @@
                 </div>
             </div>
 
-            <div class="admin-panel" id="panel-logs">
-                <div class="admin-charts-grid">
-                    <div class="admin-chart-box">
-                        <div class="chart-title"><i class="fas fa-search"></i> Mots-clés les plus recherchés</div>
-                        <div id="top-search-keywords" style="max-height:300px;overflow-y:auto;">
-                            <p style="color:var(--text-light);">Chargement...</p>
-                        </div>
-                    </div>
-                    <div class="admin-chart-box">
-                        <div class="chart-title"><i class="fas fa-history"></i> Dernières interactions</div>
-                        <div id="recent-interactions" style="max-height:300px;overflow-y:auto;">
-                            <p style="color:var(--text-light);">Chargement...</p>
-                        </div>
-                    </div>
-                </div>
-                <!-- Historique de modération supprimé -->
-            </div>
         </div>
     </main>
 
@@ -3959,7 +3933,6 @@
     </div>
 </div>
 
-<!-- POPUP HISTORIQUE DE MODÉRATION SUPPRIMÉ -->
 
 <!-- POPUP PAGES LÉGALES -->
 <div id="terms-popup" class="popup-overlay">
@@ -4022,6 +3995,13 @@
         messagingSenderId: "770406769367",
         appId: "1:770406769367:web:8e2a3f27ce0044fd120692"
     };
+
+    // API HosBac : si le frontend est hébergé sur GitHub Pages, les routes serveur
+    // restent sur Vercel. Sur Vercel/local, les routes sont relatives.
+    const HOSBAC_API_BASE = location.hostname.endsWith('github.io') ? 'https://hosbac-app.vercel.app' : '';
+    const HOSBAC_GEMINI_ENDPOINT = `${HOSBAC_API_BASE}/api/gemini-fallback`;
+    const HOSBAC_ADMIN_DELETE_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-delete-user`;
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -4037,8 +4017,6 @@
     let currentUser = null;
     let isAdmin = false;
     let userData = null;
-    let announcementsListener = null;
-    let pendingExamsListener = null;
     let filteredExamsCache = [];
     let currentPage = 1;
     const ITEMS_PER_PAGE = 12;
@@ -4059,6 +4037,23 @@
     let adminExamsCache = [];
     let adminUsersCache = [];
     let adminReportsCache = [];
+
+    // ============================================================
+    // CACHE / ANTI-QUOTA FIRESTORE
+    // ============================================================
+    const HOSBAC_CACHE_TTL = 5 * 60 * 1000;
+    const HOSBAC_AI_CACHE_TTL = 10 * 60 * 1000;
+    let approvedExamsCache = { data: [], timestamp: 0 };
+    let platformStatsCache = { data: null, timestamp: 0 };
+    let announcementsCache = { data: [], timestamp: 0 };
+    let leaderboardCache = { data: [], timestamp: 0 };
+    let adminDashboardCache = { data: null, timestamp: 0 };
+    let adminRawExamsCache = { data: [], timestamp: 0 };
+    let adminRawUsersCache = { data: [], timestamp: 0 };
+    const examDocCache = new Map();
+    const viewedExamIds = new Set();
+    let announcementsListener = null;
+    let pendingExamsListener = null;
 
     // Gestion des messages
     let messageLikes = {};
@@ -4200,6 +4195,25 @@
     const heroSearchInput = document.getElementById('hero-search-input');
 
     const contactsForm = document.getElementById('contacts-admin-form');
+
+    // Gestionnaires de progression Cloudinary manquants dans l'ancienne version.
+    function makeUploadProgress(containerId, barId, textId) {
+        const container = document.getElementById(containerId);
+        const bar = document.getElementById(barId);
+        const text = document.getElementById(textId);
+        return {
+            show(){ if(container) container.style.display='block'; },
+            hide(){ if(container) container.style.display='none'; },
+            update(value){
+                const v=Math.max(0,Math.min(100,Number(value)||0));
+                if(bar) bar.style.width=`${v}%`;
+                if(text) text.textContent=`${Math.round(v)}%`;
+            }
+        };
+    }
+    const sujetProgress = makeUploadProgress('sujet-progress-container','sujet-progress-bar','sujet-progress-text');
+    const corrigeProgress = makeUploadProgress('corrige-progress-container','corrige-progress-bar','corrige-progress-text');
+    const corrigeOnlyProgress = makeUploadProgress('corrige-only-progress-container','corrige-only-progress-bar','corrige-only-progress-text');
     const contactWhatsapp = document.getElementById('contact-whatsapp');
     const contactFacebook = document.getElementById('contact-facebook');
     const contactEmail = document.getElementById('contact-email');
@@ -4263,7 +4277,6 @@
     const detailShareBtn = document.getElementById('detail-share-btn');
     const detailReportBtn = document.getElementById('detail-report-btn');
     const detailEditBtn = document.getElementById('detail-edit-btn');
-    const detailHistoryBtn = document.getElementById('detail-history-btn');
     const detailTags = document.getElementById('detail-tags');
     const pdfViewer = document.getElementById('pdf-viewer');
     const pdfControls = document.getElementById('pdf-controls');
@@ -4286,7 +4299,6 @@
     const profileTotalXp = document.getElementById('profile-total-xp');
     const badgesContainer = document.getElementById('badges-container');
     const leaderboardList = document.getElementById('leaderboard-list');
-    const activityList = document.getElementById('activity-list');
     const weeklyChartCanvas = document.getElementById('weekly-chart');
     const xpChartCanvas = document.getElementById('xp-chart');
     const subjectStatsGrid = document.getElementById('subject-stats-grid');
@@ -4294,7 +4306,6 @@
     const changePasswordBtn = document.getElementById('change-password-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
     const deleteAccountBtn = document.getElementById('delete-account-btn');
-    const myContributionsContainer = document.getElementById('my-contributions');
 
     const reportPopup = document.getElementById('report-popup');
     const reportReasons = document.getElementById('report-reasons');
@@ -4526,8 +4537,7 @@
                 if (contactEmail) contactEmail.value = data.email || '';
                 updateFooterContacts(data);
             } else {
-                db.doc(CONTACTS_DOC_PATH).set({ whatsapp: '', facebook: '', email: '' })
-                .catch(err => console.error('[FIRESTORE] Erreur création contacts:', err));
+                updateFooterContacts({ whatsapp:'', facebook:'', email:'' });
             }
         })
         .catch(err => console.error('[FIRESTORE] Erreur chargement contacts:', err));
@@ -4582,8 +4592,7 @@
                     injectGAScript(gaId.trim());
                 }
             } else {
-                db.doc(ANALYTICS_DOC_PATH).set({ ga_measurement_id: '' })
-                .catch(err => console.error('[FIRESTORE] Erreur création analytics:', err));
+                // Aucun document analytics : rien à créer côté client.
             }
         })
         .catch(err => console.error('[FIRESTORE] Erreur chargement GA:', err));
@@ -4610,33 +4619,38 @@
     }
 
     // ============================================================
-    // RÉCUPÉRATION DES ÉPREUVES POUR L'IA
+    // RÉCUPÉRATION DES ÉPREUVES POUR L'IA — CACHE 10 MINUTES
     // ============================================================
-    async function fetchExamsForAI() {
+    async function fetchExamsForAI(force = false) {
+        const now = Date.now();
+        if (!force && cachedExamsSummary && (now - (window._hosbacAiSummaryTime || 0)) < HOSBAC_AI_CACHE_TTL) {
+            return cachedExamsSummary;
+        }
         try {
-            const snapshot = await db.collection('epreuves').get();
-            let examsList = [];
+            // Limite volontaire : l'IA n'a pas besoin de charger toute la base à chaque message.
+            const snapshot = await db.collection('epreuves')
+                .where('status', '==', 'approved')
+                .orderBy('createdAt', 'desc')
+                .limit(100)
+                .get();
+            const examsList = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                const name = data.nom_epreuve || 'Épreuve';
-                const subject = data.matiere || '';
-                const classe = data.classe || '';
-                const serie = data.serie || '';
-                let entry = `${name}`;
-                if (subject) entry += ` - ${subject}`;
-                if (classe) entry += ` (${classe}`;
-                if (serie) entry += ` - Série ${serie}`;
-                if (classe) entry += `)`;
+                let entry = data.nom_epreuve || 'Épreuve';
+                if (data.matiere) entry += ` — ${data.matiere}`;
+                if (data.classe) entry += ` (${data.classe}${data.serie ? ' — Série ' + data.serie : ''})`;
                 examsList.push(entry);
+                examDocCache.set(doc.id, { data, timestamp: Date.now() });
             });
-            window.cachedExamsForAI = examsList.join(", ");
-            cachedExamsSummary = examsList.length > 0 
-                ? `Voici la liste actuelle des épreuves disponibles sur le site (${examsList.length} épreuves) :\n\n${examsList.map((e, i) => `- ${e}`).join('\n')}`
-                : 'Aucune épreuve n\'est actuellement disponible sur le site.';
+            cachedExamsSummary = examsList.length
+                ? `Voici un échantillon des épreuves actuellement disponibles sur HosBac (${examsList.length} dernières) :\n${examsList.map(e => `- ${e}`).join('\n')}`
+                : 'Aucune épreuve approuvée n’est actuellement disponible.';
+            window.cachedExamsForAI = examsList.join(', ');
+            window._hosbacAiSummaryTime = now;
             return cachedExamsSummary;
         } catch (error) {
-            console.error("Erreur lors de la récupération des épreuves pour l'IA:", error);
-            return 'Impossible de récupérer la liste des épreuves actuellement.';
+            console.error('[AI] Impossible de charger le catalogue des épreuves:', error);
+            return cachedExamsSummary || 'Le catalogue des épreuves est momentanément indisponible.';
         }
     }
 
@@ -5016,30 +5030,10 @@
     async function displayWelcomeMessage() {
         const container = assistantMessages;
         if (!container) return;
-        if (welcomeAlreadyInitialized || hasWelcomeMessage()) {
-            return;
-        }
+        if (welcomeAlreadyInitialized || hasWelcomeMessage()) return;
 
-        let userName = "";
-        const user = auth.currentUser;
-        if (user) {
-            try {
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists) {
-                    const data = userDoc.data();
-                    if (data.prenom || data.nom) {
-                        userName = `${data.prenom || ''} ${data.nom || ''}`.trim();
-                    }
-                }
-                if (!userName && user.displayName) {
-                    userName = user.displayName;
-                }
-            } catch (e) {
-                console.error("Erreur récupération nom d'utilisateur:", e);
-            }
-        }
-
-        let welcomeText = userName 
+        const userName = userData ? `${userData.prenom || ''} ${userData.nom || ''}`.trim() : (auth.currentUser?.displayName || '');
+        const welcomeText = userName
             ? `Bonjour ${userName} ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nComment puis-je vous aider aujourd'hui ?`
             : `Bonjour ! 👋\n\nJe suis l'assistant pédagogique HosBac. Je suis là pour vous aider à comprendre, apprendre et progresser.\n\n📚 Je peux vous aider à :\n✏️ Comprendre un cours ou une notion\n💡 Résoudre un exercice ou une épreuve\n✅ Trouver des indices pour avancer\n🎯 Corriger vos réponses\n🧪 Générer des exercices similaires\n\nComment puis-je vous aider aujourd'hui ?`;
 
@@ -5047,26 +5041,18 @@
         msgDiv.className = 'chat-message bot welcome';
         msgDiv.dataset.messageId = 'welcome';
         msgDiv.setAttribute('data-raw-text', welcomeText);
-        
         const avatarDiv = document.createElement('div');
         avatarDiv.className = 'message-avatar';
         avatarDiv.textContent = 'H';
-        
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
-        safeInnerHTML(bubbleDiv, welcomeText.replace(/\n/g, '<br>') + `<div class="message-time">--:--</div>`);
-        
+        safeInnerHTML(bubbleDiv, escapeHTML(welcomeText).replace(/\n/g, '<br>') + `<div class="message-time">--:--</div>`);
         msgDiv.appendChild(avatarDiv);
         msgDiv.appendChild(bubbleDiv);
-        
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
-        
         welcomeAlreadyInitialized = true;
-        const id = generateMessageId();
-        const role = 'model';
-        const parts = [{ text: welcomeText }];
-        chatHistory.push({ id, role, parts, timestamp: new Date().toISOString() });
+        chatHistory.push({ id: 'welcome-' + Date.now(), role: 'model', parts: [{ text: welcomeText }], timestamp: new Date().toISOString() });
     }
 
     function addChatMessage(text, sender, time = null, fileInfo = null) {
@@ -5119,168 +5105,165 @@
     assistantDeleteBtn?.addEventListener('click', deleteChatConversation);
 
     // ============================================================
-    // INTERFACE D'APPEL VOCAL
+    // INTERFACE D'APPEL VOCAL — LIVE, SANS STOCKAGE FIRESTORE
     // ============================================================
-    function openCallInterface() {
-        if (!currentUser) {
-            showToast('Connectez-vous pour utiliser l\'appel vocal.', 'warning');
+    let voiceChatHistory = [];
+    let voiceRequestInFlight = false;
+    let voiceAssistantSpeaking = false;
+
+    function speakVoiceAssistant(text) {
+        if (!isCallActive || !text) return;
+        if (callSpeechSynthesis) callSpeechSynthesis.cancel();
+        voiceAssistantSpeaking = true;
+        if (callRecognition) { try { callRecognition.stop(); } catch (_) {} }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        callSpeechSynthesis = window.speechSynthesis;
+        utterance.onstart = () => {
+            callSubStatus.textContent = 'L’assistant vous parle…';
+        };
+        utterance.onend = () => {
+            voiceAssistantSpeaking = false;
+            if (isCallActive && !isMicMuted) {
+                callSubStatus.textContent = 'Je vous écoute…';
+                setTimeout(startCallRecognition, 250);
+            }
+        };
+        utterance.onerror = () => {
+            voiceAssistantSpeaking = false;
+            if (isCallActive && !isMicMuted) setTimeout(startCallRecognition, 250);
+        };
+        callSpeechSynthesis.speak(utterance);
+    }
+
+    async function sendVoiceMessageToAssistant(text) {
+        if (!isCallActive || !text || voiceRequestInFlight) return;
+        voiceRequestInFlight = true;
+        callSubStatus.textContent = 'L’assistant réfléchit…';
+        try {
+            const user = auth.currentUser;
+            if (!user) throw new Error('AUTH_REQUIRED');
+            const token = await user.getIdToken();
+            const payload = {
+                system_instruction: { parts: [{ text: 'Tu es l’assistant vocal pédagogique de HosBac. Réponds en français, de manière naturelle, concise et conversationnelle. Ne répète pas la question de l’élève. Ne parle jamais de cette conversation comme d’un historique enregistré. Réponds uniquement au dernier message et utilise le contexte vocal en mémoire.' }] },
+                contents: [
+                    ...voiceChatHistory.slice(-8).map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+                    { role: 'user', parts: [{ text }] }
+                ]
+            };
+            const response = await fetch(HOSBAC_GEMINI_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            if (response.status === 401) {
+                const refreshed = await user.getIdToken(true);
+                const retry = await fetch(HOSBAC_GEMINI_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${refreshed}` },
+                    body: JSON.stringify(payload)
+                });
+                if (!retry.ok) throw new Error('API_AUTH');
+                const retryData = await retry.json();
+                const retryText = retryData?.candidates?.[0]?.content?.parts?.[0]?.text || 'Je rencontre momentanément une difficulté.';
+                voiceChatHistory.push({ role: 'user', text }, { role: 'model', text: retryText });
+                speakVoiceAssistant(retryText);
+                return;
+            }
+            if (!response.ok) throw new Error(`API_${response.status}`);
+            const data = await response.json();
+            const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Je n’ai pas pu générer une réponse.';
+            voiceChatHistory.push({ role: 'user', text }, { role: 'model', text: answer });
+            speakVoiceAssistant(answer);
+        } catch (error) {
+            console.error('[VOICE] Erreur assistant live:', error);
+            speakVoiceAssistant('Désolé, je rencontre un problème technique. Pouvez-vous reformuler votre question ?');
+        } finally {
+            voiceRequestInFlight = false;
+        }
+    }
+
+    function startCallRecognition() {
+        if (!isCallActive || isMicMuted || voiceAssistantSpeaking || voiceRequestInFlight) return;
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            callSubStatus.textContent = 'La reconnaissance vocale n’est pas prise en charge par ce navigateur.';
             return;
         }
-        
-        if (assistantView.classList.contains('active')) {
-            navigateTo('home');
-        }
-        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (callRecognition) { try { callRecognition.stop(); } catch (_) {} }
+        callRecognition = new SpeechRecognition();
+        callRecognition.lang = 'fr-FR';
+        callRecognition.continuous = false;
+        callRecognition.interimResults = false;
+        callRecognition.maxAlternatives = 1;
+        callRecognition.onstart = () => { callSubStatus.textContent = 'Je vous écoute…'; };
+        callRecognition.onresult = event => {
+            const text = Array.from(event.results).map(r => r[0]?.transcript || '').join(' ').trim();
+            if (text) sendVoiceMessageToAssistant(text);
+        };
+        callRecognition.onerror = event => {
+            console.warn('[VOICE] Reconnaissance:', event.error);
+            if (event.error === 'not-allowed') {
+                showToast('Accès au microphone refusé.', 'error');
+                return;
+            }
+            if (isCallActive && !voiceAssistantSpeaking && !voiceRequestInFlight) setTimeout(startCallRecognition, 500);
+        };
+        callRecognition.onend = () => {
+            callRecognition = null;
+            if (isCallActive && !isMicMuted && !voiceAssistantSpeaking && !voiceRequestInFlight) setTimeout(startCallRecognition, 250);
+        };
+        try { callRecognition.start(); } catch (e) { console.warn('[VOICE] Démarrage impossible:', e); }
+    }
+
+    async function openCallInterface() {
+        if (!currentUser) { showToast('Connectez-vous pour utiliser l’appel vocal.', 'warning'); return; }
+        if (callInterface?.classList.contains('active')) return;
+        if (assistantView.classList.contains('active')) navigateTo('home');
         callInterface.classList.add('active');
-        callStatus.textContent = 'Appel sortant...';
-        callSubStatus.textContent = 'En attente de l\'assistant HosBac...';
+        callStatus.textContent = 'Connexion…';
+        callSubStatus.textContent = 'Préparation de l’assistant HosBac…';
         callSeconds = 0;
         callTimer.textContent = '00:00';
         isCallActive = true;
         isMicMuted = false;
+        voiceRequestInFlight = false;
+        voiceAssistantSpeaking = false;
+        voiceChatHistory = [];
+        callTranscript = [];
         callMicBtn.innerHTML = '<i class="fas fa-microphone"></i>';
         callMicBtn.classList.remove('muted');
-        callTranscript = [];
-        
-        if (ringtone) {
-            ringtone.currentTime = 0;
-            ringtone.play().catch(err => console.warn('Erreur lecture sonnerie:', err));
-        }
-        
+        if (ringtone) { ringtone.currentTime = 0; ringtone.play().catch(() => {}); }
         if (callInterval) clearInterval(callInterval);
         callInterval = setInterval(() => {
+            if (!isCallActive) return;
             callSeconds++;
-            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-            const secs = String(callSeconds % 60).padStart(2, '0');
-            callTimer.textContent = `${mins}:${secs}`;
-            
-            if (callSeconds === 5) {
-                callStatus.textContent = 'En ligne avec l\'assistant HosBac';
-                callSubStatus.textContent = 'L\'assistant vous parle...';
-                if (ringtone) {
-                    ringtone.pause();
-                }
-                speakAssistantGreeting();
-            }
+            callTimer.textContent = `${String(Math.floor(callSeconds / 60)).padStart(2,'0')}:${String(callSeconds % 60).padStart(2,'0')}`;
         }, 1000);
-        
         setTimeout(() => {
-            if (callSeconds < 5 && isCallActive) {
-                if (ringtone) {
-                    ringtone.pause();
-                }
-                callStatus.textContent = 'Assistant disponible';
-                callSubStatus.textContent = 'L\'assistant va vous répondre...';
-                setTimeout(() => {
-                    if (isCallActive && callSeconds < 5) {
-                        callStatus.textContent = 'En ligne avec l\'assistant HosBac';
-                        callSubStatus.textContent = 'L\'assistant vous parle...';
-                        speakAssistantGreeting();
-                    }
-                }, 3000);
-            }
-        }, 4000);
-    }
-    
-    function speakAssistantGreeting() {
-        if (!isCallActive) return;
-        if (callSpeechSynthesis) {
-            callSpeechSynthesis.cancel();
-        }
-        const greeting = "Bonjour, je suis l'assistant HosBac. Je suis là pour vous aider. Comment puis-je vous aider aujourd'hui ?";
-        const utterance = new SpeechSynthesisUtterance(greeting);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        callSpeechSynthesis = speechSynthesis;
-        callSpeechSynthesis.speak(utterance);
-        callSubStatus.textContent = 'L\'assistant vous parle...';
-        callTranscript.push('Assistant: ' + greeting);
-        
-        startCallRecognition();
-    }
-
-    function startCallRecognition() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            console.warn('Reconnaissance vocale non supportée');
-            return;
-        }
-        if (callRecognition) {
-            callRecognition.stop();
-        }
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        callRecognition = new SpeechRecognition();
-        callRecognition.lang = 'fr-FR';
-        callRecognition.continuous = true;
-        callRecognition.interimResults = true;
-        callRecognition.maxAlternatives = 1;
-        
-        callRecognition.onresult = function(event) {
-            let transcript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const result = event.results[i];
-                if (result.isFinal) {
-                    transcript += result[0].transcript;
-                }
-            }
-            if (transcript.trim()) {
-                callTranscript.push('Utilisateur: ' + transcript.trim());
-                callSubStatus.textContent = 'Vous: ' + transcript.trim().substring(0, 50) + '...';
-                setTimeout(() => {
-                    if (isCallActive) {
-                        const response = "Merci pour votre question. Je vais vous aider sur ce point.";
-                        const respUtterance = new SpeechSynthesisUtterance(response);
-                        respUtterance.lang = 'fr-FR';
-                        respUtterance.rate = 0.9;
-                        respUtterance.pitch = 1.0;
-                        callSpeechSynthesis.speak(respUtterance);
-                        callTranscript.push('Assistant: ' + response);
-                        callSubStatus.textContent = 'Assistant répond...';
-                    }
-                }, 1000);
-            }
-        };
-        
-        callRecognition.onerror = function(event) {
-            console.warn('Erreur reconnaissance vocale:', event.error);
-            if (event.error === 'not-allowed') {
-                showToast('Accès au microphone refusé.', 'error');
-            }
-        };
-        
-        try {
-            callRecognition.start();
-        } catch (e) {
-            console.warn('Erreur démarrage reconnaissance:', e);
-        }
+            if (!isCallActive) return;
+            if (ringtone) ringtone.pause();
+            callStatus.textContent = 'En ligne avec l’assistant HosBac';
+            sendVoiceMessageToAssistant('Bonjour. Présente-toi brièvement et demande-moi comment tu peux m’aider.');
+        }, 1200);
     }
 
     function closeCallInterface() {
         isCallActive = false;
-        if (callInterval) {
-            clearInterval(callInterval);
-            callInterval = null;
-        }
-        if (callSpeechSynthesis) {
-            callSpeechSynthesis.cancel();
-        }
-        if (callRecognition) {
-            try {
-                callRecognition.stop();
-            } catch (e) {}
-            callRecognition = null;
-        }
-        if (ringtone) {
-            ringtone.pause();
-        }
+        if (callInterval) { clearInterval(callInterval); callInterval = null; }
+        if (callSpeechSynthesis) callSpeechSynthesis.cancel();
+        if (callRecognition) { try { callRecognition.stop(); } catch (_) {} callRecognition = null; }
+        if (ringtone) ringtone.pause();
         callInterface.classList.remove('active');
-        
-        if (callTranscript.length > 0) {
-            const transcriptText = "🔊 **Résumé de l'appel vocal**\n\n" + callTranscript.join('\n');
-            addChatMessage(transcriptText, 'bot', new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
-            showToast('Transcription de l\'appel ajoutée au chat', 'success');
-        }
-        
+        callStatus.textContent = 'Appel terminé';
+        callSubStatus.textContent = 'Conversation vocale supprimée.';
+        // AUCUNE transcription n’est injectée dans le chat et rien n’est enregistré dans Firestore.
+        voiceChatHistory = [];
+        callTranscript = [];
+        voiceRequestInFlight = false;
+        voiceAssistantSpeaking = false;
         navigateTo('assistant');
     }
 
@@ -5291,106 +5274,34 @@
         callMicBtn.innerHTML = isMicMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
         callMicBtn.classList.toggle('muted', isMicMuted);
         if (isMicMuted) {
+            if (callRecognition) { try { callRecognition.stop(); } catch (_) {} }
             callSubStatus.textContent = 'Microphone coupé';
-            if (callRecognition) {
-                try {
-                    callRecognition.stop();
-                } catch (e) {}
-            }
-        } else {
-            callSubStatus.textContent = 'Microphone activé';
+        } else if (!voiceAssistantSpeaking && !voiceRequestInFlight) {
             startCallRecognition();
         }
     });
 
     // ============================================================
-    // GESTION DU QUOTA
+    // GESTION DU QUOTA IA — AUCUNE LECTURE FIRESTORE
     // ============================================================
+    function quotaStorageKey() {
+        const day = new Date().toISOString().slice(0, 10);
+        return `hosbac_ai_quota_${currentUser?.uid || 'guest'}_${day}`;
+    }
+
     function checkAndResetQuota() {
-        return new Promise((resolve) => {
-            if (!currentUser) {
-                resolve({ canSend: true, isAdmin: false });
-                return;
-            }
-            
-            const userRef = db.collection('users').doc(currentUser.uid);
-            userRef.get()
-            .then(doc => {
-                if (!doc.exists) {
-                    resolve({ canSend: true, isAdmin: false });
-                    return;
-                }
-                const data = doc.data();
-                const today = new Date().toISOString().split('T')[0];
-                
-                if (data.role === 'admin') {
-                    resolve({ canSend: true, isAdmin: true });
-                    return;
-                }
-                
-                const lastReset = data.lastResetDate || '';
-                if (lastReset !== today) {
-                    userRef.update({
-                        dailyMessageCount: 0,
-                        lastResetDate: today
-                    }).then(() => {
-                        resolve({ canSend: true, isAdmin: false });
-                    }).catch(() => {
-                        resolve({ canSend: true, isAdmin: false });
-                    });
-                } else {
-                    const count = data.dailyMessageCount || 0;
-                    if (count >= 15) {
-                        resolve({ canSend: false, isAdmin: false });
-                    } else {
-                        resolve({ canSend: true, isAdmin: false });
-                    }
-                }
-            })
-            .catch(() => {
-                resolve({ canSend: true, isAdmin: false });
-            });
-        });
+        if (!currentUser) return Promise.resolve({ canSend: true, isAdmin: false });
+        if (userData?.role === 'admin') return Promise.resolve({ canSend: true, isAdmin: true });
+        const count = Number(localStorage.getItem(quotaStorageKey()) || '0');
+        return Promise.resolve({ canSend: count < 15, isAdmin: false });
     }
 
     function incrementQuota() {
-        return new Promise((resolve) => {
-            if (!currentUser) {
-                resolve();
-                return;
-            }
-            
-            const userRef = db.collection('users').doc(currentUser.uid);
-            userRef.get()
-            .then(doc => {
-                if (!doc.exists) {
-                    resolve();
-                    return;
-                }
-                const data = doc.data();
-                if (data.role === 'admin') {
-                    resolve();
-                    return;
-                }
-                
-                const today = new Date().toISOString().split('T')[0];
-                const lastReset = data.lastResetDate || '';
-                
-                if (lastReset !== today) {
-                    userRef.update({
-                        dailyMessageCount: 1,
-                        lastResetDate: today
-                    }).then(() => resolve())
-                    .catch(() => resolve());
-                } else {
-                    userRef.update({
-                        dailyMessageCount: firebase.firestore.FieldValue.increment(1)
-                    }).then(() => resolve())
-                    .catch(() => resolve());
-                }
-            })
-            .catch(() => resolve());
-        });
+        if (!currentUser || userData?.role === 'admin') return Promise.resolve();
+        const key = quotaStorageKey();
+        const count = Number(localStorage.getItem(key) || '0') + 1;
+        localStorage.setItem(key, String(count));
+        return Promise.resolve();
     }
 
     // ============================================================
@@ -5398,7 +5309,7 @@
     // ============================================================
     async function sendMessageToGemini(userMessage, fileData = null, retryCount = 0, isPedagogical = false) {
         try {
-            const examsSummary = await fetchExamsForAI();
+            const examsSummary = cachedExamsSummary || await fetchExamsForAI();
 
             const recentHistory = chatHistory.slice(-10);
 
@@ -5465,7 +5376,7 @@
             }
             const token = await user.getIdToken();
 
-            const response = await fetch('/api/gemini-fallback', {
+            let response = await fetch(HOSBAC_GEMINI_ENDPOINT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -5473,6 +5384,18 @@
                 },
                 body: JSON.stringify(payload)
             });
+
+            if (response.status === 401) {
+                const refreshedToken = await user.getIdToken(true);
+                response = await fetch(HOSBAC_GEMINI_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${refreshedToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+            }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -5498,9 +5421,7 @@
 
             if (currentUser) {
                 aiConversationCount++;
-                db.collection('users').doc(currentUser.uid).update({
-                    aiConversations: firebase.firestore.FieldValue.increment(1)
-                }).catch(err => console.error('Erreur mise à jour compteur IA:', err));
+                if (userData) userData.aiConversations = (userData.aiConversations || 0) + 1;
             }
 
         } catch (error) {
@@ -5753,8 +5674,6 @@
             case 'profile': 
                 if (checkAuthRequired('profil')) {
                     loadProfileData();
-                    loadLeaderboard();
-                    loadSubjectStats();
                 }
                 break;
             case 'admin': loadAdminPanel(); break;
@@ -5810,7 +5729,11 @@
         pdfViewer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-light);"><div style="text-align:center;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--accent-blue);margin-bottom:1rem;"></i><p>Chargement...</p></div></div>';
         pdfControls.style.display = 'none';
         
-        db.collection('epreuves').doc(examId).get()
+        const cached = examDocCache.get(examId);
+        const loadPromise = cached && (Date.now() - cached.timestamp < HOSBAC_CACHE_TTL)
+            ? Promise.resolve({ exists: true, id: examId, data: () => cached.data })
+            : db.collection('epreuves').doc(examId).get();
+        loadPromise
         .then(doc => {
             if (!doc.exists) {
                 showToast('Épreuve non trouvée', 'error');
@@ -5819,6 +5742,7 @@
             }
             
             const exam = doc.data();
+            examDocCache.set(examId, { data: exam, timestamp: Date.now() });
             
             if (detailBreadcrumbCurrent) {
                 detailBreadcrumbCurrent.textContent = exam.nom_epreuve || 'Détail';
@@ -5903,9 +5827,6 @@
                 detailEditBtn.style.display = canEdit && (status === 'pending' || status === 'draft') ? 'inline-flex' : 'none';
             }
             
-            if (detailHistoryBtn) {
-                detailHistoryBtn.style.display = 'none'; // historique supprimé
-            }
             
             if (detailTags) {
                 detailTags.innerHTML = '';
@@ -5941,11 +5862,13 @@
             
             loadSimilarExams(exam);
             
-            if (currentUser) {
+            if (currentUser && !viewedExamIds.has(examId)) {
+                viewedExamIds.add(examId);
+                exam.viewCount = Number(exam.viewCount || 0) + 1;
+                examDocCache.set(examId, { data: exam, timestamp: Date.now() });
                 updateUserStats('view', examId);
-                db.collection('epreuves').doc(examId).update({
-                    viewCount: firebase.firestore.FieldValue.increment(1)
-                }).catch(err => console.error('Erreur incrémentation vues:', err));
+                db.collection('epreuves').doc(examId).update({ viewCount: firebase.firestore.FieldValue.increment(1) })
+                    .catch(err => console.warn('Erreur incrémentation vues:', err.message));
             }
             
             history.pushState({ examId }, '', `?exam=${examId}`);
@@ -5960,62 +5883,61 @@
     // ============================================================
     // STATISTIQUES PLATEFORME
     // ============================================================
-    function loadPlatformStats() {
-        db.collection('epreuves').where('status', '==', 'approved').get()
-        .then(snapshot => document.getElementById('stat-exams').textContent = snapshot.size)
-        .catch(() => document.getElementById('stat-exams').textContent = '0');
-
-        db.collection('epreuves').where('status', '==', 'approved').where('fichier_corrige', '!=', null).get()
-        .then(snapshot => document.getElementById('stat-corriges').textContent = snapshot.size)
-        .catch(() => document.getElementById('stat-corriges').textContent = '0');
-
-        db.collection('epreuves').where('status', '==', 'approved').get()
-        .then(snapshot => {
-            const matieres = new Set();
-            snapshot.forEach(doc => { const data = doc.data(); if (data.matiere) matieres.add(data.matiere); });
-            document.getElementById('stat-matieres').textContent = matieres.size || '0';
-        })
-        .catch(() => document.getElementById('stat-matieres').textContent = '0');
-
-        db.collection('users').get()
-        .then(snapshot => document.getElementById('stat-users').textContent = snapshot.size)
-        .catch(() => document.getElementById('stat-users').textContent = '0');
+    async function loadPlatformStats(force = false) {
+        const now=Date.now();
+        if(!force && platformStatsCache.data && now-platformStatsCache.timestamp<HOSBAC_CACHE_TTL){
+            const st=platformStatsCache.data;
+            document.getElementById('stat-exams').textContent=st.exams;
+            document.getElementById('stat-corriges').textContent=st.corriges;
+            document.getElementById('stat-matieres').textContent=st.matieres;
+            document.getElementById('stat-users').textContent=st.users;
+            return st;
+        }
+        try{
+            // UNE seule lecture légère. Les statistiques lourdes sont agrégées par l'admin.
+            const snap=await db.doc('settings/public').get();
+            const d=snap.exists ? (snap.data()||{}) : {};
+            const st={
+                exams:Number(d.examCount ?? d.exams ?? 0) || 0,
+                corriges:Number(d.corrigeCount ?? d.corriges ?? 0) || 0,
+                matieres:Number(d.subjectCount ?? d.matieres ?? 0) || 0,
+                users:Number(d.userCount ?? d.users ?? 0) || 0
+            };
+            platformStatsCache={data:st,timestamp:now};
+            document.getElementById('stat-exams').textContent=st.exams;
+            document.getElementById('stat-corriges').textContent=st.corriges;
+            document.getElementById('stat-matieres').textContent=st.matieres;
+            document.getElementById('stat-users').textContent=st.users;
+            return st;
+        }catch(error){
+            console.error('[FIRESTORE] Erreur statistiques plateforme:',error);
+            ['stat-exams','stat-corriges','stat-matieres','stat-users'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+            return null;
+        }
     }
 
     // ============================================================
     // ÉPREUVES POPULAIRES
     // ============================================================
-    function loadPopularExams() {
-        const container = document.getElementById('popular-exams');
-        if (!container) return;
-        container.innerHTML = '<p style="color:var(--text-light);">Chargement des épreuves populaires...</p>';
-        
-        db.collection('epreuves').where('status', '==', 'approved')
-        .orderBy('downloadCount', 'desc').limit(5).get()
-        .then(querySnapshot => {
-            container.innerHTML = '';
-            if (querySnapshot.empty) {
-                container.innerHTML = '<p style="color:var(--text-light);">Aucune épreuve populaire pour le moment.</p>';
-                return;
-            }
-            querySnapshot.forEach(doc => {
-                const exam = doc.data();
-                const card = createExamCard(exam, doc.id);
-                const badge = card.querySelector('.exam-badges');
-                if (badge) {
-                    const popBadge = document.createElement('span');
-                    popBadge.className = 'exam-badge popular';
-                    popBadge.innerHTML = '<i class="fas fa-fire"></i> Populaire';
-                    badge.appendChild(popBadge);
-                }
-                container.appendChild(card);
-            });
-            updateExamCardsVisibility();
-        })
-        .catch(error => {
-            console.error('[FIRESTORE] Erreur chargement épreuves populaires:', error);
-            container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement des épreuves populaires.</p>';
-        });
+    async function loadPopularExams(force=false) {
+        const container=document.getElementById('popular-exams'); if(!container) return;
+        const now=Date.now(); window._hosbacPopularCache=window._hosbacPopularCache||{data:[],timestamp:0};
+        if(!force && window._hosbacPopularCache.data.length && now-window._hosbacPopularCache.timestamp<HOSBAC_CACHE_TTL) return renderPopularExams(window._hosbacPopularCache.data,container);
+        container.innerHTML='<p style="color:var(--text-light);">Chargement des épreuves populaires...</p>';
+        try{
+            const snap=await db.collection('epreuves').where('status','==','approved').orderBy('downloadCount','desc').limit(5).get();
+            const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+            data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
+            window._hosbacPopularCache={data,timestamp:now};
+            renderPopularExams(data,container);
+        }catch(error){console.error('[FIRESTORE] Erreur épreuves populaires:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves populaires.</p>'; }
+    }
+
+    function renderPopularExams(data,container){
+        container.innerHTML='';
+        if(!data.length){container.innerHTML='<p style="color:var(--text-light);">Aucune épreuve populaire pour le moment.</p>';return;}
+        data.forEach(exam=>{const card=createExamCard(exam,exam.id);const badge=card.querySelector('.exam-badges');if(badge){const b=document.createElement('span');b.className='exam-badge popular';b.innerHTML='<i class="fas fa-fire"></i> Populaire';badge.appendChild(b);}container.appendChild(card);});
+        updateExamCardsVisibility();
     }
 
     // ============================================================
@@ -6244,139 +6166,82 @@
     // ============================================================
     // STATISTIQUES PAR MATIÈRE
     // ============================================================
-    function loadSubjectStats() {
-        if (!subjectStatsGrid || !currentUser) return;
-        subjectStatsGrid.innerHTML = '<p style="color:var(--text-light);grid-column:1/-1;">Chargement des statistiques...</p>';
-        
-        db.collection('epreuves').where('status', '==', 'approved').get()
-        .then(snapshot => {
-            const subjects = {};
-            let total = 0;
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.matiere) {
-                    subjects[data.matiere] = (subjects[data.matiere] || 0) + 1;
-                    total++;
-                }
-            });
-            
-            const sorted = Object.entries(subjects).sort((a, b) => b[1] - a[1]).slice(0, 8);
-            
-            if (sorted.length === 0) {
-                subjectStatsGrid.innerHTML = '<p style="color:var(--text-light);grid-column:1/-1;">Aucune donnée disponible.</p>';
-                return;
+    async function loadSubjectStats() {
+        if(!subjectStatsGrid || !currentUser) return;
+        subjectStatsGrid.innerHTML='<p style="color:var(--text-light);grid-column:1/-1;">Chargement des statistiques...</p>';
+        try{
+            let subjects={};
+            const publicSnap=await db.doc('settings/public').get();
+            const publicData=publicSnap.exists ? (publicSnap.data()||{}) : {};
+            if(publicData.subjectDistribution && typeof publicData.subjectDistribution==='object') subjects=publicData.subjectDistribution;
+            else {
+                const snap=await db.collection('epreuves').where('status','==','approved').get();
+                snap.forEach(doc=>{const m=doc.data().matiere;if(m)subjects[m]=(subjects[m]||0)+1;});
             }
-            
-            subjectStatsGrid.innerHTML = '';
-            sorted.forEach(([name, count]) => {
-                const div = document.createElement('div');
-                div.className = 'subject-stat-card';
-                div.innerHTML = `
-                    <div class="subject-name">${escapeHTML(name)}</div>
-                    <div class="subject-count">${count} épreuve${count > 1 ? 's' : ''}</div>
-                `;
-                subjectStatsGrid.appendChild(div);
-            });
-        })
-        .catch(err => {
-            console.error('Erreur chargement statistiques par matière:', err);
-            subjectStatsGrid.innerHTML = '<p style="color:var(--text-light);grid-column:1/-1;">Erreur lors du chargement.</p>';
-        });
+            const sorted=Object.entries(subjects).sort((a,b)=>b[1]-a[1]).slice(0,8);
+            if(!sorted.length){subjectStatsGrid.innerHTML='<p style="color:var(--text-light);grid-column:1/-1;">Aucune donnée disponible.</p>';return;}
+            subjectStatsGrid.innerHTML='';
+            sorted.forEach(([name,count])=>{const div=document.createElement('div');div.className='subject-stat-card';safeInnerHTML(div,`<div class="subject-name">${escapeHTML(name)}</div><div class="subject-count">${Number(count)} épreuve${Number(count)>1?'s':''}</div>`);subjectStatsGrid.appendChild(div);});
+        }catch(err){console.error('[STATS] Matières:',err);subjectStatsGrid.innerHTML='<p style="color:var(--text-light);grid-column:1/-1;">Données momentanément indisponibles.</p>';}
     }
 
     // ============================================================
     // CLASSEMENT (LEADERBOARD)
     // ============================================================
-    function loadLeaderboard() {
+    async function loadLeaderboard(force=false) {
         if (!leaderboardList) return;
-        leaderboardList.innerHTML = '<p style="color:var(--text-light);">Chargement du classement...</p>';
-        
-        db.collection('users')
-            .orderBy('totalXp', 'desc')
-            .limit(10)
-            .get()
-            .then(snapshot => {
-                leaderboardList.innerHTML = '';
-                let rank = 1;
-                snapshot.forEach(doc => {
-                    const user = doc.data();
-                    const isCurrentUser = doc.id === currentUser?.uid;
-                    const div = document.createElement('div');
-                    div.className = 'leaderboard-item';
-                    if (isCurrentUser) {
-                        div.style.borderLeft = '3px solid var(--accent-gold)';
-                        div.style.background = 'rgba(212, 168, 67, 0.05)';
-                    }
-                    
-                    let rankClass = '';
-                    if (rank === 1) rankClass = 'gold';
-                    else if (rank === 2) rankClass = 'silver';
-                    else if (rank === 3) rankClass = 'bronze';
-                    
-                    const initial = user.prenom ? user.prenom.charAt(0).toUpperCase() : 'U';
-                    const userColor = user.avatarColor || '#1a2a4a';
-                    
-                    div.innerHTML = `
-                        <span class="rank ${rankClass}">#${rank}</span>
-                        <div class="avatar-small" style="background:${isCurrentUser ? 'var(--accent-gold)' : userColor}">${initial}</div>
-                        <div class="user-info">
-                            <div class="user-name">${escapeHTML(user.prenom || '')} ${escapeHTML(user.nom || '')} ${isCurrentUser ? ' <i class="fas fa-hand-point-right"></i>' : ''}</div>
-                            <div class="user-detail">${escapeHTML(user.classe || 'Étudiant')}</div>
-                        </div>
-                        <div class="user-score">${user.totalXp || 0} <span class="xp-label">XP</span></div>
-                    `;
-                    leaderboardList.appendChild(div);
-                    rank++;
-                });
-                
-                if (rank === 1) {
-                    leaderboardList.innerHTML = '<p style="color:var(--text-light);">Aucun utilisateur enregistré.</p>';
-                }
-            })
-            .catch(err => {
-                console.error('Erreur chargement leaderboard:', err);
-                leaderboardList.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement du classement.</p>';
-            });
+        const now=Date.now();
+        if(!force && leaderboardCache.data.length && now-leaderboardCache.timestamp<HOSBAC_CACHE_TTL){ return renderLeaderboard(leaderboardCache.data); }
+        leaderboardList.innerHTML='<p style="color:var(--text-light);">Chargement du classement...</p>';
+        try{
+            const snap=await db.collection('users').orderBy('totalXp','desc').limit(10).get();
+            const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+            leaderboardCache={data,timestamp:now};
+            renderLeaderboard(data);
+        }catch(err){ console.error('Erreur chargement leaderboard:',err); leaderboardList.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement du classement.</p>'; }
+    }
+
+    function renderLeaderboard(data){
+        if(!leaderboardList) return;
+        leaderboardList.innerHTML=''; let rank=1;
+        data.forEach(user=>{
+            const isCurrentUser=user.id===currentUser?.uid; const userColor=user.avatarColor||'#1a2a4a';
+            const initial=(user.prenom||user.nom||'U').charAt(0).toUpperCase();
+            const div=document.createElement('div'); div.className='leaderboard-item';
+            if(isCurrentUser){div.style.borderLeft='3px solid var(--accent-gold)';div.style.background='rgba(212,168,67,0.05)';}
+            const rankClass=rank<=3?`top-${rank}`:'';
+            safeInnerHTML(div,`<span class="rank ${rankClass}">#${rank}</span><div class="avatar-small" style="background:${escapeHTML(userColor)}">${escapeHTML(initial)}</div><div class="user-info"><div class="user-name">${escapeHTML(user.prenom||'')} ${escapeHTML(user.nom||'')} ${isCurrentUser?' <i class="fas fa-hand-point-right"></i>':''}</div><div class="user-detail">${escapeHTML(user.classe||'Étudiant')}</div></div><div class="user-score">${Number(user.totalXp||0)} <span class="xp-label">XP</span></div>`);
+            leaderboardList.appendChild(div); rank++;
+        });
+        if(rank===1) leaderboardList.innerHTML='<p style="color:var(--text-light);">Aucun utilisateur enregistré.</p>';
     }
 
     // ============================================================
-    // MES CONTRIBUTIONS - SUPPRIMÉ
     // ============================================================
-    // La fonction loadMyContributions a été supprimée.
 
     // ============================================================
-    // ACTIVITÉ RÉCENTE - SUPPRIMÉ
     // ============================================================
-    // La fonction loadActivity a été supprimée.
 
     // ============================================================
     // GRAPHIQUES
     // ============================================================
     function initCharts() {
-        if (weeklyChartCanvas) {
-            if (typeof Chart === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = function() {
-                    createWeeklyChart();
-                };
+        const ensureChartJs = () => {
+            if (typeof Chart !== 'undefined') return Promise.resolve();
+            if (window._hosbacChartLoader) return window._hosbacChartLoader;
+            window._hosbacChartLoader = new Promise((resolve,reject)=>{
+                const script=document.createElement('script');
+                script.src='https://cdn.jsdelivr.net/npm/chart.js';
+                script.onload=resolve; script.onerror=reject;
                 document.head.appendChild(script);
-            } else {
-                createWeeklyChart();
-            }
-        }
-
-        if (xpChartCanvas) {
-            if (typeof Chart === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = function() {
-                    createXpChart();
-                };
-                document.head.appendChild(script);
-            } else {
-                createXpChart();
-            }
+            });
+            return window._hosbacChartLoader;
+        };
+        if (weeklyChartCanvas || xpChartCanvas) {
+            ensureChartJs().then(()=>{
+                if (weeklyChartCanvas) createWeeklyChart();
+                if (xpChartCanvas) createXpChart();
+            }).catch(err=>console.warn('[CHART] Chart.js indisponible:',err));
         }
     }
 
@@ -6477,7 +6342,6 @@
     }
 
     // ============================================================
-    // HISTORIQUE MODÉRATION - SUPPRIMÉ
     // ============================================================
     // La fonction loadModerationHistory a été supprimée.
 
@@ -6488,12 +6352,13 @@
         try {
             if (user) {
                 currentUser = user;
-                checkUserRole();
                 if (app) app.style.display = 'block';
                 if (authScreen) authScreen.style.display = 'none';
-                loadUserData();
-                startAnnouncementsListener();
-                startPendingExamsListener();
+                checkUserRole().then(() => {
+                    if (!currentUser) return;
+                    loadUserData();
+                    startAnnouncementsListener();
+                }).catch(() => showToast('Impossible de charger votre profil. Réessayez.', 'error'));
                 if (menuGuestItem) menuGuestItem.style.display = 'none';
                 if (sharedExamId) {
                     setTimeout(() => {
@@ -6503,17 +6368,11 @@
                 loadContactsFromFirestore();
                 loadLegalPages();
                 loadAndInjectGA();
-                if (isAdmin) loadAdminPanel();
                 setTimeout(() => {
                     if (assistantMessages.children.length === 0) {
                         displayWelcomeMessage();
                     }
                 }, 500);
-                if (userData && userData.avatarColor) {
-                    avatarColor = userData.avatarColor;
-                    if (profileAvatar) profileAvatar.style.background = avatarColor;
-                    updateAvatarColorPicker(avatarColor);
-                }
             } else {
                 currentUser = null;
                 userData = null;
@@ -6874,10 +6733,6 @@
             }
         });
 
-        detailHistoryBtn?.addEventListener('click', () => {
-            // Historique supprimé
-            showToast('Historique de modération non disponible', 'warning');
-        });
 
         editExamForm?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -6970,6 +6825,9 @@
         document.getElementById('sujet-upload')?.addEventListener('click', () => { if (sujetUploadWidget) sujetUploadWidget.open(); });
         document.getElementById('corrige-upload')?.addEventListener('click', () => { if (corrigeUploadWidget) corrigeUploadWidget.open(); });
         document.getElementById('corrige-only-upload')?.addEventListener('click', () => { if (corrigeOnlyUploadWidget) corrigeOnlyUploadWidget.open(); });
+        document.getElementById('exam-classe')?.addEventListener('change', toggleSerieField);
+        document.getElementById('edit-exam-classe')?.addEventListener('change', toggleEditSerieField);
+        toggleSerieField();
 
         filterClass?.addEventListener('change', () => { updateFilterCount(); applyFilters(); });
         filterSubject?.addEventListener('change', () => { updateFilterCount(); applyFilters(); });
@@ -7259,8 +7117,7 @@
                         case 'reports': loadAdminReports(); break;
                         case 'settings': break;
                         case 'legal': break;
-                        case 'logs': loadAdminLogs(); break;
-                        default: console.warn('[ADMIN] Panneau inconnu:', panelId);
+                           default: console.warn('[ADMIN] Panneau inconnu:', panelId);
                     }
                 } else {
                     console.warn('[ADMIN] Panneau non trouvé:', panelId);
@@ -7316,28 +7173,27 @@
                     case 'exams': loadAdminExams(); break;
                     case 'users': loadAdminUsers(); break;
                     case 'reports': loadAdminReports(); break;
-                    case 'logs': loadAdminLogs(); break;
                 }
             }
             
             if (adminExamSearch && !adminExamSearch._listenerAttached) {
-                adminExamSearch.addEventListener('input', debounce(loadAdminExams, 300));
+                adminExamSearch.addEventListener('input', debounce(filterAndRenderAdminExams, 200));
                 adminExamSearch._listenerAttached = true;
             }
             if (adminExamStatus && !adminExamStatus._listenerAttached) {
-                adminExamStatus.addEventListener('change', loadAdminExams);
+                adminExamStatus.addEventListener('change', filterAndRenderAdminExams);
                 adminExamStatus._listenerAttached = true;
             }
             if (adminExamSubject && !adminExamSubject._listenerAttached) {
-                adminExamSubject.addEventListener('change', loadAdminExams);
+                adminExamSubject.addEventListener('change', filterAndRenderAdminExams);
                 adminExamSubject._listenerAttached = true;
             }
             if (adminUserSearch && !adminUserSearch._listenerAttached) {
-                adminUserSearch.addEventListener('input', debounce(loadAdminUsers, 300));
+                adminUserSearch.addEventListener('input', debounce(filterAndRenderAdminUsers, 200));
                 adminUserSearch._listenerAttached = true;
             }
             if (adminUserRole && !adminUserRole._listenerAttached) {
-                adminUserRole.addEventListener('change', loadAdminUsers);
+                adminUserRole.addEventListener('change', filterAndRenderAdminUsers);
                 adminUserRole._listenerAttached = true;
             }
             if (adminReportStatus && !adminReportStatus._listenerAttached) {
@@ -7362,7 +7218,7 @@
             if (!isAdmin) return;
             const points = 2;
             approveExam(examId, authorId, points);
-            setTimeout(loadAdminExams, 1000);
+            setTimeout(() => loadAdminExams(true), 300);
         };
         window.rejectExamAdmin = function(examId) {
             if (!isAdmin) return;
@@ -7461,14 +7317,6 @@
         .then(() => {
             showToast('Épreuve mise à jour avec succès', 'success');
             if (editExamPopup) editExamPopup.style.display = 'none';
-            
-            return db.collection('moderation_history').add({
-                examId: examId,
-                action: 'edited',
-                moderatorId: currentUser.uid,
-                moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Utilisateur',
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
         })
         .then(() => {
             if (currentExamId === examId) {
@@ -7498,24 +7346,19 @@
                 approvedAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                return db.collection('moderation_history').add({
-                    examId: examId,
-                    action: 'approved',
-                    moderatorId: currentUser.uid,
-                    moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Administrateur',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
             })
-            .then(() => assignPointsAfterApproval(authorId, points))
+            .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
             .then(() => {
-                db.collection('notifications').add({
-                    userId: authorId, type: 'approval',
-                    message: `Épreuve approuvée ! +${points} points.`,
-                    examId: examId, read: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                if (authorId) {
+                    db.collection('notifications').add({
+                        userId: authorId, type: 'approval',
+                        message: `Épreuve approuvée ! +${points} points.`,
+                        examId: examId, read: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
+                }
             })
-            .then(() => { showToast('Épreuve approuvée', 'success'); loadAdminPanel(); })
+            .then(() => { showToast('Épreuve approuvée', 'success'); adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminPanel(); })
             .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
         } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
     }
@@ -7542,29 +7385,21 @@
                 rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
             })
             .then(() => {
-                return db.collection('moderation_history').add({
-                    examId: examId,
-                    action: 'rejected',
-                    reason: reason.trim(),
-                    moderatorId: currentUser.uid,
-                    moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Administrateur',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                });
             })
             .then(() => {
                 if (authorId) {
-                    return db.collection('notifications').add({
+                    db.collection('notifications').add({
                         userId: authorId,
                         type: 'rejection',
                         message: `Votre épreuve "${exam.nom_epreuve || ''}" a été refusée. Raison : ${reason.trim()}`,
                         examId: examId,
                         read: false,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    }).catch(err => console.warn('[NOTIFICATION] Refus:', err.message));
                 }
             })
             .then(() => {
-                showToast('Épreuve refusée', 'success');
+                showToast('Épreuve refusée', 'success'); adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0;
                 if (rejectionReasonPopup) rejectionReasonPopup.style.display = 'none';
                 rejectionReason.value = '';
                 loadAdminPanel();
@@ -7575,6 +7410,12 @@
             console.error('[FIRESTORE] Erreur refus:', error);
             showToast('Erreur lors du refus', 'error');
         });
+    }
+
+    function awardApprovalPoints(authorId, points) {
+        if (!authorId || !points) return Promise.resolve();
+        return db.collection('users').doc(authorId).update({ points: firebase.firestore.FieldValue.increment(points) })
+            .catch(err => console.warn('[POINTS] Attribution non appliquée:', err.message));
     }
 
     // ============================================================
@@ -7650,24 +7491,16 @@
                 showToast('Brouillon sauvegardé avec succès', 'success');
             } else if (isAdminUser) {
                 showToast('Épreuve publiée', 'success');
-                assignPointsAfterApproval(currentUser.uid, fichier_corrige ? 4 : 2);
+                awardApprovalPoints(currentUser.uid, fichier_corrige ? 4 : 2);
             } else {
                 showToast('Épreuve soumise, en attente d\'approbation', 'success');
-                notifyAdminsAboutPendingExam();
-            }
+                }
             
             if (!isDraft) {
                 updateUserStats('upload');
             }
             
             if (!isDraft) {
-                db.collection('moderation_history').add({
-                    examId: docRef.id,
-                    action: 'submitted',
-                    moderatorId: currentUser.uid,
-                    moderatorName: `${userData.prenom || ''} ${userData.nom || ''}`.trim() || 'Utilisateur',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(err => console.error('Erreur historisation soumission:', err));
             }
             
             loadRecentExams();
@@ -7677,128 +7510,45 @@
         })
         .catch(error => {
             console.error('[FIRESTORE] Erreur soumission:', error);
-            showToast('Erreur lors de la soumission', 'error');
+            const code = error?.code || '';
+            if (code === 'permission-denied') showToast('Soumission refusée par les règles de sécurité Firebase.', 'error');
+            else if (code === 'resource-exhausted') showToast('Quota Firebase atteint. Réessayez plus tard.', 'error');
+            else showToast(`Erreur lors de la soumission${error?.message ? ': ' + error.message : ''}`, 'error');
         });
-    }
-
-    // ============================================================
-    // MODÉRATION RÉCENTE
-    // ============================================================
-    function loadRecentModeration() {
-        const container = document.getElementById('recent-moderation');
-        if (!container) return;
-        
-        container.innerHTML = '<p style="color:var(--text-light);">Chargement...</p>';
-        
-        db.collection('moderation_history')
-            .orderBy('timestamp', 'desc')
-            .limit(20)
-            .get()
-            .then(snapshot => {
-                container.innerHTML = '';
-                if (snapshot.empty) {
-                    container.innerHTML = '<p style="color:var(--text-light);">Aucune activité de modération récente.</p>';
-                    return;
-                }
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const actionLabels = {
-                        'submitted': '<i class="fas fa-upload"></i> Soumis',
-                        'approved': '<i class="fas fa-check-circle"></i> Approuvé',
-                        'rejected': '<i class="fas fa-times-circle"></i> Refusé',
-                        'edited': '<i class="fas fa-edit"></i> Modifié'
-                    };
-                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
-                    const action = actionLabels[data.action] || data.action;
-                    
-                    const div = document.createElement('div');
-                    div.style.cssText = `
-                        padding: 0.4rem 0.6rem;
-                        border-bottom: 1px solid var(--border-color);
-                        font-size: 0.85rem;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        gap: 0.5rem;
-                        flex-wrap: wrap;
-                    `;
-                    
-                    let reasonHtml = '';
-                    if (data.reason) {
-                        reasonHtml = `<span style="color:var(--error);font-size:0.7rem;"> - ${escapeHTML(data.reason)}</span>`;
-                    }
-                    
-                    safeInnerHTML(div, `
-                        <span>
-                            <span style="color:var(--text-light);">${escapeHTML(data.moderatorName || 'Système')}</span>
-                            <span> ${action} </span>
-                            <span style="color:var(--accent-blue);">${data.examId ? data.examId.substring(0,8) : ''}</span>
-                            ${reasonHtml}
-                        </span>
-                        <span style="color:var(--text-light);font-size:0.7rem;">${time}</span>
-                    `);
-                    container.appendChild(div);
-                });
-            })
-            .catch(err => {
-                console.error('Erreur chargement modération récente:', err);
-                container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
-            });
     }
 
     // ============================================================
     // MISE À JOUR DES STATISTIQUES UTILISATEUR
     // ============================================================
     function updateUserStats(action, examId) {
-        if (!currentUser) return;
-        
+        if (!currentUser || !userData) return Promise.resolve();
         const userRef = db.collection('users').doc(currentUser.uid);
-        let updates = {};
-        let xpEarned = 0;
-        
-        switch(action) {
-            case 'view':
-                updates.examsViewed = firebase.firestore.FieldValue.increment(1);
-                xpEarned = 5;
-                break;
-            case 'download':
-                updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
-                xpEarned = 10;
-                break;
-            case 'upload':
-                updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
-                xpEarned = 20;
-                break;
-            case 'correction':
-                updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
-                xpEarned = 15;
-                break;
-            default:
-                return;
+        const xpMap = { view: 5, download: 10, upload: 20, correction: 15 };
+        if (!xpMap[action]) return Promise.resolve();
+        const xpEarned = xpMap[action];
+        const today = new Date().toISOString().slice(0,10);
+        const updates = { totalXp: firebase.firestore.FieldValue.increment(xpEarned) };
+        if (action === 'view') updates.examsViewed = firebase.firestore.FieldValue.increment(1);
+        if (action === 'download') updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
+        if (action === 'upload') updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
+        if (action === 'correction') updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
+        if (userData.lastActiveDate !== today) {
+            updates.lastActiveDate = today;
+            updates.activeDays = firebase.firestore.FieldValue.increment(1);
         }
-        
-        updates.totalXp = firebase.firestore.FieldValue.increment(xpEarned);
-        
-        const today = new Date().toISOString().split('T')[0];
-        userRef.get().then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                if (data.lastActiveDate !== today) {
-                    updates.lastActiveDate = today;
-                    updates.activeDays = firebase.firestore.FieldValue.increment(1);
-                }
-                
-                const history = data.xpHistory || [];
-                const weekStart = new Date();
-                weekStart.setDate(weekStart.getDate() - 7);
-                const recentHistory = history.filter(h => new Date(h.date) > weekStart);
-                recentHistory.push({ date: new Date().toISOString(), xp: xpEarned, action: action });
-                updates.xpHistory = recentHistory.slice(-30);
-                
-                return userRef.update(updates);
-            }
-        }).catch(err => console.error('Erreur mise à jour stats:', err));
+        const history = Array.isArray(userData.xpHistory) ? userData.xpHistory.slice(-29) : [];
+        history.push({ date: new Date().toISOString(), xp: xpEarned, action });
+        updates.xpHistory = history;
+        Object.assign(userData, {
+            totalXp: (userData.totalXp || 0) + xpEarned,
+            examsViewed: (userData.examsViewed || 0) + (action === 'view' ? 1 : 0),
+            examsDownloaded: (userData.examsDownloaded || 0) + (action === 'download' ? 1 : 0),
+            examsUploaded: (userData.examsUploaded || 0) + (action === 'upload' ? 1 : 0),
+            correctionsAdded: (userData.correctionsAdded || 0) + (action === 'correction' ? 1 : 0),
+            xpHistory: history,
+            ...(userData.lastActiveDate !== today ? { lastActiveDate: today, activeDays: (userData.activeDays || 0) + 1 } : {})
+        });
+        return userRef.update(updates).catch(err => console.warn('[STATS] Mise à jour différée:', err.message));
     }
 
     // ============================================================
@@ -7846,53 +7596,50 @@
     // FONCTIONS MÉTIER
     // ============================================================
     function startAnnouncementsListener() {
-        try {
-            if (announcementsListener) announcementsListener();
-            announcementsListener = db.collection('announcements')
-            .orderBy('createdAt', 'desc')
-            .onSnapshot(() => loadAnnouncements(), error => console.error('[FIRESTORE] Erreur écoute annonces:', error));
-        } catch (error) { console.error('[FIRESTORE] Erreur listener annonces:', error); }
+        // Les annonces sont chargées avec un cache TTL : aucun onSnapshot permanent.
+        loadAnnouncements(false);
     }
 
     function startPendingExamsListener() {
-        if (!currentUser || !isAdmin) return;
-        try {
-            if (pendingExamsListener) pendingExamsListener();
-            pendingExamsListener = db.collection('epreuves')
-            .where('status', '==', 'pending')
-            .onSnapshot(snapshot => {
-                if (document.getElementById('admin-view')?.classList.contains('active')) {
-                    loadAdminExams();
-                }
-                updatePendingExamsCount();
-            }, error => console.error('[FIRESTORE] Erreur écoute épreuves en attente:', error));
-        } catch (error) { console.error('[FIRESTORE] Erreur listener épreuves en attente:', error); }
+        // Désactivé volontairement : les listeners Firestore permanents consommaient le quota.
+        pendingExamsListener = null;
+    }
+
+    function updatePendingExamsCount() {
+        if (!adminRawExamsCache.data.length) return;
+        const count = adminRawExamsCache.data.filter(e => e.status === 'pending').length;
+        const badge = document.getElementById('admin-pending-count');
+        if (badge) { badge.textContent = count; badge.style.display = count ? 'inline-flex' : 'none'; }
     }
 
     function checkUserRole() {
-        if (!currentUser) return;
-        try {
-            db.collection('users').doc(currentUser.uid).get()
+        if (!currentUser) return Promise.resolve(null);
+        return db.collection('users').doc(currentUser.uid).get()
             .then(doc => {
-                if (doc.exists) {
-                    userData = doc.data();
-                    isAdmin = userData.role === 'admin';
-                    if (menuAdminItem) menuAdminItem.style.display = isAdmin ? 'flex' : 'none';
-                    if (isAdmin) startPendingExamsListener();
-                    updateExamCardsVisibility();
-                    updateMenuItems();
-                    if (userData.avatarColor) {
-                        avatarColor = userData.avatarColor;
-                        if (profileAvatar) profileAvatar.style.background = avatarColor;
-                        updateAvatarColorPicker(avatarColor);
-                    }
-                    if (isAdmin) {
-                        setTimeout(loadRecentModeration, 1500);
-                    }
+                if (!doc.exists) {
+                    userData = null;
+                    isAdmin = false;
+                    return null;
                 }
+                userData = doc.data();
+                isAdmin = userData.role === 'admin';
+                if (userData.status === 'suspended') {
+                    showToast('Votre compte est suspendu.', 'error');
+                    return auth.signOut().then(() => null);
+                }
+                if (menuAdminItem) menuAdminItem.style.display = isAdmin ? 'flex' : 'none';
+                if (userData.avatarColor) {
+                    avatarColor = userData.avatarColor;
+                    if (profileAvatar) profileAvatar.style.background = avatarColor;
+                    updateAvatarColorPicker(avatarColor);
+                }
+                updateMenuItems();
+                return userData;
             })
-            .catch(error => console.error('[FIRESTORE] Erreur vérification rôle:', error));
-        } catch (error) { console.error('[FIRESTORE] Erreur checkUserRole:', error); }
+            .catch(error => {
+                console.error('[FIRESTORE] Erreur récupération profil utilisateur:', error);
+                throw error;
+            });
     }
 
     function updateExamCardsVisibility() {
@@ -7910,7 +7657,8 @@
                     // On vérifie via la présence du statut dans l'élément
                     const badge = card.querySelector('.exam-badge.pending, .exam-badge.draft');
                     if (badge) {
-                        const isAuthor = card.querySelector('.exam-actions .edit') !== null; // approximation
+                        const authorId = card.dataset.authorId || editBtn.dataset.authorId || '';
+                        const isAuthor = !!currentUser && authorId === currentUser.uid;
                         editBtn.style.display = (isAuthor || isAdmin) ? 'flex' : 'none';
                     } else {
                         editBtn.style.display = 'none';
@@ -7926,47 +7674,43 @@
             loadRecentExams();
             loadPopularExams();
             loadPlatformStats();
-            loadProfileData();
             loadAnnouncements();
-            loadSubjectStats();
             if (isAdmin) updatePendingExamsCount();
         } catch (error) { console.error('[LOAD] Erreur loadUserData:', error); }
     }
 
-    function loadAnnouncements() {
+    async function loadAnnouncements(force = false) {
         const container = document.getElementById('announcements-list');
         if (!container) return;
+        const now = Date.now();
+        if (!force && announcementsCache.data.length && now - announcementsCache.timestamp < HOSBAC_CACHE_TTL) {
+            return renderAnnouncements(announcementsCache.data, container);
+        }
         container.innerHTML = '<p style="color:var(--text-light);">Chargement des annonces...</p>';
         try {
-            db.collection('announcements').orderBy('createdAt', 'desc').get()
-            .then(querySnapshot => {
-                container.innerHTML = '';
-                if (querySnapshot.empty) { container.innerHTML = '<p style="color:var(--text-light);">Aucune annonce pour le moment.</p>'; return; }
-                querySnapshot.forEach(doc => {
-                    const announcement = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'announcement-card';
-                    const hasLiked = userData && userData.likedAnnouncements && userData.likedAnnouncements.includes(doc.id);
-                    safeInnerHTML(card, `
-                    <div class="announcement-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                        <div class="announcement-title" style="font-size:1.1rem;font-weight:700;color:var(--text-color);">${escapeHTML(announcement.title || 'Sans titre')}</div>
-                        <div class="announcement-date" style="color:var(--text-light);font-size:0.8rem;">${new Date(announcement.createdAt?.toDate()).toLocaleDateString('fr-FR')}</div>
-                    </div>
-                    <div class="announcement-content" style="margin-bottom:0.8rem;line-height:1.6;color:var(--text-color);">${escapeHTML(announcement.content || '')}</div>
-                    <div class="announcement-actions" style="display:flex;gap:1rem;align-items:center;">
-                        <button class="like-btn ${hasLiked ? 'liked' : ''}" data-announcement-id="${doc.id}" style="background:transparent;border:none;cursor:pointer;font-size:1rem;color:var(--text-light);transition:var(--transition);display:flex;align-items:center;gap:0.4rem;">
-                            <i class="fas fa-heart"></i>
-                            <span class="like-count" style="font-size:0.85rem;color:var(--text-light);">${announcement.likes || 0}</span>
-                        </button>
-                    </div>
-                    `);
-                    const likeBtn = card.querySelector('.like-btn');
-                    likeBtn?.addEventListener('click', () => toggleAnnouncementLike(doc.id, likeBtn));
-                    container.appendChild(card);
-                });
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur chargement annonces:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement des annonces.</p>'; });
-        } catch (error) { console.error('[FIRESTORE] Erreur loadAnnouncements:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement des annonces.</p>'; }
+            const snap = await db.collection('announcements').orderBy('createdAt','desc').limit(20).get();
+            const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            announcementsCache = { data, timestamp: now };
+            renderAnnouncements(data, container);
+        } catch (error) {
+            console.error('[FIRESTORE] Erreur annonces:', error);
+            container.innerHTML = '<p style="color:var(--text-light);">Impossible de charger les annonces.</p>';
+        }
+    }
+
+    function renderAnnouncements(data, container) {
+        container.innerHTML = '';
+        if (!data.length) { container.innerHTML = '<p style="color:var(--text-light);">Aucune annonce pour le moment.</p>'; return; }
+        data.forEach(announcement => {
+            const card = document.createElement('div');
+            card.className = 'announcement-card';
+            const hasLiked = userData?.likedAnnouncements?.includes(announcement.id);
+            const date = announcement.createdAt?.toDate ? announcement.createdAt.toDate().toLocaleDateString('fr-FR') : '-';
+            safeInnerHTML(card, `<div class="announcement-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;"><div class="announcement-title" style="font-size:1.1rem;font-weight:700;color:var(--text-color);">${escapeHTML(announcement.title||'Sans titre')}</div><div class="announcement-date" style="color:var(--text-light);font-size:0.8rem;">${date}</div></div><div class="announcement-content" style="margin-bottom:0.8rem;line-height:1.6;color:var(--text-color);">${escapeHTML(announcement.content||'')}</div><div class="announcement-actions" style="display:flex;gap:1rem;align-items:center;"><button class="like-btn ${hasLiked?'liked':''}" data-announcement-id="${escapeHTML(announcement.id)}" style="background:transparent;border:none;cursor:pointer;font-size:1rem;color:var(--text-light);display:flex;align-items:center;gap:0.4rem;"><i class="fas fa-heart"></i><span class="like-count" style="font-size:0.85rem;color:var(--text-light);">${Number(announcement.likes||0)}</span></button></div>`);
+            const likeBtn=card.querySelector('.like-btn');
+            likeBtn?.addEventListener('click',()=>toggleAnnouncementLike(announcement.id,likeBtn));
+            container.appendChild(card);
+        });
     }
 
     function toggleAnnouncementLike(announcementId, button) {
@@ -8014,32 +7758,26 @@
         } catch (error) { console.error('[FIRESTORE] Erreur submitAnnouncement:', error); showToast('Erreur lors de la publication', 'error'); }
     }
 
-    function loadRecentExams() {
-        const container = document.getElementById('recent-exams');
-        if (!container) return;
-        container.innerHTML = '<p style="color:var(--text-light);">Chargement des épreuves récentes...</p>';
-        try {
-            db.collection('epreuves').where('status', '==', 'approved')
-            .orderBy('createdAt', 'desc').limit(6).get()
-            .then(querySnapshot => {
-                container.innerHTML = '';
-                if (querySnapshot.empty) { container.innerHTML = '<p style="color:var(--text-light);">Aucune épreuve récente.</p>'; return; }
-                querySnapshot.forEach(doc => {
-                    const exam = doc.data();
-                    const card = createExamCard(exam, doc.id);
-                    const badge = card.querySelector('.exam-badges');
-                    if (badge) {
-                        const newBadge = document.createElement('span');
-                        newBadge.className = 'exam-badge new';
-                        newBadge.innerHTML = '<i class="fas fa-plus-circle"></i> Nouveau';
-                        badge.appendChild(newBadge);
-                    }
-                    container.appendChild(card);
-                });
-                updateExamCardsVisibility();
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur chargement épreuves récentes:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement des épreuves.</p>'; });
-        } catch (error) { console.error('[FIRESTORE] Erreur loadRecentExams:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement des épreuves.</p>'; }
+    async function loadRecentExams(force=false) {
+        const container=document.getElementById('recent-exams'); if(!container) return;
+        const key='hosbac_recent_exams'; const now=Date.now();
+        window._hosbacRecentCache=window._hosbacRecentCache||{data:[],timestamp:0};
+        if(!force && window._hosbacRecentCache.data.length && now-window._hosbacRecentCache.timestamp<HOSBAC_CACHE_TTL) return renderRecentExams(window._hosbacRecentCache.data,container);
+        container.innerHTML='<p style="color:var(--text-light);">Chargement des épreuves récentes...</p>';
+        try{
+            const snap=await db.collection('epreuves').where('status','==','approved').orderBy('createdAt','desc').limit(6).get();
+            const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+            data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
+            window._hosbacRecentCache={data,timestamp:now};
+            renderRecentExams(data,container);
+        }catch(error){console.error('[FIRESTORE] Erreur épreuves récentes:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves.</p>'; }
+    }
+
+    function renderRecentExams(data,container){
+        container.innerHTML='';
+        if(!data.length){container.innerHTML='<p style="color:var(--text-light);">Aucune épreuve récente.</p>';return;}
+        data.forEach(exam=>{const card=createExamCard(exam,exam.id);const badge=card.querySelector('.exam-badges');if(badge){const b=document.createElement('span');b.className='exam-badge new';b.innerHTML='<i class="fas fa-plus-circle"></i> Nouveau';badge.appendChild(b);}container.appendChild(card);});
+        updateExamCardsVisibility();
     }
 
     // ============================================================
@@ -8215,6 +7953,7 @@
     function createExamCard(exam, examId) {
         const card = document.createElement('div');
         card.className = 'exam-card';
+        card.dataset.authorId = exam.auteurId || '';
         const isFavorite = userData && userData.favorites && userData.favorites.includes(examId);
         const hasCorrige = exam.fichier_corrige && exam.fichier_corrige.trim().length > 0;
         const downloadCount = exam.downloadCount || 0;
@@ -8353,21 +8092,6 @@
                     safeInnerHTML(detailFavoriteBtn, '<i class="fas fa-heart"></i> Retirer des favoris');
                     detailFavoriteBtn.classList.add('active');
                 }
-                if (auteurId && auteurId !== currentUser.uid) {
-                    db.collection('epreuves').doc(epreuveId).get()
-                    .then(doc => {
-                        if (doc.exists) {
-                            const exam = doc.data();
-                            db.collection('notifications').add({
-                                userId: auteurId, type: 'favorite',
-                                message: `${userData.prenom || ''} ${userData.nom || ''} a ajouté "${exam.nom_epreuve || ''}" à ses favoris`,
-                                examId: epreuveId, read: false,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        }
-                    })
-                    .catch(error => console.error('[FIRESTORE] Erreur notification favori:', error));
-                }
             }
             db.collection('users').doc(currentUser.uid).update({ favorites: newFavs })
             .then(() => {
@@ -8381,103 +8105,62 @@
     // ============================================================
     // TÉLÉCHARGER ÉPREUVE
     // ============================================================
-    function downloadExam(examId, type) {
+    async function downloadExam(examId, type) {
         try {
-            db.collection('epreuves').doc(examId).get()
-            .then(doc => {
-                if (doc.exists) {
-                    const exam = doc.data();
-                    if (exam.status !== 'approved') {
-                        showToast('Cette épreuve n\'est pas encore approuvée', 'warning');
-                        return;
-                    }
-                    if (type === 'sujet') {
-                        const fileUrl = exam.fichier_sujet;
-                        if (fileUrl && fileUrl.includes('cloudinary.com')) {
-                            const link = document.createElement('a');
-                            link.href = fileUrl;
-                            link.download = `${exam.nom_epreuve || 'epreuve'}_sujet.pdf`;
-                            link.target = '_blank';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) });
-                            showToast('Téléchargement lancé', 'success');
-                            updateUserStats('download', examId);
-                        } else { showToast('Fichier non disponible', 'error'); }
-                    } else if (type === 'corrige') {
-                        handleCorrigeAccess(examId, exam, 'download');
-                    } else if (type === 'ia') {
-                        if (!currentUser) {
-                            showToast('Connectez-vous pour utiliser l\'IA', 'warning');
-                            return;
-                        }
-                        navigateTo('assistant');
-                        setTimeout(() => {
-                            if (chatInput) {
-                                const title = exam.nom_epreuve || 'cette épreuve';
-                                chatInput.value = `Peux-tu m'aider à résoudre "${title}" ?`;
-                                chatInput.focus();
-                            }
-                        }, 500);
-                    }
-                }
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur téléchargement:', error); showToast('Erreur lors du téléchargement', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur downloadExam:', error); showToast('Erreur lors du téléchargement', 'error'); }
+            const cached=examDocCache.get(examId);
+            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await db.collection('epreuves').doc(examId).get();
+            if(!doc.exists){showToast('Épreuve introuvable','error');return;}
+            const exam=doc.data(); examDocCache.set(examId,{data:exam,timestamp:Date.now()});
+            if(exam.status!=='approved'){showToast("Cette épreuve n'est pas encore approuvée",'warning');return;}
+            if(type==='sujet'){
+                const fileUrl=exam.fichier_sujet;
+                if(!fileUrl || !fileUrl.includes('cloudinary.com')){showToast('Fichier non disponible','error');return;}
+                const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve||'epreuve'}_sujet.pdf`; link.target='_blank'; document.body.appendChild(link); link.click(); link.remove();
+                db.collection('epreuves').doc(examId).update({downloadCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+                exam.downloadCount=Number(exam.downloadCount||0)+1; examDocCache.set(examId,{data:exam,timestamp:Date.now()});
+                showToast('Téléchargement lancé','success'); updateUserStats('download',examId);
+            } else if(type==='corrige') handleCorrigeAccess(examId,exam,'download');
+            else if(type==='ia'){
+                if(!currentUser){showToast("Connectez-vous pour utiliser l’IA",'warning');return;}
+                navigateTo('assistant');
+                setTimeout(()=>{if(chatInput){chatInput.value=`Peux-tu m'aider à résoudre "${exam.nom_epreuve||'cette épreuve'}" ?`;chatInput.focus();}},500);
+            }
+        }catch(error){console.error('[FIRESTORE] Erreur téléchargement:',error);showToast('Erreur lors du téléchargement','error');}
     }
 
     function handleCorrigeAccess(examId, exam, action) {
         if (!checkAuthRequired('accéder au corrigé')) return;
-        if (exam.status !== 'approved') {
-            showToast('Cette épreuve n\'est pas encore approuvée', 'warning');
-            return;
-        }
-        try {
-            db.collection('users').doc(currentUser.uid).get()
-            .then(userDoc => {
-                const user = userDoc.data();
-                if (user.points < 2) {
-                    showToast('Points insuffisants. 2 points requis.', 'error');
-                    return;
-                }
-                return db.collection('users').doc(currentUser.uid).update({
-                    points: firebase.firestore.FieldValue.increment(-2),
-                    examsDownloaded: firebase.firestore.FieldValue.increment(1)
-                }).then(() => {
-                    if (exam.auteurId && exam.auteurId !== currentUser.uid) {
-                        return db.collection('users').doc(exam.auteurId).update({
-                            points: firebase.firestore.FieldValue.increment(2)
-                        }).then(() => {
-                            db.collection('notifications').add({
-                                userId: exam.auteurId, type: 'points_received',
-                                message: `+2 points de ${user.prenom || ''} ${user.nom || ''} pour le corrigé`,
-                                examId: examId, read: false,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                        });
-                    }
-                }).then(() => {
-                    db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) });
-                    const fileUrl = exam.fichier_corrige;
-                    if (fileUrl && fileUrl.includes('cloudinary.com')) {
-                        if (action === 'view') { window.open(fileUrl, '_blank'); }
-                        else {
-                            const link = document.createElement('a');
-                            link.href = fileUrl;
-                            link.download = `${exam.nom_epreuve || 'epreuve'}_corrige.pdf`;
-                            link.target = '_blank';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }
-                        showToast('Corrigé accessible (2 points déduits)', 'success');
-                        updateUserStats('correction', examId);
-                    } else { showToast('Fichier corrigé non disponible', 'error'); }
-                });
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur accès corrigé:', error); showToast('Erreur lors de l\'accès au corrigé', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur handleCorrigeAccess:', error); showToast('Erreur lors de l\'accès au corrigé', 'error'); }
+        if (exam.status !== 'approved') { showToast("Cette épreuve n'est pas encore approuvée", 'warning'); return; }
+        if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
+        const fileUrl = exam.fichier_corrige;
+        if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
+        db.collection('users').doc(currentUser.uid).update({
+            points: firebase.firestore.FieldValue.increment(-2),
+            examsDownloaded: firebase.firestore.FieldValue.increment(1)
+        }).then(() => {
+            userData.points = Math.max(0, (userData.points || 0) - 2);
+            userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
+            if (exam.auteurId && exam.auteurId !== currentUser.uid) {
+                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
+                    .then(() => db.collection('notifications').add({
+                        userId: exam.auteurId, type:'points_received',
+                        message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
+                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    }));
+            }
+        }).then(() => {
+            db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
+            if (action === 'view') window.open(fileUrl, '_blank');
+            else {
+                const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve || 'epreuve'}_corrige.pdf`; link.target='_blank';
+                document.body.appendChild(link); link.click(); link.remove();
+            }
+            showToast('Corrigé accessible (2 points déduits)', 'success');
+            updateUserStats('correction', examId);
+        }).catch(error => {
+            console.error('[FIRESTORE] Erreur accès corrigé:', error);
+            showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : "Erreur lors de l’accès au corrigé", 'error');
+        });
     }
 
     // ============================================================
@@ -8490,6 +8173,12 @@
                 db.collection('epreuves').doc(examId).delete()
                 .then(() => {
                     showToast('Épreuve supprimée', 'success');
+                    approvedExamsCache = { data: [], timestamp: 0 };
+                    platformStatsCache = { data: null, timestamp: 0 };
+                    adminDashboardCache = { data: null, timestamp: 0 };
+                    adminRawExamsCache = { data: [], timestamp: 0 };
+                    window._hosbacRecentCache = { data: [], timestamp: 0 };
+                    window._hosbacPopularCache = { data: [], timestamp: 0 };
                     if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
                     if (document.getElementById('home-view')?.classList.contains('active')) {
                         loadRecentExams();
@@ -8550,8 +8239,8 @@
         } catch (error) { console.error('[FIRESTORE] Erreur loadUserProfile:', error); showToast('Erreur lors du chargement du profil', 'error'); }
     }
 
-    function loadProfileData() {
-        if (!currentUser) return;
+    async function loadProfileData() {
+        if (!currentUser || !userData) return;
         const viewingUserId = sessionStorage.getItem('viewingUserId');
         if (viewingUserId && viewingUserId !== currentUser.uid) {
             loadUserProfile(viewingUserId);
@@ -8559,93 +8248,37 @@
             return;
         }
         try {
-            db.collection('users').doc(currentUser.uid).get()
-            .then(doc => {
-                if (doc.exists) {
-                    userData = doc.data();
-                    
-                    if (profileAvatar) {
-                        profileAvatar.textContent = userData.prenom ? userData.prenom.charAt(0).toUpperCase() : 'U';
-                        profileAvatar.style.background = userData.avatarColor || '#1a2a4a';
-                    }
-                    
-                    if (profileName) profileName.textContent = `${userData.prenom || ''} ${userData.nom || ''}`;
-                    if (profileEmail) profileEmail.textContent = userData.email || '';
-                    if (profileClass) profileClass.textContent = `Classe: ${userData.classe || 'Non définie'}`;
-                    
-                    const totalXp = userData.totalXp || 0;
-                    const levelInfo = getLevelAndXP(totalXp);
-                    
-                    if (profileLevelBadge) profileLevelBadge.textContent = levelInfo.level;
-                    if (profileLevelText) profileLevelText.textContent = `Niveau ${levelInfo.level}`;
-                    if (profileXpBar) profileXpBar.style.width = `${levelInfo.progress}%`;
-                    if (profileXpText) profileXpText.textContent = `${levelInfo.xpInLevel} / ${levelInfo.xpForNextLevel} XP`;
-                    if (profileTotalXp) profileTotalXp.textContent = totalXp;
-                    
-                    const points = document.getElementById('points-balance');
-                    const uploaded = document.getElementById('exams-uploaded');
-                    const downloaded = document.getElementById('exams-downloaded');
-                    if (points) points.textContent = userData.points || 0;
-                    if (uploaded) uploaded.textContent = userData.examsUploaded || 0;
-                    if (downloaded) downloaded.textContent = userData.examsDownloaded || 0;
-                    
-                    renderBadges({
-                        examsUploaded: userData.examsUploaded || 0,
-                        examsViewed: userData.examsViewed || 0,
-                        examsDownloaded: userData.examsDownloaded || 0,
-                        correctionsAdded: userData.correctionsAdded || 0,
-                        activeDays: userData.activeDays || 0,
-                        totalXp: userData.totalXp || 0,
-                        aiConversations: userData.aiConversations || 0,
-                        quizTotal: userData.quizTotal || 0,
-                        quizPerfect: userData.quizPerfect || 0,
-                        revisionPlanCreated: userData.revisionPlanCreated || 0
-                    });
-                    
-                    if (xpChart && userData.xpHistory) {
-                        const history = userData.xpHistory || [];
-                        const last4Weeks = history.slice(-4);
-                        const xpData = last4Weeks.map(h => h.xp || 0);
-                        while (xpData.length < 4) xpData.unshift(0);
-                        xpChart.data.datasets[0].data = xpData;
-                        xpChart.update();
-                    }
-                    
-                    const editNom = document.getElementById('edit-nom');
-                    const editPrenom = document.getElementById('edit-prenom');
-                    const editClasse = document.getElementById('edit-classe');
-                    if (editNom) editNom.value = userData.nom || '';
-                    if (editPrenom) editPrenom.value = userData.prenom || '';
-                    if (editClasse) editClasse.value = userData.classe || '';
-                    
-                    if (welcomeMessage) {
-                        welcomeMessage.textContent = `Bienvenue sur HosBac, ${userData.prenom || 'Utilisateur'} ! <i class="fas fa-wave"></i>`;
-                        welcomeSubtitle.textContent = 'Prêt à trouver la bonne épreuve ?';
-                    }
-                    
-                    const homePoints = document.getElementById('home-points-balance');
-                    const homeUploaded = document.getElementById('home-exams-uploaded');
-                    const homeDownloaded = document.getElementById('home-exams-downloaded');
-                    if (homePoints) homePoints.textContent = userData.points || 0;
-                    if (homeUploaded) homeUploaded.textContent = userData.examsUploaded || 0;
-                    if (homeDownloaded) homeDownloaded.textContent = userData.examsDownloaded || 0;
-                    
-                    const profileFormEl = document.getElementById('profile-form');
-                    const favList = document.getElementById('favorites-list');
-                    const cardTitle = document.querySelector('#profile-view .card:nth-of-type(2) .card-title');
-                    const logoutBtnEl = document.getElementById('logout-btn');
-                    if (profileFormEl) profileFormEl.style.display = 'block';
-                    if (favList) favList.style.display = 'grid';
-                    if (cardTitle) cardTitle.style.display = 'block';
-                    if (logoutBtnEl) logoutBtnEl.style.display = 'block';
-                    
-                    loadFavorites();
-                    loadLeaderboard();
-                    loadSubjectStats();
-                }
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); });
-        } catch (error) { console.error('[FIRESTORE] Erreur loadProfileData:', error); }
+            if (profileAvatar) {
+                profileAvatar.textContent = userData.prenom ? userData.prenom.charAt(0).toUpperCase() : 'U';
+                profileAvatar.style.background = userData.avatarColor || '#1a2a4a';
+            }
+            if (profileName) profileName.textContent = `${userData.prenom || ''} ${userData.nom || ''}`.trim();
+            if (profileEmail) profileEmail.textContent = userData.email || currentUser.email || '';
+            if (profileClass) profileClass.textContent = `Classe: ${userData.classe || 'Non définie'}`;
+            const totalXp=userData.totalXp||0; const levelInfo=getLevelAndXP(totalXp);
+            if(profileLevelBadge) profileLevelBadge.textContent=levelInfo.level;
+            if(profileLevelText) profileLevelText.textContent=`Niveau ${levelInfo.level}`;
+            if(profileXpBar) profileXpBar.style.width=`${levelInfo.progress}%`;
+            if(profileXpText) profileXpText.textContent=`${levelInfo.xpInLevel} / ${levelInfo.xpForNextLevel} XP`;
+            if(profileTotalXp) profileTotalXp.textContent=totalXp;
+            const points=document.getElementById('points-balance'), uploaded=document.getElementById('exams-uploaded'), downloaded=document.getElementById('exams-downloaded');
+            if(points) points.textContent=userData.points||0;
+            if(uploaded) uploaded.textContent=userData.examsUploaded||0;
+            if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
+            renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
+            if(xpChart && userData.xpHistory){ const history=userData.xpHistory.slice(-4); const xpData=history.map(h=>h.xp||0); while(xpData.length<4) xpData.unshift(0); xpChart.data.datasets[0].data=xpData; xpChart.update(); }
+            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe');
+            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse) editClasse.value=userData.classe||'';
+            if(welcomeMessage) welcomeMessage.textContent=`Bienvenue sur HosBac, ${userData.prenom||'Utilisateur'} !`;
+            if(welcomeSubtitle) welcomeSubtitle.textContent='Prêt à trouver la bonne épreuve ?';
+            const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
+            if(homePoints) homePoints.textContent=userData.points||0; if(homeUploaded) homeUploaded.textContent=userData.examsUploaded||0; if(homeDownloaded) homeDownloaded.textContent=userData.examsDownloaded||0;
+            const profileFormEl=document.getElementById('profile-form'), favList=document.getElementById('favorites-list'), cardTitle=document.querySelector('#profile-view .card:nth-of-type(2) .card-title'), logoutBtnEl=document.getElementById('logout-btn');
+            if(profileFormEl) profileFormEl.style.display='block'; if(favList) favList.style.display='grid'; if(cardTitle) cardTitle.style.display='block'; if(logoutBtnEl) logoutBtnEl.style.display='block';
+            await loadFavorites();
+            await loadLeaderboard();
+            await loadSubjectStats();
+        } catch(error) { console.error('[PROFILE] Erreur affichage profil:',error); }
     }
 
     function updateProfile() {
@@ -8655,40 +8288,35 @@
         const classe = document.getElementById('edit-classe')?.value || '';
         try {
             db.collection('users').doc(currentUser.uid).update({ nom, prenom, classe })
-            .then(() => { showToast('Profil mis à jour', 'success'); loadProfileData(); })
+            .then(() => {
+                userData = { ...(userData || {}), nom, prenom, classe };
+                if (profileName) profileName.textContent = `${prenom} ${nom}`.trim();
+                if (profileClass) profileClass.textContent = `Classe: ${classe || 'Non définie'}`;
+                if (profileAvatar) profileAvatar.textContent = prenom ? prenom.charAt(0).toUpperCase() : 'U';
+                showToast('Profil mis à jour', 'success');
+            })
             .catch(error => { console.error('[FIRESTORE] Erreur mise à jour profil:', error); showToast('Erreur lors de la mise à jour', 'error'); });
         } catch (error) { console.error('[FIRESTORE] Erreur updateProfile:', error); showToast('Erreur lors de la mise à jour', 'error'); }
     }
 
-    function loadFavorites() {
-        if (!currentUser) return;
-        const container = document.getElementById('favorites-list');
-        if (!container) return;
-        container.innerHTML = '<p style="color:var(--text-light);">Chargement des favoris...</p>';
-        if (!userData || !userData.favorites || userData.favorites.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);">Aucun favori.</p>';
-            return;
-        }
-        try {
-            const promises = userData.favorites.map(id => db.collection('epreuves').doc(id).get());
-            Promise.all(promises)
-            .then(docs => {
-                container.innerHTML = '';
-                let hasFavs = false;
-                docs.forEach(doc => {
-                    if (doc.exists) {
-                        const exam = doc.data();
-                        const card = createExamCard(exam, doc.id);
-                        card.addEventListener('click', () => showExamDetail(doc.id));
-                        container.appendChild(card);
-                        hasFavs = true;
-                    }
-                });
-                if (!hasFavs) container.innerHTML = '<p style="color:var(--text-light);">Aucun favori.</p>';
-                updateExamCardsVisibility();
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur chargement favoris:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>'; });
-        } catch (error) { console.error('[FIRESTORE] Erreur loadFavorites:', error); container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>'; }
+    async function loadFavorites() {
+        if(!currentUser) return;
+        const container=document.getElementById('favorites-list'); if(!container) return;
+        if(!userData?.favorites?.length){ container.innerHTML='<p style="color:var(--text-light);">Aucun favori.</p>'; return; }
+        container.innerHTML='<p style="color:var(--text-light);">Chargement des favoris...</p>';
+        try{
+            const docs=await Promise.all(userData.favorites.slice(0,20).map(async id=>{
+                const cached=examDocCache.get(id);
+                if(cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL) return {id,exists:true,data:()=>cached.data};
+                const doc=await db.collection('epreuves').doc(id).get();
+                if(doc.exists) examDocCache.set(id,{data:doc.data(),timestamp:Date.now()});
+                return doc;
+            }));
+            container.innerHTML=''; let has=false;
+            docs.forEach(doc=>{ if(doc.exists){ const exam=doc.data(); const card=createExamCard(exam,doc.id); card.addEventListener('click',()=>showExamDetail(doc.id)); container.appendChild(card); has=true; }});
+            if(!has) container.innerHTML='<p style="color:var(--text-light);">Aucun favori disponible.</p>';
+            updateExamCardsVisibility();
+        }catch(error){ console.error('[FIRESTORE] Erreur favoris:',error); container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des favoris.</p>'; }
     }
 
     function performDynamicSearch(query) {
@@ -8701,9 +8329,7 @@
         const examsPromise = db.collection('epreuves').where('status', '==', 'approved')
         .where('nom_epreuve', '>=', query).where('nom_epreuve', '<=', query + '\uf8ff').limit(8).get()
         .catch(() => { return { empty: true }; });
-        const usersPromise = db.collection('users')
-        .where('nom', '>=', query).where('nom', '<=', query + '\uf8ff').limit(5).get()
-        .catch(() => { return { empty: true }; });
+        const usersPromise = Promise.resolve({ empty: true, forEach: () => {} });
         Promise.all([examsPromise, usersPromise])
         .then(([examsSnapshot, usersSnapshot]) => {
             if (searchSuggestions) {
@@ -8806,6 +8432,66 @@
     }
 
     // ============================================================
+    // CORRIGÉ SEUL / CHAMPS SÉRIE
+    // ============================================================
+    function toggleSerieField() {
+        const classe = document.getElementById('exam-classe')?.value || '';
+        const container = document.getElementById('exam-serie-container');
+        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
+    }
+
+    function toggleEditSerieField() {
+        const classe = document.getElementById('edit-exam-classe')?.value || '';
+        const container = document.getElementById('edit-exam-serie-container');
+        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
+    }
+
+    async function loadExistingExamsForCorrige() {
+        const select = document.getElementById('corrige-only-exam');
+        if (!select || !currentUser) return;
+        select.innerHTML = '<option value="">Chargement...</option>';
+        try {
+            let query = db.collection('epreuves').where('status','==','approved').orderBy('createdAt','desc').limit(100);
+            if (!isAdmin) query = db.collection('epreuves').where('status','==','approved').where('auteurId','==',currentUser.uid).limit(100);
+            const snap = await query.get();
+            select.innerHTML = '<option value="">Sélectionner une épreuve</option>';
+            snap.forEach(doc => {
+                const e=doc.data();
+                if (e.fichier_corrige) return;
+                const option=document.createElement('option'); option.value=doc.id; option.textContent=`${e.nom_epreuve||'Sans titre'} — ${e.matiere||''} ${e.classe||''}`.trim();
+                select.appendChild(option);
+                examDocCache.set(doc.id,{data:e,timestamp:Date.now()});
+            });
+        } catch(err) {
+            console.error('[CORRIGE] Erreur chargement épreuves:',err);
+            select.innerHTML='<option value="">Impossible de charger les épreuves</option>';
+            showToast('Impossible de charger la liste des épreuves.', 'error');
+        }
+    }
+
+    async function submitCorrigeOnly() {
+        if (!currentUser || !userData) return;
+        const examId=document.getElementById('corrige-only-exam')?.value || '';
+        const url=document.getElementById('corrige-only-url')?.value || '';
+        if(!examId || !url){ showToast('Sélectionnez une épreuve et téléversez le corrigé.', 'warning'); return; }
+        try {
+            const cached=examDocCache.get(examId);
+            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await db.collection('epreuves').doc(examId).get();
+            if(!doc.exists){showToast('Épreuve introuvable.', 'error');return;}
+            const exam=doc.data();
+            if(!isAdmin && exam.auteurId!==currentUser.uid){showToast('Vous ne pouvez ajouter un corrigé qu’à vos propres épreuves.', 'error');return;}
+            await db.collection('epreuves').doc(examId).update({fichier_corrige:url,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+            if(addCorrigeOnlyForm) addCorrigeOnlyForm.reset();
+            if(addCorrigeOnlyPopup) addCorrigeOnlyPopup.style.display='none';
+            approvedExamsCache={data:[],timestamp:0}; platformStatsCache={data:null,timestamp:0};
+            showToast('Corrigé ajouté avec succès.', 'success');
+        } catch(err) {
+            console.error('[CORRIGE] Erreur soumission:',err);
+            showToast(err?.code==='permission-denied' ? 'Action refusée par les règles Firebase.' : 'Erreur lors de l’ajout du corrigé.', 'error');
+        }
+    }
+
+    // ============================================================
     // ADMIN FUNCTIONS
     // ============================================================
     function loadAdminPanel() {
@@ -8819,27 +8505,26 @@
                 case 'exams': loadAdminExams(); break;
                 case 'users': loadAdminUsers(); break;
                 case 'reports': loadAdminReports(); break;
-                case 'logs': loadAdminLogs(); break;
             }
         }
         if (adminExamSearch && !adminExamSearch._listenerAttached) {
-            adminExamSearch.addEventListener('input', debounce(loadAdminExams, 300));
+            adminExamSearch.addEventListener('input', debounce(filterAndRenderAdminExams, 200));
             adminExamSearch._listenerAttached = true;
         }
         if (adminExamStatus && !adminExamStatus._listenerAttached) {
-            adminExamStatus.addEventListener('change', loadAdminExams);
+            adminExamStatus.addEventListener('change', filterAndRenderAdminExams);
             adminExamStatus._listenerAttached = true;
         }
         if (adminExamSubject && !adminExamSubject._listenerAttached) {
-            adminExamSubject.addEventListener('change', loadAdminExams);
+            adminExamSubject.addEventListener('change', filterAndRenderAdminExams);
             adminExamSubject._listenerAttached = true;
         }
         if (adminUserSearch && !adminUserSearch._listenerAttached) {
-            adminUserSearch.addEventListener('input', debounce(loadAdminUsers, 300));
+            adminUserSearch.addEventListener('input', debounce(filterAndRenderAdminUsers, 200));
             adminUserSearch._listenerAttached = true;
         }
         if (adminUserRole && !adminUserRole._listenerAttached) {
-            adminUserRole.addEventListener('change', loadAdminUsers);
+            adminUserRole.addEventListener('change', filterAndRenderAdminUsers);
             adminUserRole._listenerAttached = true;
         }
         if (adminReportStatus && !adminReportStatus._listenerAttached) {
@@ -8860,55 +8545,55 @@
 
     let adminStatsCache = null;
 
-    function loadAdminDashboard() {
-        const setDefaultStats = () => {
-            document.getElementById('admin-stat-users').textContent = '0';
-            document.getElementById('admin-stat-exams').textContent = '0';
-            document.getElementById('admin-stat-pending').textContent = '0';
-            document.getElementById('admin-stat-reports').textContent = '0';
-            document.getElementById('admin-stat-downloads').textContent = '0';
-            document.getElementById('admin-stat-views').textContent = '0';
-        };
-
-        if (adminStatsCache) {
-            updateAdminStatsUI(adminStatsCache);
+    async function loadAdminDashboard(force = false) {
+        if (!isAdmin) return;
+        const now = Date.now();
+        if (!force && adminDashboardCache.data && now - adminDashboardCache.timestamp < HOSBAC_CACHE_TTL) {
+            updateAdminStatsUI(adminDashboardCache.data.stats);
+            renderAdminCharts(adminDashboardCache.data.exams, adminDashboardCache.data.users);
             return;
         }
-        
-        Promise.all([
-            db.collection('users').get().catch(() => ({ size: 0 })),
-            db.collection('epreuves').get().catch(() => ({ size: 0 })),
-            db.collection('epreuves').where('status', '==', 'pending').get().catch(() => ({ size: 0 })),
-            db.collection('reports').where('status', '==', 'pending').get().catch(() => ({ size: 0 }))
-        ])
-        .then(([users, exams, pending, reports]) => {
-            let totalDownloads = 0;
-            let totalViews = 0;
-            if (exams.forEach) {
-                exams.forEach(doc => {
-                    const data = doc.data();
-                    totalDownloads += data.downloadCount || 0;
-                    totalViews += data.viewCount || 0;
-                });
-            }
+        try {
+            const [usersSnap, examsSnap, reportsSnap] = await Promise.all([
+                db.collection('users').get(),
+                db.collection('epreuves').get(),
+                db.collection('reports').where('status', '==', 'pending').get()
+            ]);
+            const users = usersSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+            const exams = examsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
             const stats = {
-                users: users.size || 0,
-                exams: exams.size || 0,
-                pending: pending.size || 0,
-                reports: reports.size || 0,
-                downloads: totalDownloads,
-                views: totalViews
+                users: users.length,
+                exams: exams.length,
+                pending: exams.filter(e => e.status === 'pending').length,
+                reports: reportsSnap.size,
+                downloads: exams.reduce((n,e) => n + Number(e.downloadCount || 0), 0),
+                views: exams.reduce((n,e) => n + Number(e.viewCount || 0), 0)
             };
+            adminDashboardCache = { data:{ stats, exams, users }, timestamp:now };
             adminStatsCache = stats;
+            adminRawExamsCache = { data:exams, timestamp:now };
+            adminRawUsersCache = { data:users, timestamp:now };
+            adminExamsCache = exams.slice();
+            adminUsersCache = users.slice();
+            exams.forEach(e => examDocCache.set(e.id,{data:e,timestamp:now}));
             updateAdminStatsUI(stats);
-        })
-        .catch(() => {
-            setDefaultStats();
-            showToast('Impossible de charger les statistiques du dashboard', 'warning');
-        });
-
-        loadAdminCharts();
-        loadRecentModeration();
+            updatePendingExamsCount();
+            renderAdminCharts(exams, users);
+            // Agrégat public : les visiteurs ne relisent plus toute la collection epreuves/users.
+            const subjectDistribution = {};
+            exams.filter(e=>e.status==='approved').forEach(e=>{ if(e.matiere) subjectDistribution[e.matiere]=(subjectDistribution[e.matiere]||0)+1; });
+            db.doc('settings/public').set({
+                examCount: exams.filter(e=>e.status==='approved').length,
+                corrigeCount: exams.filter(e=>e.status==='approved' && e.fichier_corrige).length,
+                subjectCount: Object.keys(subjectDistribution).length,
+                subjectDistribution,
+                userCount: users.length,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge:true }).catch(err=>console.warn('[STATS] Agrégat public non mis à jour:',err.message));
+        } catch (err) {
+            console.error('Erreur chargement dashboard:', err);
+            showToast('Impossible de charger les données du tableau de bord.', 'warning');
+        }
     }
 
     function updateAdminStatsUI(stats) {
@@ -8920,91 +8605,73 @@
         document.getElementById('admin-stat-views').textContent = stats.views;
     }
 
-    function loadAdminCharts() {
-        // Éviter les lectures globales multiples : utiliser les données déjà récupérées si possible
-        // Sinon, afficher un message "Pas assez de données"
-        const ctxExams = adminExamsChartCanvas?.getContext('2d');
-        const ctxSubjects = adminSubjectsChartCanvas?.getContext('2d');
-        const ctxDownloads = adminDownloadsChartCanvas?.getContext('2d');
-        const ctxUsers = adminUsersChartCanvas?.getContext('2d');
-        
-        if (ctxExams) {
-            if (adminExamsChart) adminExamsChart.destroy();
-            adminExamsChart = new Chart(ctxExams, {
-                type: 'bar',
-                data: {
-                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
-                    datasets: [{
-                        label: 'Épreuves ajoutées',
-                        data: [0,0,0,0,0,0,0],
-                        backgroundColor: 'rgba(59,130,246,0.6)',
-                        borderColor: 'rgba(59,130,246,1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                    }
-                }
-            });
-            // On pourrait mettre à jour avec des données réelles si on les avait, mais on n'a pas de stats agrégées.
-            // On va juste afficher un message en overlay (option non implémentée ici).
+    function renderAdminCharts(exams = [], users = []) {
+        if (typeof Chart === 'undefined') {
+            if (!window._hosbacChartLoader) {
+                window._hosbacChartLoader = new Promise((resolve,reject)=>{
+                    const script=document.createElement('script');
+                    script.src='https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload=resolve; script.onerror=reject;
+                    document.head.appendChild(script);
+                });
+            }
+            window._hosbacChartLoader.then(()=>renderAdminCharts(exams,users)).catch(()=>showToast('Impossible de charger les graphiques.', 'warning'));
+            return;
         }
-        // Même principe pour les autres graphiques.
-        // Idéalement, on lirait un document admin_stats/overview, mais on ne l'a pas.
-        // On laisse les graphiques vides.
+        const make = (canvas, oldChart, config) => {
+            if (!canvas) return oldChart;
+            const ctx=canvas.getContext('2d');
+            if (!ctx) return oldChart;
+            if (oldChart) oldChart.destroy();
+            return new Chart(ctx, config);
+        };
+        const now=new Date();
+        const dayLabels=[]; const dayData=[0,0,0,0,0,0,0];
+        for(let i=6;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); dayLabels.push(d.toLocaleDateString('fr-FR',{weekday:'short'})); }
+        exams.forEach(e=>{ if(e.createdAt){ const d=e.createdAt.toDate?e.createdAt.toDate():new Date(e.createdAt); const diff=Math.floor((now-d)/86400000); if(diff>=0&&diff<7) dayData[6-diff]++; }});
+        adminExamsChart=make(adminExamsChartCanvas,adminExamsChart,{type:'bar',data:{labels:dayLabels,datasets:[{label:'Épreuves ajoutées',data:dayData}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+
+        const subjects={}; exams.filter(e=>e.status==='approved').forEach(e=>{ if(e.matiere) subjects[e.matiere]=(subjects[e.matiere]||0)+1; });
+        const topSubjects=Object.entries(subjects).sort((a,b)=>b[1]-a[1]).slice(0,8);
+        adminSubjectsChart=make(adminSubjectsChartCanvas,adminSubjectsChart,{type:'doughnut',data:{labels:topSubjects.map(x=>x[0]),datasets:[{data:topSubjects.map(x=>x[1])}]},options:{responsive:true,maintainAspectRatio:false}});
+
+        const totalDownloads=exams.reduce((n,e)=>n+Number(e.downloadCount||0),0);
+        adminDownloadsChart=make(adminDownloadsChartCanvas,adminDownloadsChart,{type:'bar',data:{labels:['Total actuel'],datasets:[{label:'Téléchargements cumulés',data:[totalDownloads]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+
+        const userCounts=[0,0,0,0,0,0,0];
+        users.forEach(u=>{ if(u.createdAt){ const d=u.createdAt.toDate?u.createdAt.toDate():new Date(u.createdAt); const diff=Math.floor((now-d)/86400000); if(diff>=0&&diff<7) userCounts[6-diff]++; }});
+        adminUsersChart=make(adminUsersChartCanvas,adminUsersChart,{type:'bar',data:{labels:dayLabels,datasets:[{label:'Nouveaux utilisateurs',data:userCounts}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
     }
 
-    function loadAdminExams() {
+    async function loadAdminExams(force = false) {
         if (!adminExamsBody) return;
-        adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
-        
-        const search = adminExamSearch?.value?.trim() || '';
-        const status = adminExamStatus?.value || '';
-        const subject = adminExamSubject?.value || '';
-        
-        let query = db.collection('epreuves').orderBy('createdAt', 'desc');
-        if (status) {
-            query = db.collection('epreuves').where('status', '==', status).orderBy('createdAt', 'desc');
+        const now=Date.now();
+        try {
+            if (force || !adminRawExamsCache.data.length || now-adminRawExamsCache.timestamp>=HOSBAC_CACHE_TTL) {
+                adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
+                const snap=await db.collection('epreuves').orderBy('createdAt','desc').get();
+                adminRawExamsCache={data:snap.docs.map(d=>({id:d.id,...d.data()})),timestamp:now};
+                adminRawExamsCache.data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
+                adminDashboardCache.timestamp=0;
+            }
+            filterAndRenderAdminExams();
+            updatePendingExamsCount();
+        } catch(err) {
+            console.error('Erreur chargement épreuves admin:',err);
+            adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
         }
-        
-        const timeout = setTimeout(() => {
-            adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune donnée disponible (timeout).</td></tr>';
-        }, 5000);
-        
-        query.get()
-        .then(snapshot => {
-            clearTimeout(timeout);
-            let exams = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                data.id = doc.id;
-                exams.push(data);
-            });
-            if (search) {
-                const s = search.toLowerCase();
-                exams = exams.filter(e => 
-                    (e.nom_epreuve && e.nom_epreuve.toLowerCase().includes(s)) ||
-                    (e.matiere && e.matiere.toLowerCase().includes(s)) ||
-                    (e.auteurNom && e.auteurNom.toLowerCase().includes(s))
-                );
-            }
-            if (subject) {
-                exams = exams.filter(e => e.matiere === subject);
-            }
-            adminExamsCache = exams;
-            renderAdminExamsPage(1);
-        })
-        .catch(err => {
-            clearTimeout(timeout);
-            console.error('Erreur chargement épreuves admin:', err);
-            adminExamsBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
-        });
+    }
+
+    function filterAndRenderAdminExams() {
+        const search=(adminExamSearch?.value||'').trim().toLowerCase();
+        const status=adminExamStatus?.value||'';
+        const subject=adminExamSubject?.value||'';
+        let exams=adminRawExamsCache.data.slice();
+        if(status) exams=exams.filter(e=>e.status===status);
+        if(subject) exams=exams.filter(e=>e.matiere===subject);
+        if(search) exams=exams.filter(e=>(e.nom_epreuve||'').toLowerCase().includes(search)||(e.matiere||'').toLowerCase().includes(search)||(e.auteurNom||'').toLowerCase().includes(search));
+        adminExamsCache=exams;
+        renderAdminExamsPage(1);
     }
 
     function renderAdminExamsPage(page) {
@@ -9039,16 +8706,20 @@
                 <td>${date}</td>
                 <td>
                     <div class="admin-actions">
-                        <button class="btn-view" onclick="showExamDetail('${exam.id}')"><i class="fas fa-eye"></i></button>
+                        <button class="btn-view admin-view-exam" type="button"><i class="fas fa-eye"></i></button>
                         ${exam.status === 'pending' ? `
-                            <button class="btn-approve" onclick="approveExamAdmin('${exam.id}', '${exam.auteurId}')"><i class="fas fa-check"></i></button>
-                            <button class="btn-reject" onclick="rejectExamAdmin('${exam.id}')"><i class="fas fa-times"></i></button>
+                            <button class="btn-approve admin-approve-exam" type="button"><i class="fas fa-check"></i></button>
+                            <button class="btn-reject admin-reject-exam" type="button"><i class="fas fa-times"></i></button>
                         ` : ''}
-                        ${isAdmin ? `<button class="btn-delete" onclick="deleteExam('${exam.id}')"><i class="fas fa-trash-alt"></i></button>` : ''}
+                        ${isAdmin ? `<button class="btn-delete admin-delete-exam" type="button"><i class="fas fa-trash-alt"></i></button>` : ''}
                     </div>
                 </td>
             `);
             adminExamsBody.appendChild(tr);
+            tr.querySelector('.admin-view-exam')?.addEventListener('click', () => showExamDetail(exam.id));
+            tr.querySelector('.admin-approve-exam')?.addEventListener('click', () => approveExamAdmin(exam.id, exam.auteurId));
+            tr.querySelector('.admin-reject-exam')?.addEventListener('click', () => rejectExamAdmin(exam.id));
+            tr.querySelector('.admin-delete-exam')?.addEventListener('click', () => deleteExam(exam.id));
         });
         renderAdminPagination(totalPages, adminExamsPagination, renderAdminExamsPage);
     }
@@ -9073,43 +8744,30 @@
         });
     }
 
-    function loadAdminUsers() {
+    async function loadAdminUsers(force = false) {
         if (!adminUsersBody) return;
-        adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
-        const search = adminUserSearch?.value?.trim() || '';
-        const role = adminUserRole?.value || '';
-        let query = db.collection('users').orderBy('createdAt', 'desc');
-        if (role) {
-            query = db.collection('users').where('role', '==', role);
-        }
-        const timeout = setTimeout(() => {
-            adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Aucune donnée disponible (timeout).</td></tr>';
-        }, 5000);
-        query.get()
-        .then(snapshot => {
-            clearTimeout(timeout);
-            let users = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                data.id = doc.id;
-                users.push(data);
-            });
-            if (search) {
-                const s = search.toLowerCase();
-                users = users.filter(u => 
-                    (u.nom && u.nom.toLowerCase().includes(s)) ||
-                    (u.prenom && u.prenom.toLowerCase().includes(s)) ||
-                    (u.email && u.email.toLowerCase().includes(s))
-                );
+        const now=Date.now();
+        try {
+            if (force || !adminRawUsersCache.data.length || now-adminRawUsersCache.timestamp>=HOSBAC_CACHE_TTL) {
+                adminUsersBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
+                const snap=await db.collection('users').orderBy('createdAt','desc').get();
+                adminRawUsersCache={data:snap.docs.map(d=>({id:d.id,...d.data()})),timestamp:now};
             }
-            adminUsersCache = users;
-            renderAdminUsersPage(1);
-        })
-        .catch(err => {
-            clearTimeout(timeout);
-            console.error('Erreur chargement utilisateurs admin:', err);
-            adminUsersBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
-        });
+            filterAndRenderAdminUsers();
+        } catch(err) {
+            console.error('Erreur chargement utilisateurs admin:',err);
+            adminUsersBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
+        }
+    }
+
+    function filterAndRenderAdminUsers() {
+        const search=(adminUserSearch?.value||'').trim().toLowerCase();
+        const role=adminUserRole?.value||'';
+        let users=adminRawUsersCache.data.slice();
+        if(role) users=users.filter(u=>u.role===role);
+        if(search) users=users.filter(u=>(u.nom||'').toLowerCase().includes(search)||(u.prenom||'').toLowerCase().includes(search)||(u.email||'').toLowerCase().includes(search));
+        adminUsersCache=users;
+        renderAdminUsersPage(1);
     }
 
     function renderAdminUsersPage(page) {
@@ -9147,14 +8805,18 @@
                 <td>
                     <div class="admin-actions">
                         ${isAdmin ? `
-                            <button class="btn-edit" onclick="editUserRole('${user.id}')"><i class="fas fa-user-cog"></i></button>
-                            ${status === 'active' ? `<button class="btn-suspend" onclick="suspendUser('${user.id}')"><i class="fas fa-pause"></i></button>` : `<button class="btn-activate" onclick="activateUser('${user.id}')"><i class="fas fa-play"></i></button>`}
-                            <button class="btn-delete" onclick="deleteUser('${user.id}')" style="background:var(--error);color:#fff;"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn-edit admin-edit-user" type="button"><i class="fas fa-user-cog"></i></button>
+                            ${status === 'active' ? `<button class="btn-suspend admin-suspend-user" type="button"><i class="fas fa-pause"></i></button>` : `<button class="btn-activate admin-activate-user" type="button"><i class="fas fa-play"></i></button>`}
+                            <button class="btn-delete admin-delete-user" type="button" style="background:var(--error);color:#fff;"><i class="fas fa-trash-alt"></i></button>
                         ` : ''}
                     </div>
                 </td>
             `);
             adminUsersBody.appendChild(tr);
+            tr.querySelector('.admin-edit-user')?.addEventListener('click', () => editUserRole(user.id));
+            tr.querySelector('.admin-suspend-user')?.addEventListener('click', () => suspendUser(user.id));
+            tr.querySelector('.admin-activate-user')?.addEventListener('click', () => activateUser(user.id));
+            tr.querySelector('.admin-delete-user')?.addEventListener('click', () => deleteUser(user.id));
         });
         renderAdminPagination(totalPages, adminUsersPagination, renderAdminUsersPage);
     }
@@ -9164,55 +8826,53 @@
         const newRole = prompt('Entrez le nouveau rôle (admin, moderator, contributor, student) :', 'student');
         if (newRole && ['admin', 'moderator', 'contributor', 'student'].includes(newRole)) {
             db.collection('users').doc(userId).update({ role: newRole })
-            .then(() => { showToast('Rôle mis à jour', 'success'); loadAdminUsers(); })
+            .then(() => { showToast('Rôle mis à jour', 'success'); adminRawUsersCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminUsers(true); })
             .catch(err => { console.error('Erreur mise à jour rôle:', err); showToast('Erreur lors de la mise à jour', 'error'); });
         }
     }
 
     function suspendUser(userId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        if (confirm('Suspendre cet utilisateur ?')) {
-            db.collection('users').doc(userId).update({ status: 'suspended' })
-            .then(() => { showToast('Utilisateur suspendu', 'success'); loadAdminUsers(); })
-            .catch(err => { console.error('Erreur suspension:', err); showToast('Erreur lors de la suspension', 'error'); });
-        }
+        if (!confirm('Suspendre cet utilisateur ?')) return;
+        db.collection('users').doc(userId).update({ status:'suspended' })
+            .then(()=>{
+                const u=adminRawUsersCache.data.find(x=>x.id===userId); if(u) u.status='suspended';
+                filterAndRenderAdminUsers();
+                showToast('Utilisateur suspendu','success');
+            })
+            .catch(err=>{ console.error('Erreur suspension:',err); showToast('Erreur lors de la suspension','error'); });
     }
 
     function activateUser(userId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        db.collection('users').doc(userId).update({ status: 'active' })
-        .then(() => { showToast('Utilisateur réactivé', 'success'); loadAdminUsers(); })
-        .catch(err => { console.error('Erreur réactivation:', err); showToast('Erreur lors de la réactivation', 'error'); });
+        db.collection('users').doc(userId).update({ status:'active' })
+            .then(()=>{
+                const u=adminRawUsersCache.data.find(x=>x.id===userId); if(u) u.status='active';
+                filterAndRenderAdminUsers();
+                showToast('Utilisateur réactivé','success');
+            })
+            .catch(err=>{ console.error('Erreur réactivation:',err); showToast('Erreur lors de la réactivation','error'); });
     }
 
-    function deleteUser(userId) {
-        if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        if (!confirm(`Supprimer définitivement l'utilisateur ${userId} ? Cette action est irréversible.`)) return;
-        if (!confirm('Les épreuves publiées par cet utilisateur seront conservées. Continuer ?')) return;
-        
-        // Supprimer le document user
-        db.collection('users').doc(userId).delete()
-        .then(() => {
-            // Supprimer les sous-collections (favoris, notifications, chats)
-            const subcollections = ['favorites', 'notifications', 'chats'];
-            const promises = subcollections.map(col => {
-                return db.collection('users').doc(userId).collection(col).get()
-                .then(snapshot => {
-                    const batch = db.batch();
-                    snapshot.forEach(doc => batch.delete(doc.ref));
-                    return batch.commit();
-                }).catch(() => {});
+    async function deleteUser(userId) {
+        if (!isAdmin || !currentUser) { showToast('Action non autorisée', 'error'); return; }
+        if (userId === currentUser.uid) { showToast('Vous ne pouvez pas supprimer votre propre compte depuis cette liste.', 'warning'); return; }
+        if (!confirm('Supprimer définitivement cet utilisateur ? Ses épreuves resteront publiées.')) return;
+        try {
+            const token = await currentUser.getIdToken();
+            const response = await fetch(HOSBAC_ADMIN_DELETE_ENDPOINT, {
+                method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body:JSON.stringify({ userId })
             });
-            return Promise.all(promises);
-        })
-        .then(() => {
-            showToast('Utilisateur supprimé avec succès', 'success');
-            loadAdminUsers();
-        })
-        .catch(err => {
-            console.error('Erreur suppression utilisateur:', err);
-            showToast('Erreur lors de la suppression', 'error');
-        });
+            const data = await response.json().catch(()=>({}));
+            if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+            showToast('Utilisateur supprimé. Ses épreuves ont été conservées.', 'success');
+            adminRawUsersCache = { data: adminRawUsersCache.data.filter(u=>u.id!==userId), timestamp: Date.now() };
+            filterAndRenderAdminUsers();
+        } catch (err) {
+            console.error('[ADMIN] Suppression utilisateur:', err);
+            showToast('Impossible de supprimer cet utilisateur.', 'error');
+        }
     }
 
     function loadAdminReports() {
@@ -9431,25 +9091,11 @@
     }
 
     // ============================================================
-    // LOGS
+    // LOGS — DÉSACTIVÉS POUR ÉVITER LES ÉCRITURES INUTILES
     // ============================================================
-    function logSearch(keyword) {
-        if (!keyword || keyword.trim().length < 3) return;
-        const userType = currentUser ? 'connecté' : 'anonyme';
-        db.collection('search_logs').add({ keyword: keyword.trim(), timestamp: firebase.firestore.FieldValue.serverTimestamp(), userType: userType })
-        .catch(err => console.error('[FIRESTORE] Erreur logSearch:', err));
-    }
-
-    function logInteraction(action, epreuveId) {
-        if (!epreuveId) return;
-        const userType = currentUser ? 'connecté' : 'anonyme';
-        db.collection('interaction_logs').add({ action, epreuveId, timestamp: firebase.firestore.FieldValue.serverTimestamp(), userType: userType })
-        .catch(err => console.error('[FIRESTORE] Erreur logInteraction:', err));
-    }
-
-    function loadAdminLogs() {
-        // déjà implémenté
-    }
+    function logSearch() { return; }
+    function logInteraction() { return; }
+    function loadAdminLogs() { return; }
 
     // ============================================================
     // SERVICE WORKER
@@ -9468,28 +9114,28 @@
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        installBanner.style.display = 'flex';
+        if (installBanner) installBanner.style.display = 'flex';
         console.log('beforeinstallprompt déclenché');
     });
 
-    installBanner.addEventListener('click', async () => {
+    installBanner?.addEventListener('click', async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const result = await deferredPrompt.userChoice;
             console.log('Choix utilisateur:', result.outcome);
             deferredPrompt = null;
-            installBanner.style.display = 'none';
+            if (installBanner) installBanner.style.display = 'none';
         }
     });
 
-    installCloseBtn.addEventListener('click', (e) => {
+    installCloseBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
-        installBanner.style.display = 'none';
+        if (installBanner) installBanner.style.display = 'none';
     });
 
     window.addEventListener('appinstalled', () => {
         console.log('Application HosBac installée');
-        installBanner.style.display = 'none';
+        if (installBanner) installBanner.style.display = 'none';
     });
 
     // ============================================================
