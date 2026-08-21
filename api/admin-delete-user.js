@@ -19,7 +19,7 @@ async function verifyAdmin(authHeader) {
   if (!authHeader?.startsWith('Bearer ')) throw new Error('AUTH_REQUIRED');
   const decoded = await admin.auth().verifyIdToken(authHeader.slice(7));
   const snap = await admin.firestore().collection('users').doc(decoded.uid).get();
-  if (!snap.exists || snap.data().role !== 'admin' || snap.data().status !== 'active') throw new Error('ADMIN_REQUIRED');
+  if (!snap.exists || snap.data().role !== 'admin') throw new Error('ADMIN_REQUIRED');
   return decoded;
 }
 
