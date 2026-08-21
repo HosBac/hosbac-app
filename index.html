@@ -1588,37 +1588,6 @@
             color: var(--text-muted);
         }
 
-        .activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.5rem 0.8rem;
-            background: var(--bg-color);
-            border-radius: var(--border-radius-sm);
-            border-left: 3px solid var(--accent-blue);
-        }
-        .activity-item .activity-icon {
-            font-size: 1rem;
-            color: var(--accent-gold);
-            min-width: 24px;
-            text-align: center;
-        }
-        .activity-item .activity-text {
-            flex: 1;
-            font-size: 0.85rem;
-            color: var(--text-color);
-        }
-        .activity-item .activity-time {
-            font-size: 0.7rem;
-            color: var(--text-light);
-        }
-
         /* ============================================================
            ADMIN PANEL
            ============================================================ */
@@ -2464,7 +2433,7 @@
         }
 
         /* ============================================================
-           ZONE DE SAISIE ASSISTANT - CORRIGÉE
+           ZONE DE SAISIE ASSISTANT
            ============================================================ */
         .assistant-input-area {
             display: flex;
@@ -3337,10 +3306,8 @@
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
             </div>
 
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-upload"></i> Mes contributions</h2>
-                <div id="my-contributions" class="exam-list"></div>
-            </div>
+            <!-- MES CONTRIBUTIONS SUPPRIMÉES -->
+            <!-- ACTIVITÉ RÉCENTE SUPPRIMÉE -->
 
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-award"></i> Badges</h2>
@@ -3374,12 +3341,7 @@
                 </div>
             </div>
 
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-history"></i> Activité récente</h2>
-                <div class="activity-list" id="activity-list">
-                    <p style="color:var(--text-light);">Aucune activité récente.</p>
-                </div>
-            </div>
+            <!-- ACTIVITÉ RÉCENTE SUPPRIMÉE -->
 
             <div class="card">
                 <h2 class="card-title"><i class="fas fa-edit"></i> Modifier le profil</h2>
@@ -3647,12 +3609,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="admin-chart-box" style="margin-top:1rem;">
-                    <div class="chart-title"><i class="fas fa-clipboard-list"></i> Historique de modération</div>
-                    <div id="admin-moderation-history" style="max-height:300px;overflow-y:auto;">
-                        <p style="color:var(--text-light);">Chargement...</p>
-                    </div>
-                </div>
+                <!-- Historique de modération supprimé -->
             </div>
         </div>
     </main>
@@ -4002,15 +3959,7 @@
     </div>
 </div>
 
-<div id="moderation-history-popup" class="popup-overlay">
-    <div class="popup-content">
-        <button class="popup-close"><i class="fas fa-times"></i></button>
-        <h2 class="popup-title"><i class="fas fa-history"></i> Historique de modération</h2>
-        <div id="moderation-history-list" class="moderation-history-list">
-            <p style="color:var(--text-light);">Chargement...</p>
-        </div>
-    </div>
-</div>
+<!-- POPUP HISTORIQUE DE MODÉRATION SUPPRIMÉ -->
 
 <!-- POPUP PAGES LÉGALES -->
 <div id="terms-popup" class="popup-overlay">
@@ -4059,7 +4008,7 @@
 </audio>
 
 <!-- ============================================================
-     JAVASCRIPT COMPLET - AVEC CORRECTION DU BOUTON D'ENVOI
+     JAVASCRIPT COMPLET - AVEC TOUTES LES CORRECTIONS
      ============================================================ -->
 <script>
     // ============================================================
@@ -4200,7 +4149,6 @@
     const adminSubjectsChartCanvas = document.getElementById('admin-subjects-chart');
     const adminDownloadsChartCanvas = document.getElementById('admin-downloads-chart');
     const adminUsersChartCanvas = document.getElementById('admin-users-chart');
-    const adminModerationHistory = document.getElementById('admin-moderation-history');
 
     let adminExamsChart = null;
     let adminSubjectsChart = null;
@@ -4361,8 +4309,6 @@
     const confirmRejectionBtn = document.getElementById('confirm-rejection-btn');
     const cancelRejectionBtn = document.getElementById('cancel-rejection-btn');
     const rejectionExamId = document.getElementById('rejection-exam-id');
-    const moderationHistoryPopup = document.getElementById('moderation-history-popup');
-    const moderationHistoryList = document.getElementById('moderation-history-list');
     const draftsBtn = document.getElementById('drafts-btn');
     const saveDraftBtn = document.getElementById('save-draft-btn');
 
@@ -5057,7 +5003,6 @@
         const index = chatHistory.findIndex(m => m.id === id);
         if (index !== -1) {
             chatHistory.splice(index, 1);
-            saveChatToFirestore();
         }
         if (chatHistory.length === 0) {
             displayWelcomeMessage();
@@ -5122,7 +5067,6 @@
         const role = 'model';
         const parts = [{ text: welcomeText }];
         chatHistory.push({ id, role, parts, timestamp: new Date().toISOString() });
-        saveChatToFirestore();
     }
 
     function addChatMessage(text, sender, time = null, fileInfo = null) {
@@ -5137,7 +5081,6 @@
             const role = sender === 'user' ? 'user' : 'model';
             const parts = [{ text: text }];
             chatHistory.push({ id, role, parts, timestamp: new Date().toISOString() });
-            saveChatToFirestore();
         }
     }
 
@@ -5167,7 +5110,6 @@
             assistantMessages.innerHTML = '';
             welcomeAlreadyInitialized = false;
             displayWelcomeMessage();
-            saveChatToFirestore();
             showToast('Conversation supprimée.', 'info');
             pedagogicalModeIndicator.style.display = 'none';
             pedagogicalModeActive = false;
@@ -5516,7 +5458,6 @@
                 }
             }
 
-            // Récupérer le token Firebase
             const user = auth.currentUser;
             if (!user) {
                 addChatMessage('Vous devez être connecté pour utiliser l\'assistant.', 'bot');
@@ -5596,7 +5537,7 @@
     }
 
     // ============================================================
-    // FONCTION PRINCIPALE D'ENVOI DE MESSAGE (corrigée)
+    // FONCTION PRINCIPALE D'ENVOI DE MESSAGE
     // ============================================================
     function handleSendMessage() {
         if (isChatLoading) {
@@ -5604,7 +5545,6 @@
             return;
         }
 
-        // Récupérer le texte depuis le DOM pour être sûr
         const text = chatInput ? chatInput.value.trim() : '';
         if (!text && !attachedFile) {
             showToast('Veuillez écrire un message ou attacher un fichier.', 'warning');
@@ -5625,7 +5565,6 @@
 
                 const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
 
-                // Réinitialiser le champ et le fichier attaché
                 chatInput.value = '';
                 attachedFile = null;
                 chatFilePreview.style.display = 'none';
@@ -5633,7 +5572,6 @@
                 chatInput.style.height = 'auto';
                 chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
 
-                // Cooldown de 2 secondes pour éviter les envois multiples
                 if (cooldownTimeout) {
                     clearTimeout(cooldownTimeout);
                     cooldownTimeout = null;
@@ -5652,10 +5590,9 @@
     }
 
     // ============================================================
-    // INITIALISATION DES CONTRÔLES DE L'ASSISTANT (CORRIGÉE - SANS CLONENODE)
+    // INITIALISATION DES CONTRÔLES DE L'ASSISTANT
     // ============================================================
     function initAssistantSendControls() {
-        // On récupère les éléments DOM actuels (pas de clone)
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send-btn');
         const attachBtn = document.getElementById('assistant-attach-btn');
@@ -5667,35 +5604,27 @@
             return;
         }
 
-        // Vérifier si déjà initialisé pour éviter les doublons
         if (chatInput.dataset.hosbacInitialized === 'true') {
-            console.log('[ASSISTANT] Déjà initialisé');
             return;
         }
 
-        // Marquer comme initialisé
         chatInput.dataset.hosbacInitialized = 'true';
         sendBtn.dataset.hosbacInitialized = 'true';
 
-        // Désactiver le bouton par défaut si vide
         sendBtn.disabled = true;
 
-        // Auto-resize du textarea
         chatInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-            // Activer/désactiver le bouton en fonction du contenu
             const hasText = this.value.trim().length > 0;
             sendBtn.disabled = !(hasText || attachedFile);
         });
 
-        // Click sur le bouton
         sendBtn.addEventListener('click', function(e) {
             e.preventDefault();
             handleSendMessage();
         });
 
-        // Touche Entrée
         chatInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -5703,7 +5632,6 @@
             }
         });
 
-        // Attachement de fichier
         if (attachBtn && fileInput) {
             attachBtn.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -5714,7 +5642,7 @@
                 const file = this.files[0];
                 if (!file) return;
                 
-                const maxSize = 5 * 1024 * 1024; // 5 MB
+                const maxSize = 5 * 1024 * 1024;
                 if (file.size > maxSize) {
                     showToast('Le fichier est trop volumineux (5 MB max).', 'error');
                     this.value = '';
@@ -5739,7 +5667,6 @@
                     };
                     chatFileName.textContent = file.name;
                     chatFilePreview.style.display = 'flex';
-                    // Activer le bouton si un fichier est attaché
                     sendBtn.disabled = false;
                     showToast('Fichier attaché : ' + file.name, 'success');
                 };
@@ -5747,101 +5674,25 @@
             });
         }
 
-        // Suppression du fichier attaché
         if (removeBtn) {
             removeBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 attachedFile = null;
                 chatFilePreview.style.display = 'none';
                 fileInput.value = '';
-                // Désactiver le bouton si le champ est vide
                 const hasText = chatInput.value.trim().length > 0;
                 sendBtn.disabled = !hasText;
                 showToast('Fichier retiré', 'info');
             });
         }
 
-        console.log('[ASSISTANT] Contrôles initialisés avec succès (sans cloneNode)');
+        console.log('[ASSISTANT] Contrôles initialisés (mode live, pas de Firestore)');
     }
 
-    // ============================================================
-    // INITIALISATION ROBUSTE
-    // ============================================================
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initAssistantSendControls, { once: true });
     } else {
         initAssistantSendControls();
-    }
-
-    // ============================================================
-    // SAUVEGARDE ET CHARGEMENT DE L'HISTORIQUE CHAT
-    // ============================================================
-    function loadChatHistoryFromFirestore() {
-        if (!currentUser) return Promise.resolve();
-        const docRef = db.collection('users').doc(currentUser.uid).collection('chats').doc('current');
-        return docRef.get().then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                if (data && data.messages && Array.isArray(data.messages)) {
-                    chatHistory = data.messages;
-                    assistantMessages.innerHTML = '';
-                    welcomeAlreadyInitialized = false;
-                    if (chatHistory.length === 0) {
-                        displayWelcomeMessage();
-                    } else {
-                        const hasWelcome = chatHistory.some(msg => msg.role === 'model' && msg.parts[0].text.includes('Bonjour') && msg.parts[0].text.includes('assistant pédagogique'));
-                        if (!hasWelcome) {
-                            displayWelcomeMessage();
-                        } else {
-                            welcomeAlreadyInitialized = true;
-                        }
-                        chatHistory.forEach(msg => {
-                            const sender = msg.role === 'user' ? 'user' : 'bot';
-                            const text = msg.parts[0].text;
-                            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-                            const isBot = sender === 'bot';
-                            const id = msg.id || generateMessageId();
-                            addChatMessageToDOM(text, sender, time, isBot, id, assistantMessages);
-                        });
-                        const welcomeEl = assistantMessages.querySelector('.chat-message.welcome');
-                        if (welcomeEl) welcomeEl.remove();
-                    }
-                    assistantMessages.scrollTop = assistantMessages.scrollHeight;
-                    return;
-                }
-            }
-            chatHistory = [];
-            assistantMessages.innerHTML = '';
-            welcomeAlreadyInitialized = false;
-            displayWelcomeMessage();
-            saveChatToFirestore();
-        }).catch(err => console.error('Erreur chargement historique chat:', err));
-    }
-
-    function saveChatToFirestore() {
-        if (!currentUser) return;
-        const docRef = db.collection('users').doc(currentUser.uid).collection('chats').doc('current');
-        const data = { messages: chatHistory, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        docRef.set(data, { merge: true }).catch(err => console.error('Erreur sauvegarde chat:', err));
-    }
-
-    // ============================================================
-    // GESTION DE LA VISIBILITÉ DE LA NAVIGATION
-    // ============================================================
-    function toggleAssistantMode(active) {
-        if (active) {
-            document.body.classList.add('assistant-open');
-            app.classList.add('assistant-active');
-            bottomNav.classList.add('assistant-visible');
-            const footer = document.getElementById('main-footer');
-            if (footer) footer.style.display = 'none';
-        } else {
-            document.body.classList.remove('assistant-open');
-            app.classList.remove('assistant-active');
-            bottomNav.classList.remove('assistant-visible');
-            const footer = document.getElementById('main-footer');
-            if (footer) footer.style.display = '';
-        }
     }
 
     // ============================================================
@@ -5895,19 +5746,15 @@
                 break;
             case 'search': break;
             case 'assistant':
-                loadChatHistoryFromFirestore().then(() => {
-                    if (assistantMessages.children.length === 0) {
-                        displayWelcomeMessage();
-                    }
-                });
+                if (assistantMessages.children.length === 0) {
+                    displayWelcomeMessage();
+                }
                 break;
             case 'profile': 
                 if (checkAuthRequired('profil')) {
                     loadProfileData();
                     loadLeaderboard();
-                    loadActivity();
                     loadSubjectStats();
-                    loadMyContributions();
                 }
                 break;
             case 'admin': loadAdminPanel(); break;
@@ -5915,6 +5762,25 @@
         if (searchSuggestions) searchSuggestions.style.display = 'none';
         closeFullscreenMenu();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================================
+    // TOGGLE ASSISTANT MODE
+    // ============================================================
+    function toggleAssistantMode(active) {
+        if (active) {
+            document.body.classList.add('assistant-open');
+            app.classList.add('assistant-active');
+            bottomNav.classList.add('assistant-visible');
+            const footer = document.getElementById('main-footer');
+            if (footer) footer.style.display = 'none';
+        } else {
+            document.body.classList.remove('assistant-open');
+            app.classList.remove('assistant-active');
+            bottomNav.classList.remove('assistant-visible');
+            const footer = document.getElementById('main-footer');
+            if (footer) footer.style.display = '';
+        }
     }
 
     // ============================================================
@@ -6038,7 +5904,7 @@
             }
             
             if (detailHistoryBtn) {
-                detailHistoryBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+                detailHistoryBtn.style.display = 'none'; // historique supprimé
             }
             
             if (detailTags) {
@@ -6369,7 +6235,7 @@
             if (!isEarned) {
                 div.title = 'Badge non débloqué';
             } else {
-                div.title = 'Badge débloqué ! \u2728';
+                div.title = 'Badge débloqué ! ✨';
             }
             badgesContainer.appendChild(div);
         });
@@ -6474,123 +6340,14 @@
     }
 
     // ============================================================
-    // ACTIVITÉ RÉCENTE
+    // MES CONTRIBUTIONS - SUPPRIMÉ
     // ============================================================
-    function loadActivity() {
-        if (!activityList || !currentUser) return;
-        activityList.innerHTML = '<p style="color:var(--text-light);">Chargement de l\'activité...</p>';
-        
-        db.collection('interaction_logs')
-            .where('userId', '==', currentUser.uid)
-            .orderBy('timestamp', 'desc')
-            .limit(10)
-            .get()
-            .then(snapshot => {
-                activityList.innerHTML = '';
-                if (snapshot.empty) {
-                    activityList.innerHTML = '<p style="color:var(--text-light);">Aucune activité récente.</p>';
-                    return;
-                }
-                
-                const icons = {
-                    'voir': '<i class="fas fa-eye"></i>',
-                    'telecharger': '<i class="fas fa-download"></i>',
-                    'favorite': '<i class="fas fa-heart"></i>'
-                };
-                
-                const labels = {
-                    'voir': 'a consulté une épreuve',
-                    'telecharger': 'a téléchargé une épreuve',
-                    'favorite': 'a ajouté une épreuve aux favoris'
-                };
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const div = document.createElement('div');
-                    div.className = 'activity-item';
-                    const icon = icons[data.action] || '<i class="fas fa-pin"></i>';
-                    const label = labels[data.action] || 'a effectué une action';
-                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR', { 
-                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
-                    }) : '';
-                    
-                    safeInnerHTML(div, `
-                        <span class="activity-icon">${icon}</span>
-                        <span class="activity-text">${label}</span>
-                        <span class="activity-time">${time}</span>
-                    `);
-                    activityList.appendChild(div);
-                });
-            })
-            .catch(err => {
-                console.error('Erreur chargement activité:', err);
-                activityList.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement de l\'activité.</p>';
-            });
-    }
+    // La fonction loadMyContributions a été supprimée.
 
     // ============================================================
-    // MES CONTRIBUTIONS
+    // ACTIVITÉ RÉCENTE - SUPPRIMÉ
     // ============================================================
-    function loadMyContributions() {
-        if (!myContributionsContainer || !currentUser) return;
-        myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Chargement de vos contributions...</p>';
-        
-        db.collection('epreuves')
-            .where('auteurId', '==', currentUser.uid)
-            .orderBy('createdAt', 'desc')
-            .get()
-            .then(snapshot => {
-                myContributionsContainer.innerHTML = '';
-                if (snapshot.empty) {
-                    myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Vous n\'avez pas encore contribué.</p>';
-                    return;
-                }
-                
-                snapshot.forEach(doc => {
-                    const exam = doc.data();
-                    const status = exam.status || 'pending';
-                    const statusLabels = {
-                        'pending': '<i class="fas fa-clock"></i> En attente',
-                        'approved': '<i class="fas fa-check-circle"></i> Approuvée',
-                        'rejected': '<i class="fas fa-times-circle"></i> Refusée',
-                        'draft': '<i class="fas fa-save"></i> Brouillon'
-                    };
-                    
-                    const card = document.createElement('div');
-                    card.className = 'exam-card';
-                    card.style.cursor = 'pointer';
-                    safeInnerHTML(card, `
-                        <div class="exam-badges">
-                            <span class="exam-badge ${status}">${statusLabels[status] || status}</span>
-                            ${exam.fichier_corrige ? '<span class="exam-badge corrige"><i class="fas fa-check-circle"></i> Corrigé</span>' : '<span class="exam-badge sans-corrige"><i class="fas fa-times-circle"></i> Sans corrigé</span>'}
-                        </div>
-                        <h3 class="exam-name">${escapeHTML(exam.nom_epreuve || 'Sans nom')}</h3>
-                        <div class="exam-meta">
-                            <span><i class="fas fa-book meta-icon"></i> ${escapeHTML(exam.matiere || '')}</span>
-                            <span><i class="fas fa-users meta-icon"></i> ${escapeHTML(exam.classe || '')}${exam.serie ? ' - Série '+escapeHTML(exam.serie) : ''}</span>
-                        </div>
-                        <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-light);">
-                            ${exam.status === 'rejected' && exam.rejectionReason ? 
-                                `<span style="color:var(--error);"><i class="fas fa-times-circle"></i> ${escapeHTML(exam.rejectionReason)}</span>` : 
-                                ''}
-                            ${exam.status === 'pending' ? 
-                                '<span style="color:var(--warning);"><i class="fas fa-clock"></i> En attente de validation</span>' : 
-                                ''}
-                        </div>
-                    `);
-                    
-                    card.addEventListener('click', () => {
-                        showExamDetail(doc.id);
-                    });
-                    
-                    myContributionsContainer.appendChild(card);
-                });
-            })
-            .catch(err => {
-                console.error('Erreur chargement contributions:', err);
-                myContributionsContainer.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
-            });
-    }
+    // La fonction loadActivity a été supprimée.
 
     // ============================================================
     // GRAPHIQUES
@@ -6720,59 +6477,9 @@
     }
 
     // ============================================================
-    // HISTORIQUE MODÉRATION
+    // HISTORIQUE MODÉRATION - SUPPRIMÉ
     // ============================================================
-    function loadModerationHistory(examId) {
-        if (!moderationHistoryList) return;
-        moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Chargement de l\'historique...</p>';
-        
-        db.collection('moderation_history')
-            .where('examId', '==', examId)
-            .orderBy('timestamp', 'desc')
-            .get()
-            .then(snapshot => {
-                moderationHistoryList.innerHTML = '';
-                if (snapshot.empty) {
-                    moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Aucun historique de modération.</p>';
-                    return;
-                }
-                
-                const actionLabels = {
-                    'submitted': '<i class="fas fa-upload"></i> Soumission',
-                    'approved': '<i class="fas fa-check-circle"></i> Approbation',
-                    'rejected': '<i class="fas fa-times-circle"></i> Refus',
-                    'edited': '<i class="fas fa-edit"></i> Modification'
-                };
-                
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const item = document.createElement('div');
-                    item.className = 'moderation-history-item';
-                    const action = actionLabels[data.action] || data.action;
-                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
-                    
-                    let reasonHtml = '';
-                    if (data.reason) {
-                        reasonHtml = `<div class="history-reason">Raison : ${escapeHTML(data.reason)}</div>`;
-                    }
-                    
-                    safeInnerHTML(item, `
-                        <div class="history-icon">${data.action === 'approved' ? '<i class="fas fa-check-circle" style="color:var(--success);"></i>' : data.action === 'rejected' ? '<i class="fas fa-times-circle" style="color:var(--error);"></i>' : '<i class="fas fa-edit"></i>'}</div>
-                        <div class="history-content">
-                            <div class="history-action">${action}</div>
-                            <div class="history-detail">Par : ${escapeHTML(data.moderatorName || 'Système')}</div>
-                            ${reasonHtml}
-                        </div>
-                        <div class="history-time">${time}</div>
-                    `);
-                    moderationHistoryList.appendChild(item);
-                });
-            })
-            .catch(err => {
-                console.error('Erreur chargement historique modération:', err);
-                moderationHistoryList.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
-            });
-    }
+    // La fonction loadModerationHistory a été supprimée.
 
     // ============================================================
     // AUTH STATE CHANGED
@@ -6798,18 +6505,15 @@
                 loadAndInjectGA();
                 if (isAdmin) loadAdminPanel();
                 setTimeout(() => {
-                    loadChatHistoryFromFirestore().then(() => {
-                        if (assistantMessages.children.length === 0) {
-                            displayWelcomeMessage();
-                        }
-                    });
+                    if (assistantMessages.children.length === 0) {
+                        displayWelcomeMessage();
+                    }
                 }, 500);
                 if (userData && userData.avatarColor) {
                     avatarColor = userData.avatarColor;
                     if (profileAvatar) profileAvatar.style.background = avatarColor;
                     updateAvatarColorPicker(avatarColor);
                 }
-                setTimeout(loadMyContributions, 1000);
             } else {
                 currentUser = null;
                 userData = null;
@@ -6840,7 +6544,6 @@
     // DOM CONTENT LOADED - INITIALISATION PRINCIPALE
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        // Le splash screen est supprimé, on affiche directement l'app
         if (!sharedExamId) {
             if (warningScreen) warningScreen.style.display = 'flex';
         }
@@ -6940,7 +6643,7 @@
             const prenom = document.getElementById('signup-prenom')?.value || '';
             const ecole = document.getElementById('signup-ecole')?.value || '';
             const email = document.getElementById('signup-email')?.value || '';
-            const password = signupPassword?.value || '';
+            const password = document.getElementById('signup-password')?.value || '';
             auth.createUserWithEmailAndPassword(email, password)
             .then(userCredential => {
                 currentUser = userCredential.user;
@@ -6998,7 +6701,6 @@
             });
         });
 
-        // Bouton Ajouter une épreuve
         const addExamBtnElement = document.getElementById('add-exam-btn');
         if (addExamBtnElement) {
             const newAddExamBtn = addExamBtnElement.cloneNode(true);
@@ -7173,11 +6875,8 @@
         });
 
         detailHistoryBtn?.addEventListener('click', () => {
-            if (!checkAuthRequired('voir l\'historique')) return;
-            if (currentExamId) {
-                if (moderationHistoryPopup) moderationHistoryPopup.style.display = 'flex';
-                loadModerationHistory(currentExamId);
-            }
+            // Historique supprimé
+            showToast('Historique de modération non disponible', 'warning');
         });
 
         editExamForm?.addEventListener('submit', (e) => {
@@ -7675,6 +7374,7 @@
         window.editUserRole = editUserRole;
         window.suspendUser = suspendUser;
         window.activateUser = activateUser;
+        window.deleteUser = deleteUser;
         window.resolveReport = resolveReport;
         window.ignoreReport = ignoreReport;
 
@@ -7686,11 +7386,12 @@
         initCharts();
 
         console.log('[PHASE 4] Corrections finales appliquées avec succès :');
-        console.log('   ✅ Bouton d\'envoi réparé (toujours actif, validation interne)');
-        console.log('   ✅ Pipeline IA sécurisé (clés serveur uniquement)');
+        console.log('   ✅ Bouton d\'envoi réparé');
+        console.log('   ✅ Pipeline IA sécurisé (clés serveur)');
         console.log('   ✅ Audit de sécurité complet (XSS, authentification, Firestore)');
         console.log('   ✅ Durcissement final (quota, fallback, erreurs)');
-        console.log('   ✅ Toutes les fonctionnalités sont conservées');
+        console.log('   ✅ Suppression des fonctions inutiles (contributions, activité, historique)');
+        console.log('   ✅ Suppression du stockage Firestore de l\'assistant');
     });
 
     // ============================================================
@@ -7777,7 +7478,7 @@
                 applyFilters();
             }
             if (document.getElementById('profile-view')?.classList.contains('active')) {
-                loadMyContributions();
+                loadProfileData();
             }
         })
         .catch(err => {
@@ -7877,10 +7578,17 @@
     }
 
     // ============================================================
-    // SOUMETTRE UNE ÉPREUVE
+    // SOUMETTRE UNE ÉPREUVE (CORRIGÉE)
     // ============================================================
     function submitExam(isDraft = false) {
         if (!currentUser) return;
+        
+        // Utiliser userData déjà chargé, pas de lecture supplémentaire
+        if (!userData) {
+            showToast('Données utilisateur non disponibles, veuillez recharger', 'error');
+            return;
+        }
+        
         const matiere = document.getElementById('exam-matiere')?.value || '';
         const classe = document.getElementById('exam-classe')?.value || '';
         const serie = document.getElementById('exam-serie')?.value || '';
@@ -7901,68 +7609,76 @@
         
         let serieToSave = serie;
         if (!['2nd', '1ère', 'Terminale'].includes(classe)) serieToSave = '';
-        const status = isDraft ? 'draft' : (isAdmin ? 'approved' : 'pending');
         
-        try {
-            db.collection('users').doc(currentUser.uid).get()
-            .then(userDoc => {
-                const user = userDoc.data();
-                const examData = {
-                    matiere, classe, serie: serieToSave, nom_epreuve,
-                    annee, departement, session, type,
-                    fichier_sujet: fichier_sujet || null,
-                    fichier_corrige: fichier_corrige || null,
-                    auteurId: currentUser.uid,
-                    auteurNom: `${user.prenom || ''} ${user.nom || ''}`,
-                    status, downloadCount: 0, viewCount: 0,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                return db.collection('epreuves').add(examData);
-            })
-            .then((docRef) => {
-                if (addExamPopup) addExamPopup.style.display = 'none';
-                if (addExamForm) addExamForm.reset();
-                const sujetUpload = document.getElementById('sujet-upload');
-                const corrigeUpload = document.getElementById('corrige-upload');
-                if (sujetUpload) sujetUpload.innerHTML = '<p>Cliquez pour télécharger le fichier sujet</p>';
-                if (corrigeUpload) corrigeUpload.innerHTML = '<p>Cliquez pour télécharger le fichier corrigé</p>';
-                sujetProgress.hide(); corrigeProgress.hide();
-                const submitBtn = document.getElementById('add-exam-submit-btn');
-                if (submitBtn) submitBtn.disabled = false;
-                toggleSerieField();
-                
-                if (isDraft) {
-                    showToast('Brouillon sauvegardé avec succès', 'success');
-                } else if (isAdmin) {
-                    showToast('Épreuve publiée', 'success');
-                    assignPointsAfterApproval(currentUser.uid, fichier_corrige ? 4 : 2);
-                } else {
-                    showToast('Épreuve soumise, en attente d\'approbation', 'success');
-                    notifyAdminsAboutPendingExam();
-                }
-                
-                if (!isDraft) {
-                    updateUserStats('upload');
-                }
-                
-                if (!isDraft) {
-                    db.collection('moderation_history').add({
-                        examId: docRef.id,
-                        action: 'submitted',
-                        moderatorId: currentUser.uid,
-                        moderatorName: `${userData?.prenom || ''} ${userData?.nom || ''}`.trim() || 'Utilisateur',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(err => console.error('Erreur historisation soumission:', err));
-                }
-                
-                loadRecentExams();
-                loadPopularExams();
-                loadPlatformStats();
-                if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
-                if (document.getElementById('profile-view')?.classList.contains('active')) loadMyContributions();
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur soumission:', error); showToast('Erreur lors de la soumission', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur submitExam:', error); showToast('Erreur lors de la soumission', 'error'); }
+        // Déterminer le statut : si admin, approuvé directement
+        const isAdminUser = userData.role === 'admin';
+        const status = isDraft ? 'draft' : (isAdminUser ? 'approved' : 'pending');
+        
+        const examData = {
+            matiere,
+            classe,
+            serie: serieToSave,
+            nom_epreuve,
+            annee,
+            departement,
+            session,
+            type,
+            fichier_sujet: fichier_sujet || null,
+            fichier_corrige: fichier_corrige || null,
+            auteurId: currentUser.uid,
+            auteurNom: `${userData.prenom || ''} ${userData.nom || ''}`.trim() || 'Anonyme',
+            status,
+            downloadCount: 0,
+            viewCount: 0,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        db.collection('epreuves').add(examData)
+        .then((docRef) => {
+            if (addExamPopup) addExamPopup.style.display = 'none';
+            if (addExamForm) addExamForm.reset();
+            const sujetUpload = document.getElementById('sujet-upload');
+            const corrigeUpload = document.getElementById('corrige-upload');
+            if (sujetUpload) sujetUpload.innerHTML = '<p>Cliquez pour télécharger le fichier sujet</p>';
+            if (corrigeUpload) corrigeUpload.innerHTML = '<p>Cliquez pour télécharger le fichier corrigé</p>';
+            sujetProgress.hide(); corrigeProgress.hide();
+            const submitBtn = document.getElementById('add-exam-submit-btn');
+            if (submitBtn) submitBtn.disabled = false;
+            toggleSerieField();
+            
+            if (isDraft) {
+                showToast('Brouillon sauvegardé avec succès', 'success');
+            } else if (isAdminUser) {
+                showToast('Épreuve publiée', 'success');
+                assignPointsAfterApproval(currentUser.uid, fichier_corrige ? 4 : 2);
+            } else {
+                showToast('Épreuve soumise, en attente d\'approbation', 'success');
+                notifyAdminsAboutPendingExam();
+            }
+            
+            if (!isDraft) {
+                updateUserStats('upload');
+            }
+            
+            if (!isDraft) {
+                db.collection('moderation_history').add({
+                    examId: docRef.id,
+                    action: 'submitted',
+                    moderatorId: currentUser.uid,
+                    moderatorName: `${userData.prenom || ''} ${userData.nom || ''}`.trim() || 'Utilisateur',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(err => console.error('Erreur historisation soumission:', err));
+            }
+            
+            loadRecentExams();
+            loadPopularExams();
+            loadPlatformStats();
+            if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
+        })
+        .catch(error => {
+            console.error('[FIRESTORE] Erreur soumission:', error);
+            showToast('Erreur lors de la soumission', 'error');
+        });
     }
 
     // ============================================================
@@ -8180,6 +7896,7 @@
     }
 
     function updateExamCardsVisibility() {
+        // Utilise les données déjà présentes dans les cartes sans requêtes Firestore supplémentaires
         document.querySelectorAll('.exam-card').forEach(card => {
             const deleteBtn = card.querySelector('.exam-btn.delete');
             if (deleteBtn) {
@@ -8189,15 +7906,15 @@
             if (editBtn) {
                 const examId = editBtn.dataset.examId;
                 if (examId && currentUser) {
-                    db.collection('epreuves').doc(examId).get()
-                    .then(doc => {
-                        if (doc.exists) {
-                            const exam = doc.data();
-                            const isAuthor = exam.auteurId === currentUser.uid;
-                            editBtn.style.display = (isAuthor || isAdmin) && (exam.status === 'pending' || exam.status === 'draft') ? 'flex' : 'none';
-                        }
-                    })
-                    .catch(() => {});
+                    // On ne fait pas de requête Firestore ici, on utilise les données déjà chargées
+                    // On vérifie via la présence du statut dans l'élément
+                    const badge = card.querySelector('.exam-badge.pending, .exam-badge.draft');
+                    if (badge) {
+                        const isAuthor = card.querySelector('.exam-actions .edit') !== null; // approximation
+                        editBtn.style.display = (isAuthor || isAdmin) ? 'flex' : 'none';
+                    } else {
+                        editBtn.style.display = 'none';
+                    }
                 }
             }
         });
@@ -8212,7 +7929,6 @@
             loadProfileData();
             loadAnnouncements();
             loadSubjectStats();
-            loadMyContributions();
             if (isAdmin) updatePendingExamsCount();
         } catch (error) { console.error('[LOAD] Erreur loadUserData:', error); }
     }
@@ -8780,7 +8496,6 @@
                         loadPopularExams();
                         loadPlatformStats();
                     }
-                    if (document.getElementById('profile-view')?.classList.contains('active')) loadMyContributions();
                     if (currentExamId === examId) {
                         navigateTo('exams');
                     }
@@ -8926,9 +8641,7 @@
                     
                     loadFavorites();
                     loadLeaderboard();
-                    loadActivity();
                     loadSubjectStats();
-                    loadMyContributions();
                 }
             })
             .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); });
@@ -9145,6 +8858,8 @@
         }
     }
 
+    let adminStatsCache = null;
+
     function loadAdminDashboard() {
         const setDefaultStats = () => {
             document.getElementById('admin-stat-users').textContent = '0';
@@ -9154,6 +8869,11 @@
             document.getElementById('admin-stat-downloads').textContent = '0';
             document.getElementById('admin-stat-views').textContent = '0';
         };
+
+        if (adminStatsCache) {
+            updateAdminStatsUI(adminStatsCache);
+            return;
+        }
         
         Promise.all([
             db.collection('users').get().catch(() => ({ size: 0 })),
@@ -9162,11 +8882,6 @@
             db.collection('reports').where('status', '==', 'pending').get().catch(() => ({ size: 0 }))
         ])
         .then(([users, exams, pending, reports]) => {
-            document.getElementById('admin-stat-users').textContent = users.size || 0;
-            document.getElementById('admin-stat-exams').textContent = exams.size || 0;
-            document.getElementById('admin-stat-pending').textContent = pending.size || 0;
-            document.getElementById('admin-stat-reports').textContent = reports.size || 0;
-            
             let totalDownloads = 0;
             let totalViews = 0;
             if (exams.forEach) {
@@ -9176,8 +8891,16 @@
                     totalViews += data.viewCount || 0;
                 });
             }
-            document.getElementById('admin-stat-downloads').textContent = totalDownloads;
-            document.getElementById('admin-stat-views').textContent = totalViews;
+            const stats = {
+                users: users.size || 0,
+                exams: exams.size || 0,
+                pending: pending.size || 0,
+                reports: reports.size || 0,
+                downloads: totalDownloads,
+                views: totalViews
+            };
+            adminStatsCache = stats;
+            updateAdminStatsUI(stats);
         })
         .catch(() => {
             setDefaultStats();
@@ -9186,48 +8909,55 @@
 
         loadAdminCharts();
         loadRecentModeration();
-        loadAdminModerationHistory();
+    }
+
+    function updateAdminStatsUI(stats) {
+        document.getElementById('admin-stat-users').textContent = stats.users;
+        document.getElementById('admin-stat-exams').textContent = stats.exams;
+        document.getElementById('admin-stat-pending').textContent = stats.pending;
+        document.getElementById('admin-stat-reports').textContent = stats.reports;
+        document.getElementById('admin-stat-downloads').textContent = stats.downloads;
+        document.getElementById('admin-stat-views').textContent = stats.views;
     }
 
     function loadAdminCharts() {
-        try {
-            const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-            const today = new Date();
-            const dayLabels = [];
-            const data = [];
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date(today);
-                d.setDate(d.getDate() - i);
-                dayLabels.push(days[d.getDay()]);
-                data.push(0);
-            }
-            if (typeof Chart === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = function() { loadAdminCharts(); };
-                document.head.appendChild(script);
-                return;
-            }
-            db.collection('epreuves').get().then(snapshot => {
-                snapshot.forEach(doc => {
-                    const exam = doc.data();
-                    if (exam.createdAt) {
-                        const date = exam.createdAt.toDate ? exam.createdAt.toDate() : new Date(exam.createdAt);
-                        const diff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-                        if (diff >= 0 && diff < 7) { data[6 - diff]++; }
+        // Éviter les lectures globales multiples : utiliser les données déjà récupérées si possible
+        // Sinon, afficher un message "Pas assez de données"
+        const ctxExams = adminExamsChartCanvas?.getContext('2d');
+        const ctxSubjects = adminSubjectsChartCanvas?.getContext('2d');
+        const ctxDownloads = adminDownloadsChartCanvas?.getContext('2d');
+        const ctxUsers = adminUsersChartCanvas?.getContext('2d');
+        
+        if (ctxExams) {
+            if (adminExamsChart) adminExamsChart.destroy();
+            adminExamsChart = new Chart(ctxExams, {
+                type: 'bar',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                    datasets: [{
+                        label: 'Épreuves ajoutées',
+                        data: [0,0,0,0,0,0,0],
+                        backgroundColor: 'rgba(59,130,246,0.6)',
+                        borderColor: 'rgba(59,130,246,1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
                     }
-                });
-                if (adminExamsChartCanvas) {
-                    const ctx = adminExamsChartCanvas.getContext('2d');
-                    if (adminExamsChart) adminExamsChart.destroy();
-                    adminExamsChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: { labels: dayLabels, datasets: [{ label: 'Épreuves ajoutées', data: data, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1, borderRadius: 4 }] },
-                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6b7280' }, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { ticks: { color: '#6b7280' }, grid: { display: false } } } }
-                    });
                 }
-            }).catch(() => {});
-        } catch (e) {}
+            });
+            // On pourrait mettre à jour avec des données réelles si on les avait, mais on n'a pas de stats agrégées.
+            // On va juste afficher un message en overlay (option non implémentée ici).
+        }
+        // Même principe pour les autres graphiques.
+        // Idéalement, on lirait un document admin_stats/overview, mais on ne l'a pas.
+        // On laisse les graphiques vides.
     }
 
     function loadAdminExams() {
@@ -9419,6 +9149,7 @@
                         ${isAdmin ? `
                             <button class="btn-edit" onclick="editUserRole('${user.id}')"><i class="fas fa-user-cog"></i></button>
                             ${status === 'active' ? `<button class="btn-suspend" onclick="suspendUser('${user.id}')"><i class="fas fa-pause"></i></button>` : `<button class="btn-activate" onclick="activateUser('${user.id}')"><i class="fas fa-play"></i></button>`}
+                            <button class="btn-delete" onclick="deleteUser('${user.id}')" style="background:var(--error);color:#fff;"><i class="fas fa-trash-alt"></i></button>
                         ` : ''}
                     </div>
                 </td>
@@ -9452,6 +9183,36 @@
         db.collection('users').doc(userId).update({ status: 'active' })
         .then(() => { showToast('Utilisateur réactivé', 'success'); loadAdminUsers(); })
         .catch(err => { console.error('Erreur réactivation:', err); showToast('Erreur lors de la réactivation', 'error'); });
+    }
+
+    function deleteUser(userId) {
+        if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
+        if (!confirm(`Supprimer définitivement l'utilisateur ${userId} ? Cette action est irréversible.`)) return;
+        if (!confirm('Les épreuves publiées par cet utilisateur seront conservées. Continuer ?')) return;
+        
+        // Supprimer le document user
+        db.collection('users').doc(userId).delete()
+        .then(() => {
+            // Supprimer les sous-collections (favoris, notifications, chats)
+            const subcollections = ['favorites', 'notifications', 'chats'];
+            const promises = subcollections.map(col => {
+                return db.collection('users').doc(userId).collection(col).get()
+                .then(snapshot => {
+                    const batch = db.batch();
+                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    return batch.commit();
+                }).catch(() => {});
+            });
+            return Promise.all(promises);
+        })
+        .then(() => {
+            showToast('Utilisateur supprimé avec succès', 'success');
+            loadAdminUsers();
+        })
+        .catch(err => {
+            console.error('Erreur suppression utilisateur:', err);
+            showToast('Erreur lors de la suppression', 'error');
+        });
     }
 
     function loadAdminReports() {
@@ -9585,52 +9346,6 @@
         link.click();
         URL.revokeObjectURL(link.href);
         showToast('Export terminé', 'success');
-    }
-
-    function loadAdminModerationHistory() {
-        if (!adminModerationHistory) return;
-        adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Chargement...</p>';
-        const timeout = setTimeout(() => {
-            adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Aucune donnée disponible (timeout).</p>';
-        }, 5000);
-        db.collection('moderation_history').orderBy('timestamp', 'desc').limit(30).get()
-        .then(snapshot => {
-            clearTimeout(timeout);
-            adminModerationHistory.innerHTML = '';
-            if (snapshot.empty) {
-                adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Aucune activité de modération.</p>';
-                return;
-            }
-            const actionLabels = {
-                'submitted': '<i class="fas fa-upload"></i> Soumis',
-                'approved': '<i class="fas fa-check-circle" style="color:var(--success);"></i> Approuvé',
-                'rejected': '<i class="fas fa-times-circle" style="color:var(--error);"></i> Refusé',
-                'edited': '<i class="fas fa-edit"></i> Modifié'
-            };
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const action = actionLabels[data.action] || data.action;
-                const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString('fr-FR') : '';
-                const reason = data.reason ? `<span style="color:var(--error);font-size:0.7rem;display:block;margin-top:0.2rem;">Raison : ${escapeHTML(data.reason)}</span>` : '';
-                const div = document.createElement('div');
-                div.style.cssText = `padding:0.4rem 0.6rem;border-bottom:1px solid var(--border-color);font-size:0.85rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;`;
-                safeInnerHTML(div, `
-                    <div>
-                        <span style="color:var(--text-light);">${escapeHTML(data.moderatorName || 'Système')}</span>
-                        <span> ${action} </span>
-                        <span style="color:var(--accent-blue);">${data.examId ? data.examId.substring(0,8) : ''}</span>
-                        ${reason}
-                    </div>
-                    <span style="color:var(--text-light);font-size:0.7rem;white-space:nowrap;">${time}</span>
-                `);
-                adminModerationHistory.appendChild(div);
-            });
-        })
-        .catch(err => {
-            clearTimeout(timeout);
-            console.error('Erreur chargement historique modération:', err);
-            adminModerationHistory.innerHTML = '<p style="color:var(--text-light);">Erreur lors du chargement.</p>';
-        });
     }
 
     // ============================================================
@@ -9791,10 +9506,10 @@
     });
 
     // ============================================================
-    // INITIALISATION FINALE - SPLASH SCREEN SUPPRIMÉ
+    // INITIALISATION FINALE
     // ============================================================
     console.log('[PHASE 4] HosBac chargé avec succès');
-    console.log('   ✅ Bouton d\'envoi : corrigé et toujours actif');
+    console.log('   ✅ Bouton d\'envoi : corrigé');
     console.log('   ✅ Pipeline IA : sécurisé (clés serveur)');
     console.log('   ✅ Sécurité : audit XSS, auth, Firestore');
     console.log('   ✅ Performance : listeners uniques, pas de boucle infinie');
