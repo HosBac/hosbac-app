@@ -195,6 +195,25 @@
         .auth-brand-points { display: grid; gap: .7rem; color: rgba(255,255,255,.9); font-weight: 600; }
         .auth-brand-points span { padding: .6rem .8rem; border: 1px solid rgba(255,255,255,.14); border-radius: 12px; background: rgba(255,255,255,.06); }
         .auth-container > * { position: relative; z-index: 1; }
+        .auth-page-top-brand {
+            position: absolute; top: 22px; left: 28px; z-index: 5;
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border: 1px solid rgba(255,255,255,.10);
+            border-radius: 14px; background: rgba(0,0,0,.28); backdrop-filter: blur(12px);
+        }
+        .auth-page-logo-mark { width: 32px; height: 32px; border-radius: 10px; display:grid; place-items:center;
+            background: linear-gradient(135deg,var(--accent-blue),var(--accent-gold)); color:#fff; font-weight:900; }
+        .auth-page-logo-text { font-size: 1.35rem; font-weight: 900; line-height:1; }
+        .auth-page-logo-text .hos { color:#fff; } .auth-page-logo-text .bac { color:var(--accent-gold); }
+        .auth-page-logo-tagline { color:var(--text-light); font-size:.72rem; padding-left:4px; }
+        .auth-close-btn { display:none !important; }
+        .auth-container { padding-top: clamp(4.5rem, 7vw, 6rem); }
+        .auth-form { max-width: 430px; }
+        .auth-tabs { margin-bottom: 1rem; }
+        .form-group { margin-bottom: .75rem; }
+        .form-group input, .form-group select, .form-group textarea { padding: .62rem .8rem; }
+        .auth-btn { padding: .7rem; }
+        .google-auth-btn { padding: 10px 12px; }
         @keyframes authPageIn { from { opacity: 0; } to { opacity: 1; } }
         .auth-close-btn {
             position: absolute;
@@ -332,6 +351,9 @@
         .ai-thinking-brand { font-weight: 700; letter-spacing: .1px; }
         .ai-thinking-brand > span:first-child { color: var(--primary-blue); }
         .ai-thinking-emoji { display: inline-block; margin-left: .15rem; animation: thinkingDots 1.2s ease-in-out infinite; }
+        .ai-streaming-content { line-height: 1.7; }
+        .ai-streaming-bubble .message-actions, .ai-streaming-bubble .message-time { opacity: 0; transition: opacity .25s ease; }
+        .ai-streaming-bubble.stream-complete .message-actions, .ai-streaming-bubble.stream-complete .message-time { opacity: 1; }
         @keyframes thinkingPulse { 0%,100% { opacity:.72; } 50% { opacity:1; } }
         @keyframes thinkingDots { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 
@@ -2801,7 +2823,10 @@
             }
             .auth-container::before { display: none; }
             .auth-container .auth-brand-panel { display: none; }
-            .auth-close-btn { top: 14px; right: 14px; }
+            .auth-page-top-brand { top: 14px; left: 50%; transform: translateX(-50%); }
+            .auth-page-logo-tagline { display:none; }
+            .auth-container { padding: 4.5rem 1rem 1.25rem; }
+            .auth-form { max-width: 390px; }
             .fullscreen-menu { padding: 16px; }
             .fullscreen-menu-item { padding: 12px 14px; font-size: 0.95rem; }
             .bottom-nav-item { padding: 2px 8px; min-width: 48px; }
@@ -3060,6 +3085,11 @@
 <!-- AUTH SCREEN -->
 <div id="auth-screen">
     <div class="auth-container">
+        <div class="auth-page-top-brand" aria-label="HosBac">
+            <div class="auth-page-logo-mark">H</div>
+            <div class="auth-page-logo-text"><span class="hos">Hos</span><span class="bac">Bac</span></div>
+            <span class="auth-page-logo-tagline">Plateforme éducative</span>
+        </div>
         <div class="auth-brand-panel">
             <div class="auth-brand-logo"><span class="hos">Hos</span><span class="bac">Bac</span></div>
             <h1>Apprenez. Comprenez. Réussissez.</h1>
@@ -4138,6 +4168,12 @@
     let adminExamsCache = [];
     let adminUsersCache = [];
     let adminReportsCache = [];
+    let adminExamHasNext = false;
+    let adminUserHasNext = false;
+    let adminExamPage = 1;
+    let adminUserPage = 1;
+    let adminExamPageCursors = [null];
+    let adminUserPageCursors = [null];
 
     // ============================================================
     // CACHE / ANTI-QUOTA FIRESTORE
@@ -5170,6 +5206,49 @@
         chatHistory.push({ id: 'welcome-' + Date.now(), role: 'model', parts: [{ text: welcomeText }], timestamp: new Date().toISOString() });
     }
 
+    async function addBotMessageAnimated(text, time = null) {
+        const container = assistantMessages;
+        if (!container) return;
+        const timeStr = time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const id = generateMessageId();
+        const welcomeEl = container.querySelector('.chat-message.welcome');
+        if (welcomeEl) welcomeEl.remove();
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message bot';
+        msgDiv.dataset.messageId = id;
+        msgDiv.setAttribute('data-raw-text', text);
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'message-avatar';
+        avatarDiv.textContent = 'H';
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble ai-streaming-bubble';
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'ai-streaming-content';
+        bubbleDiv.appendChild(contentDiv);
+        msgDiv.appendChild(avatarDiv); msgDiv.appendChild(bubbleDiv); container.appendChild(msgDiv);
+
+        chatHistory.push({ id, role:'model', parts:[{text}], timestamp:new Date().toISOString() });
+
+        const words = String(text).split(/(\s+)/);
+        let built = '';
+        const delay = Math.max(12, Math.min(38, Math.round(2600 / Math.max(1, words.filter(w => /\S/.test(w)).length))));
+        for (const token of words) {
+            built += token;
+            safeInnerHTML(contentDiv, formatMessage(built));
+            container.scrollTop = container.scrollHeight;
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        safeInnerHTML(contentDiv, formatMessage(text));
+        const actions = createMessageActions(id, text);
+        bubbleDiv.appendChild(actions);
+        const timeEl = document.createElement('div');
+        timeEl.className = 'message-time'; timeEl.textContent = timeStr; bubbleDiv.appendChild(timeEl);
+        bubbleDiv.classList.add('stream-complete');
+        typesetMath(bubbleDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+
     function addChatMessage(text, sender, time = null, fileInfo = null) {
         const timeStr = time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         const isBot = sender === 'bot';
@@ -5572,7 +5651,7 @@
 
             const data = await response.json();
             const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Je n\'ai pas de réponse à cela.';
-            addChatMessage(textResponse, 'bot');
+            await addBotMessageAnimated(textResponse);
 
             if (currentUser) {
                 aiConversationCount++;
@@ -6349,11 +6428,13 @@
         if(!force && leaderboardCache.data.length && now-leaderboardCache.timestamp<HOSBAC_CACHE_TTL){ return renderLeaderboard(leaderboardCache.data); }
         leaderboardList.innerHTML='<p style="color:var(--text-light);">Chargement du classement...</p>';
         try{
-            const snap=await db.collection('users').orderBy('totalXp','desc').limit(10).get();
-            const data=snap.docs.map(d=>({id:d.id,...d.data()}));
+            // Anti-quota : le classement public est servi depuis l'agrégat, pas depuis toute la collection users.
+            const snap=await db.doc('settings/public').get();
+            const publicData=snap.exists ? (snap.data()||{}) : {};
+            const data=Array.isArray(publicData.leaderboard) ? publicData.leaderboard.slice(0,10).map((u,i)=>({id:u.id||String(i),...u})) : [];
             leaderboardCache={data,timestamp:now};
             renderLeaderboard(data);
-        }catch(err){ console.error('Erreur chargement leaderboard:',err); leaderboardList.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement du classement.</p>'; }
+        }catch(err){ console.error('Erreur chargement leaderboard:',err); leaderboardList.innerHTML='<p style="color:var(--text-light);">Classement momentanément indisponible.</p>'; }
     }
 
     function renderLeaderboard(data){
@@ -7400,23 +7481,23 @@
             }
             
             if (adminExamSearch && !adminExamSearch._listenerAttached) {
-                adminExamSearch.addEventListener('input', debounce(filterAndRenderAdminExams, 200));
+                adminExamSearch.addEventListener('input', debounce(() => loadAdminExams(true), 350));
                 adminExamSearch._listenerAttached = true;
             }
             if (adminExamStatus && !adminExamStatus._listenerAttached) {
-                adminExamStatus.addEventListener('change', filterAndRenderAdminExams);
+                adminExamStatus.addEventListener('change', () => loadAdminExams(true));
                 adminExamStatus._listenerAttached = true;
             }
             if (adminExamSubject && !adminExamSubject._listenerAttached) {
-                adminExamSubject.addEventListener('change', filterAndRenderAdminExams);
+                adminExamSubject.addEventListener('change', () => loadAdminExams(true));
                 adminExamSubject._listenerAttached = true;
             }
             if (adminUserSearch && !adminUserSearch._listenerAttached) {
-                adminUserSearch.addEventListener('input', debounce(filterAndRenderAdminUsers, 200));
+                adminUserSearch.addEventListener('input', debounce(() => loadAdminUsers(true), 350));
                 adminUserSearch._listenerAttached = true;
             }
             if (adminUserRole && !adminUserRole._listenerAttached) {
-                adminUserRole.addEventListener('change', filterAndRenderAdminUsers);
+                adminUserRole.addEventListener('change', () => loadAdminUsers(true));
                 adminUserRole._listenerAttached = true;
             }
             if (adminReportStatus && !adminReportStatus._listenerAttached) {
@@ -7828,9 +7909,8 @@
         pendingExamsListener = null;
     }
 
-    function updatePendingExamsCount() {
-        if (!adminRawExamsCache.data.length) return;
-        const count = adminRawExamsCache.data.filter(e => e.status === 'pending').length;
+    function updatePendingExamsCount(countOverride = null) {
+        const count = countOverride !== null ? Number(countOverride || 0) : adminRawExamsCache.data.filter(e => e.status === 'pending').length;
         const badge = document.getElementById('admin-pending-count');
         if (badge) { badge.textContent = count; badge.style.display = count ? 'inline-flex' : 'none'; }
     }
@@ -8530,11 +8610,12 @@
 
     async function loadFavorites() {
         if(!currentUser) return;
+        // Maximum 8 lectures de documents d'épreuves par ouverture du profil, avec cache TTL.
         const container=document.getElementById('favorites-list'); if(!container) return;
         if(!userData?.favorites?.length){ container.innerHTML='<p style="color:var(--text-light);">Aucun favori.</p>'; return; }
         container.innerHTML='<p style="color:var(--text-light);">Chargement des favoris...</p>';
         try{
-            const docs=await Promise.all(userData.favorites.slice(0,20).map(async id=>{
+            const docs=await Promise.all(userData.favorites.slice(0,8).map(async id=>{
                 const cached=examDocCache.get(id);
                 if(cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL) return {id,exists:true,data:()=>cached.data};
                 const doc=await db.collection('epreuves').doc(id).get();
@@ -8779,49 +8860,48 @@
         const now = Date.now();
         if (!force && adminDashboardCache.data && now - adminDashboardCache.timestamp < HOSBAC_CACHE_TTL) {
             updateAdminStatsUI(adminDashboardCache.data.stats);
-            renderAdminCharts(adminDashboardCache.data.exams, adminDashboardCache.data.users);
+            renderAdminChartsFromAggregate(adminDashboardCache.data);
             return;
         }
         try {
-            const [usersSnap, examsSnap, reportsSnap] = await Promise.all([
-                db.collection('users').get(),
-                db.collection('epreuves').get(),
-                db.collection('reports').where('status', '==', 'pending').get()
-            ]);
-            const users = usersSnap.docs.map(d => ({ id:d.id, ...d.data() }));
-            const exams = examsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
-            const stats = {
-                users: users.length,
-                exams: exams.length,
-                pending: exams.filter(e => e.status === 'pending').length,
-                reports: reportsSnap.size,
-                downloads: exams.reduce((n,e) => n + Number(e.downloadCount || 0), 0),
-                views: exams.reduce((n,e) => n + Number(e.viewCount || 0), 0)
+            // Anti-quota : le dashboard ne lit plus /users ni /epreuves.
+            // Une seule lecture d'un document agrégé, alimenté côté serveur/admin.
+            const snap = await db.doc('admin_stats/overview').get();
+            if (!snap.exists) {
+                const empty = { stats:{users:0,exams:0,pending:0,reports:0,downloads:0,views:0},
+                    charts:{examsByDay:[],subjects:[],downloadsByMonth:[],usersByMonth:[]} };
+                adminDashboardCache = { data: empty, timestamp: now };
+                updateAdminStatsUI(empty.stats);
+                renderAdminChartsFromAggregate(empty);
+                showToast('Les statistiques agrégées ne sont pas encore configurées.', 'warning');
+                return;
+            }
+            const raw = snap.data() || {};
+            const statsRaw = raw.stats || raw;
+            const data = {
+                stats: {
+                    users: Number(statsRaw.users ?? statsRaw.userCount ?? 0) || 0,
+                    exams: Number(statsRaw.exams ?? statsRaw.examCount ?? 0) || 0,
+                    pending: Number(statsRaw.pending ?? statsRaw.pendingExams ?? 0) || 0,
+                    reports: Number(statsRaw.reports ?? statsRaw.pendingReports ?? 0) || 0,
+                    downloads: Number(statsRaw.downloads ?? statsRaw.totalDownloads ?? 0) || 0,
+                    views: Number(statsRaw.views ?? statsRaw.totalViews ?? 0) || 0
+                },
+                charts: raw.charts || {
+                    examsByDay: raw.examsByDay || [],
+                    subjects: raw.subjects || raw.subjectDistribution || [],
+                    downloadsByMonth: raw.downloadsByMonth || [],
+                    usersByMonth: raw.usersByMonth || []
+                }
             };
-            adminDashboardCache = { data:{ stats, exams, users }, timestamp:now };
-            adminStatsCache = stats;
-            adminRawExamsCache = { data:exams, timestamp:now };
-            adminRawUsersCache = { data:users, timestamp:now };
-            adminExamsCache = exams.slice();
-            adminUsersCache = users.slice();
-            exams.forEach(e => examDocCache.set(e.id,{data:e,timestamp:now}));
-            updateAdminStatsUI(stats);
-            updatePendingExamsCount();
-            renderAdminCharts(exams, users);
-            // Agrégat public : les visiteurs ne relisent plus toute la collection epreuves/users.
-            const subjectDistribution = {};
-            exams.filter(e=>e.status==='approved').forEach(e=>{ if(e.matiere) subjectDistribution[e.matiere]=(subjectDistribution[e.matiere]||0)+1; });
-            db.doc('settings/public').set({
-                examCount: exams.filter(e=>e.status==='approved').length,
-                corrigeCount: exams.filter(e=>e.status==='approved' && e.fichier_corrige).length,
-                subjectCount: Object.keys(subjectDistribution).length,
-                subjectDistribution,
-                userCount: users.length,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge:true }).catch(err=>console.warn('[STATS] Agrégat public non mis à jour:',err.message));
+            adminDashboardCache = { data, timestamp: now };
+            adminStatsCache = data.stats;
+            updateAdminStatsUI(data.stats);
+            renderAdminChartsFromAggregate(data);
+            updatePendingExamsCount(data.stats.pending);
         } catch (err) {
-            console.error('Erreur chargement dashboard:', err);
-            showToast('Impossible de charger les données du tableau de bord.', 'warning');
+            console.error('[ADMIN_STATS] Erreur lecture agrégat:', err);
+            showToast('Impossible de charger les statistiques administratives.', 'warning');
         }
     }
 
@@ -8834,74 +8914,76 @@
         document.getElementById('admin-stat-views').textContent = stats.views;
     }
 
-    function renderAdminCharts(exams = [], users = []) {
+    function renderAdminChartsFromAggregate(data = {}) {
         if (typeof Chart === 'undefined') {
             if (!window._hosbacChartLoader) {
                 window._hosbacChartLoader = new Promise((resolve,reject)=>{
-                    const script=document.createElement('script');
-                    script.src='https://cdn.jsdelivr.net/npm/chart.js';
-                    script.onload=resolve; script.onerror=reject;
-                    document.head.appendChild(script);
+                    const script=document.createElement('script'); script.src='https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload=resolve; script.onerror=reject; document.head.appendChild(script);
                 });
             }
-            window._hosbacChartLoader.then(()=>renderAdminCharts(exams,users)).catch(()=>showToast('Impossible de charger les graphiques.', 'warning'));
+            window._hosbacChartLoader.then(()=>renderAdminChartsFromAggregate(data)).catch(()=>showToast('Impossible de charger les graphiques.', 'warning'));
             return;
         }
-        const make = (canvas, oldChart, config) => {
-            if (!canvas) return oldChart;
-            const ctx=canvas.getContext('2d');
-            if (!ctx) return oldChart;
-            if (oldChart) oldChart.destroy();
-            return new Chart(ctx, config);
+        const charts = data.charts || {};
+        const make=(canvas,oldChart,config)=>{ if(!canvas)return oldChart; const ctx=canvas.getContext('2d'); if(!ctx)return oldChart; if(oldChart)oldChart.destroy(); return new Chart(ctx,config); };
+        const normalizePairs=(value)=>{
+            if(Array.isArray(value)) return value.map(x=>({label:String(x.label??x.name??x.month??x.day??''),value:Number(x.value??x.count??0)||0}));
+            if(value && typeof value==='object') return Object.entries(value).map(([label,v])=>({label,value:Number(v)||0}));
+            return [];
         };
-        const now=new Date();
-        const dayLabels=[]; const dayData=[0,0,0,0,0,0,0];
-        for(let i=6;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); dayLabels.push(d.toLocaleDateString('fr-FR',{weekday:'short'})); }
-        exams.forEach(e=>{ if(e.createdAt){ const d=e.createdAt.toDate?e.createdAt.toDate():new Date(e.createdAt); const diff=Math.floor((now-d)/86400000); if(diff>=0&&diff<7) dayData[6-diff]++; }});
-        adminExamsChart=make(adminExamsChartCanvas,adminExamsChart,{type:'bar',data:{labels:dayLabels,datasets:[{label:'Épreuves ajoutées',data:dayData}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+        const exams=normalizePairs(charts.examsByDay);
+        const subjects=normalizePairs(charts.subjects);
+        const downloads=normalizePairs(charts.downloadsByMonth);
+        const users=normalizePairs(charts.usersByMonth);
+        const labelsFallback=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+        const e=exams.length?exams:[...labelsFallback.map(label=>({label,value:0}))];
+        adminExamsChart=make(adminExamsChartCanvas,adminExamsChart,{type:'bar',data:{labels:e.map(x=>x.label),datasets:[{label:'Épreuves ajoutées',data:e.map(x=>x.value)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+        const s=subjects.length?subjects:[{label:'Aucune donnée',value:0}];
+        adminSubjectsChart=make(adminSubjectsChartCanvas,adminSubjectsChart,{type:'doughnut',data:{labels:s.map(x=>x.label),datasets:[{data:s.map(x=>x.value)}]},options:{responsive:true,maintainAspectRatio:false}});
+        const d=downloads.length?downloads:[{label:'Aucune donnée',value:0}];
+        adminDownloadsChart=make(adminDownloadsChartCanvas,adminDownloadsChart,{type:'bar',data:{labels:d.map(x=>x.label),datasets:[{label:'Téléchargements',data:d.map(x=>x.value)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+        const u=users.length?users:[...labelsFallback.map(label=>({label,value:0}))];
+        adminUsersChart=make(adminUsersChartCanvas,adminUsersChart,{type:'bar',data:{labels:u.map(x=>x.label),datasets:[{label:'Nouveaux utilisateurs',data:u.map(x=>x.value)}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+    }
 
-        const subjects={}; exams.filter(e=>e.status==='approved').forEach(e=>{ if(e.matiere) subjects[e.matiere]=(subjects[e.matiere]||0)+1; });
-        const topSubjects=Object.entries(subjects).sort((a,b)=>b[1]-a[1]).slice(0,8);
-        adminSubjectsChart=make(adminSubjectsChartCanvas,adminSubjectsChart,{type:'doughnut',data:{labels:topSubjects.map(x=>x[0]),datasets:[{data:topSubjects.map(x=>x[1])}]},options:{responsive:true,maintainAspectRatio:false}});
-
-        const totalDownloads=exams.reduce((n,e)=>n+Number(e.downloadCount||0),0);
-        adminDownloadsChart=make(adminDownloadsChartCanvas,adminDownloadsChart,{type:'bar',data:{labels:['Total actuel'],datasets:[{label:'Téléchargements cumulés',data:[totalDownloads]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-
-        const userCounts=[0,0,0,0,0,0,0];
-        users.forEach(u=>{ if(u.createdAt){ const d=u.createdAt.toDate?u.createdAt.toDate():new Date(u.createdAt); const diff=Math.floor((now-d)/86400000); if(diff>=0&&diff<7) userCounts[6-diff]++; }});
-        adminUsersChart=make(adminUsersChartCanvas,adminUsersChart,{type:'bar',data:{labels:dayLabels,datasets:[{label:'Nouveaux utilisateurs',data:userCounts}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}});
+    // Compatibilité interne : aucune collection globale n'est relue.
+    function renderAdminCharts() {
+        if (adminDashboardCache.data) renderAdminChartsFromAggregate(adminDashboardCache.data);
     }
 
     async function loadAdminExams(force = false) {
         if (!adminExamsBody) return;
-        const now=Date.now();
+        const page = force ? 1 : adminExamPage;
+        if (force) { adminExamPage = 1; adminExamPageCursors = [null]; }
+        const search=(adminExamSearch?.value||'').trim().toLowerCase();
+        const status=adminExamStatus?.value||'';
+        const subject=adminExamSubject?.value||'';
+        adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
         try {
-            if (force || !adminRawExamsCache.data.length || now-adminRawExamsCache.timestamp>=HOSBAC_CACHE_TTL) {
-                adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
-                const snap=await db.collection('epreuves').orderBy('createdAt','desc').get();
-                adminRawExamsCache={data:snap.docs.map(d=>({id:d.id,...d.data()})),timestamp:now};
-                adminRawExamsCache.data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
-                adminDashboardCache.timestamp=0;
-            }
-            filterAndRenderAdminExams();
-            updatePendingExamsCount();
+            let query=db.collection('epreuves').orderBy('createdAt','desc');
+            if(status) query=query.where('status','==',status);
+            if(subject) query=query.where('matiere','==',subject);
+            query=query.limit(ADMIN_ITEMS_PER_PAGE);
+            const cursor=adminExamPageCursors[page-1];
+            if(cursor) query=query.startAfter(cursor);
+            const snap=await query.get();
+            adminExamHasNext=snap.size===ADMIN_ITEMS_PER_PAGE;
+            if(adminExamHasNext) adminExamPageCursors[page]=snap.docs[snap.docs.length-1];
+            adminExamPage=page;
+            adminExamsCache=snap.docs.map(d=>({id:d.id,...d.data()}));
+            adminRawExamsCache={data:adminExamsCache,timestamp:Date.now()};
+            adminExamsCache=search ? adminExamsCache.filter(e=>(e.nom_epreuve||'').toLowerCase().includes(search)||(e.matiere||'').toLowerCase().includes(search)||(e.auteurNom||'').toLowerCase().includes(search)) : adminExamsCache;
+            adminExamsCache.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:Date.now()}));
+            renderAdminExamsPage(adminExamPage);
+            updatePendingExamsCount(adminDashboardCache.data?.stats?.pending ?? null);
         } catch(err) {
             console.error('Erreur chargement épreuves admin:',err);
             adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
         }
     }
 
-    function filterAndRenderAdminExams() {
-        const search=(adminExamSearch?.value||'').trim().toLowerCase();
-        const status=adminExamStatus?.value||'';
-        const subject=adminExamSubject?.value||'';
-        let exams=adminRawExamsCache.data.slice();
-        if(status) exams=exams.filter(e=>e.status===status);
-        if(subject) exams=exams.filter(e=>e.matiere===subject);
-        if(search) exams=exams.filter(e=>(e.nom_epreuve||'').toLowerCase().includes(search)||(e.matiere||'').toLowerCase().includes(search)||(e.auteurNom||'').toLowerCase().includes(search));
-        adminExamsCache=exams;
-        renderAdminExamsPage(1);
-    }
+    function filterAndRenderAdminExams() { loadAdminExams(true); }
 
     function renderAdminExamsPage(page) {
         const totalPages = Math.ceil(adminExamsCache.length / ADMIN_ITEMS_PER_PAGE);
@@ -8950,7 +9032,16 @@
             tr.querySelector('.admin-reject-exam')?.addEventListener('click', () => rejectExamAdmin(exam.id));
             tr.querySelector('.admin-delete-exam')?.addEventListener('click', () => deleteExam(exam.id));
         });
-        renderAdminPagination(totalPages, adminExamsPagination, renderAdminExamsPage);
+        renderCursorPagination(adminExamsPagination, adminExamPage, adminExamHasNext, (p)=>{ adminExamPage=p; loadAdminExams(false); });
+    }
+
+    function renderCursorPagination(container, currentPage, hasNext, callback) {
+        if(!container) return;
+        container.innerHTML = `<button type="button" data-page="prev" ${currentPage<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>
+            <span style="padding:0 .7rem;color:var(--text-light);">Page ${currentPage}</span>
+            <button type="button" data-page="next" ${hasNext?'':'disabled'}><i class="fas fa-chevron-right"></i></button>`;
+        container.querySelector('[data-page="prev"]')?.addEventListener('click',()=>{ if(currentPage>1) callback(currentPage-1); });
+        container.querySelector('[data-page="next"]')?.addEventListener('click',()=>{ if(hasNext) callback(currentPage+1); });
     }
 
     function renderAdminPagination(totalPages, container, callback) {
@@ -8975,29 +9066,31 @@
 
     async function loadAdminUsers(force = false) {
         if (!adminUsersBody) return;
-        const now=Date.now();
-        try {
-            if (force || !adminRawUsersCache.data.length || now-adminRawUsersCache.timestamp>=HOSBAC_CACHE_TTL) {
-                adminUsersBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
-                const snap=await db.collection('users').orderBy('createdAt','desc').get();
-                adminRawUsersCache={data:snap.docs.map(d=>({id:d.id,...d.data()})),timestamp:now};
-            }
-            filterAndRenderAdminUsers();
-        } catch(err) {
+        const page=force?1:adminUserPage;
+        if(force){adminUserPage=1;adminUserPageCursors=[null];}
+        adminUsersBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
+        const search=(adminUserSearch?.value||'').trim().toLowerCase();
+        const role=adminUserRole?.value||'';
+        try{
+            let query=db.collection('users').orderBy('createdAt','desc');
+            if(role) query=query.where('role','==',role);
+            query=query.limit(ADMIN_ITEMS_PER_PAGE);
+            const cursor=adminUserPageCursors[page-1]; if(cursor) query=query.startAfter(cursor);
+            const snap=await query.get();
+            adminUserHasNext=snap.size===ADMIN_ITEMS_PER_PAGE;
+            if(adminUserHasNext) adminUserPageCursors[page]=snap.docs[snap.docs.length-1];
+            adminUserPage=page;
+            adminUsersCache=snap.docs.map(d=>({id:d.id,...d.data()}));
+            adminRawUsersCache={data:adminUsersCache,timestamp:Date.now()};
+            if(search) adminUsersCache=adminUsersCache.filter(u=>(u.nom||'').toLowerCase().includes(search)||(u.prenom||'').toLowerCase().includes(search)||(u.email||'').toLowerCase().includes(search));
+            renderAdminUsersPage(adminUserPage);
+        }catch(err){
             console.error('Erreur chargement utilisateurs admin:',err);
             adminUsersBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Erreur lors du chargement.</td></tr>';
         }
     }
 
-    function filterAndRenderAdminUsers() {
-        const search=(adminUserSearch?.value||'').trim().toLowerCase();
-        const role=adminUserRole?.value||'';
-        let users=adminRawUsersCache.data.slice();
-        if(role) users=users.filter(u=>u.role===role);
-        if(search) users=users.filter(u=>(u.nom||'').toLowerCase().includes(search)||(u.prenom||'').toLowerCase().includes(search)||(u.email||'').toLowerCase().includes(search));
-        adminUsersCache=users;
-        renderAdminUsersPage(1);
-    }
+    function filterAndRenderAdminUsers(){ loadAdminUsers(true); }
 
     function renderAdminUsersPage(page) {
         const totalPages = Math.ceil(adminUsersCache.length / ADMIN_ITEMS_PER_PAGE);
@@ -9047,7 +9140,7 @@
             tr.querySelector('.admin-activate-user')?.addEventListener('click', () => activateUser(user.id));
             tr.querySelector('.admin-delete-user')?.addEventListener('click', () => deleteUser(user.id));
         });
-        renderAdminPagination(totalPages, adminUsersPagination, renderAdminUsersPage);
+        renderCursorPagination(adminUsersPagination, adminUserPage, adminUserHasNext, (p)=>{ adminUserPage=p; loadAdminUsers(false); });
     }
 
     function editUserRole(userId) {
