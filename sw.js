@@ -1,41 +1,13 @@
-// sw.js – Service Worker minimal pour HosBac
-const CACHE_NAME = 'hosbac-v2';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/favicon.png',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png'
-];
+const CACHE_NAME = 'hosbac-static-v3';
 
-// Installation : mise en cache des ressources statiques
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
-});
+self.addEventListener('install', event => { event.waitUntil(self.skipWaiting()); });
+self.addEventListener('activate', event => { event.waitUntil(self.clients.claim()); });
 
-// Activation : nettoyage des anciens caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(name => {
-          if (name !== CACHE_NAME) {
-            return caches.delete(name);
-          }
-        })
-      );
-    })
-  );
-});
-
-// Interception des requêtes : stratégie "Cache First"
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-  );
+  const request = event.request;
+  const url = new URL(request.url);
+  // Never intercept Firebase Auth/Firestore, Vercel API, Cloudinary or any CDN.
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/')) return;
+  event.respondWith(fetch(request).catch(() => caches.match(request)));
 });
