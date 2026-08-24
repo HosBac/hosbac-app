@@ -16,7 +16,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -3169,10 +3168,13 @@
             <div class="auth-switch-link">Vous n'avez pas de compte ? <span id="switch-to-signup">S'inscrire</span></div>
         </form>
         <form id="signup-form" class="auth-form">
-            <div class="form-group"><label for="signup-nom">Nom</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
-            <div class="form-group"><label for="signup-prenom">Prénom</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
-            <div class="form-group"><label for="signup-ecole">École</label><input type="text" id="signup-ecole" placeholder="Votre établissement" required></div>
-            <div class="form-group"><label for="signup-email">Email</label><input type="email" id="signup-email" placeholder="votre@email.com" required></div>
+            <div class="form-group"><label for="signup-nom">Nom *</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
+            <div class="form-group"><label for="signup-prenom">Prénom *</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
+            <div class="form-group"><label for="signup-phone">Numéro de téléphone *</label><input type="tel" id="signup-phone" placeholder="Ex. +229 01 90 00 00 00" required autocomplete="tel"></div>
+            <div class="form-group"><label for="signup-classe">Classe *</label><select id="signup-classe" required><option value="">Sélectionner une classe</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div>
+            <div class="form-group" id="signup-serie-group" style="display:none"><label for="signup-serie">Série *</label><select id="signup-serie"></select></div>
+            <div class="form-group"><label for="signup-ecole">Établissement <span style="opacity:.65">(optionnel)</span></label><input type="text" id="signup-ecole" placeholder="Votre établissement"></div>
+            <div class="form-group"><label for="signup-email">Adresse email *</label><input type="email" id="signup-email" placeholder="votre@email.com" required autocomplete="email"></div>
             <div class="form-group password-field"><label for="signup-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <div class="form-group" id="confirm-password-group">
                 <label for="signup-confirm-password">Confirmer le mot de passe</label>
@@ -3535,7 +3537,7 @@
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-nom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Nom</label><input type="text" id="edit-nom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-prenom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Prénom</label><input type="text" id="edit-prenom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                     </div>
-                    <div class="form-group"><label for="edit-classe" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Classe</label><input type="text" id="edit-classe" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+                    <div class="form-group"><label for="edit-classe">Classe *</label><select id="edit-classe"><option value="">Sélectionner</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div><div class="form-group" id="edit-serie-group" style="display:none"><label for="edit-serie">Série</label><select id="edit-serie"></select></div>
                     <button type="submit" class="submit-btn">Sauvegarder</button>
                 </form>
             </div>
@@ -3772,15 +3774,7 @@
                         </div>
                         <div class="form-group">
                             <label for="legal-privacy" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Politique de Confidentialité</label>
-                            <textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="legal-about" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">À propos</label>
-                            <textarea id="legal-about" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Présentation de HosBac..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="legal-faq" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">FAQ</label>
-                            <textarea id="legal-faq" rows="8" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Questions fréquentes et réponses..."></textarea>
+                            <label style="display:block;margin:.6rem 0 .3rem;font-weight:600">À propos</label><textarea id="legal-about" rows="6" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);resize:vertical;" placeholder="Présentation de HosBac..."></textarea><label style="display:block;margin:.6rem 0 .3rem;font-weight:600">FAQ</label><textarea id="legal-faq" rows="6" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);resize:vertical;" placeholder="Questions fréquentes..."></textarea><textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
                         </div>
                         <button type="submit" class="submit-btn" id="update-legal-btn">Enregistrer les textes</button>
                     </form>
@@ -3801,10 +3795,7 @@
             </div>
             <div class="footer-links">
                 <button type="button" class="footer-link footer-quiz-link" id="footer-quiz-btn"><i class="fas fa-graduation-cap"></i> Quiz</button>
-                <div class="footer-link" id="about-link" data-legal="about">À propos</div>
-                <div class="footer-link" id="faq-link" data-legal="faq">FAQ</div>
-                <div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div>
-                <div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
+                <div class="footer-link" id="about-link" data-legal="about">À propos</div><div class="footer-link" id="faq-link" data-legal="faq">FAQ</div><div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div><div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
             </div>
         </div>
     </footer>
@@ -4156,22 +4147,6 @@
     </div>
 </div>
 
-<div id="about-popup" class="popup-overlay">
-    <div class="popup-content">
-        <button class="popup-close"><i class="fas fa-times"></i></button>
-        <h2 class="popup-title"><i class="fas fa-circle-info"></i> À propos de HosBac</h2>
-        <div id="about-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
-    </div>
-</div>
-
-<div id="faq-popup" class="popup-overlay">
-    <div class="popup-content">
-        <button class="popup-close"><i class="fas fa-times"></i></button>
-        <h2 class="popup-title"><i class="fas fa-circle-question"></i> FAQ</h2>
-        <div id="faq-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
-    </div>
-</div>
-
 <!-- INTERFACE APPEL VOCAL (PLEIN ÉCRAN) -->
 <div id="call-interface" class="call-interface">
     <div class="call-logo"><span class="hos">Hos</span><span class="bac">Bac</span></div>
@@ -4233,7 +4208,6 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     const cloudName = "dqn1dbimm";
-    const uploadPreset = "hosbac_preset";
     
     const pdfjsLib = window.pdfjsLib;
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -4422,8 +4396,6 @@
     const profileForm = document.getElementById('profile-form');
     const termsLink = document.getElementById('terms-link');
     const privacyLink = document.getElementById('privacy-link');
-    const aboutLink = document.getElementById('about-link');
-    const faqLink = document.getElementById('faq-link');
     const popupCloseButtons = document.querySelectorAll('.popup-close');
     const filterClass = document.getElementById('filter-class');
     const filterSubject = document.getElementById('filter-subject');
@@ -5717,7 +5689,7 @@
             const payload = {
                 system_instruction: {
                     parts: [{
-                        text: "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. Pour les mathématiques, affiche toujours les formules en LaTeX lisible avec $...$ pour l'inline et $$...$$ pour les formules en bloc; n'écris jamais les formules mathématiques sous forme de texte brut illisible. Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " + 
+                        text: "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " + 
                         (isPedagogical ? "L'utilisateur a demandé un mode pédagogique spécifique. Adapte ta réponse en conséquence." : "") +
                         "\n\nVoici la liste des épreuves disponibles sur la plateforme :\n" + examsSummary
                     }]
@@ -6732,6 +6704,12 @@
         try {
             if (user) {
                 currentUser = user;
+                if (user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
+                    if (app) app.style.display = 'none';
+                    if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
+                    showToast('Vérifiez votre adresse email avant de continuer.', 'warning');
+                    return;
+                }
                 if (app) app.style.display = 'block';
                 if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
                 checkUserRole().then(() => {
@@ -6898,7 +6876,7 @@
             const prenom = display.shift() || 'Utilisateur';
             const nom = display.join(' ');
             const data = {
-                nom, prenom, ecole:'', email:user.email || '', classe:'', points:0,
+                nom, prenom, phone:'', ecole:'', email:user.email || '', classe:'', serie:'', points:0,
                 examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
                 dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
                 totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
@@ -6914,7 +6892,8 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 const credential = await auth.signInWithPopup(provider);
-                await ensureGoogleUserProfile(credential.user);
+                const googleProfile=await ensureGoogleUserProfile(credential.user);
+                if(!googleProfile.classe){showToast('Compte Google créé. Complétez maintenant votre classe et votre série depuis le profil.', 'warning');navigateTo('profile');return;}
                 showToast('Connexion Google réussie', 'success');
             } catch (error) {
                 console.error('[AUTH] Google:', error);
@@ -6949,6 +6928,11 @@
             const nom = document.getElementById('signup-nom')?.value || '';
             const prenom = document.getElementById('signup-prenom')?.value || '';
             const ecole = document.getElementById('signup-ecole')?.value || '';
+            const phone = document.getElementById('signup-phone')?.value.trim() || '';
+            const classe = document.getElementById('signup-classe')?.value || '';
+            const serie = document.getElementById('signup-serie')?.value || '';
+            if(!classe){showToast('La classe est obligatoire.','warning');return;}
+            if(seriesForClass(classe).length&&!serie){showToast('La série est obligatoire pour cette classe.','warning');return;}
             const email = document.getElementById('signup-email')?.value || '';
             const password = document.getElementById('signup-password')?.value || '';
             if (password.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'warning'); return; }
@@ -6956,7 +6940,7 @@
             .then(userCredential => {
                 currentUser = userCredential.user;
                 return db.collection('users').doc(currentUser.uid).set({
-                    nom, prenom, ecole, email, classe: '', points: 0,
+                    nom, prenom, phone, ecole, email, classe, serie: seriesForClass(classe).length ? serie : '', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'student',
                     likedAnnouncements: [], favorites: [],
                     dailyMessageCount: 0,
@@ -6976,7 +6960,8 @@
                     status: 'active'
                 });
             })
-            .then(() => showToast('Inscription réussie', 'success'))
+            .then(() => auth.currentUser?.sendEmailVerification({url: window.location.href}))
+            .then(() => { showToast('Compte créé. Un email de vérification vient de vous être envoyé. Vérifiez votre boîte mail avant de continuer.', 'success'); return auth.signOut(); })
             .catch(error => {
                 console.error('[AUTH] Erreur inscription:', error);
                 const messages = {
@@ -7067,7 +7052,10 @@
             .catch(error => console.error('[AUTH] Erreur déconnexion:', error));
         });
 
-        profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile(); });
+        function toggleSignupSerie(){const c=document.getElementById('signup-classe')?.value||'',g=document.getElementById('signup-serie-group');if(g)g.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('signup-serie'),c);}
+function toggleEditProfileSerie(){const c=document.getElementById('edit-classe')?.value||'',g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('edit-serie'),c,document.getElementById('edit-serie')?.value||'');}
+document.getElementById('signup-classe')?.addEventListener('change',toggleSignupSerie);document.getElementById('edit-classe')?.addEventListener('change',toggleEditProfileSerie);toggleSignupSerie();
+profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile(); });
 
         popupCloseButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -7210,77 +7198,21 @@
             rejectionReason.value = '';
         });
 
-        // Cloudinary Upload Widgets
-        let sujetUploadWidget, corrigeUploadWidget, corrigeOnlyUploadWidget;
-        try {
-            sujetUploadWidget = cloudinary.createUploadWidget({
-                cloudName, uploadPreset, sources: ['local'], multiple: false,
-                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
-            }, (error, result) => {
-                const submitBtn = document.getElementById('add-exam-submit-btn');
-                if (!error && result && result.event === 'success') {
-                    document.getElementById('exam-sujet-url').value = result.info.secure_url;
-                    document.getElementById('sujet-upload').innerHTML = `<p>Fichier sujet téléchargé: ${result.info.original_filename}</p>`;
-                    sujetProgress.hide();
-                    if (submitBtn) submitBtn.disabled = false;
-                    showToast('Fichier sujet uploadé avec succès', 'success');
-                } else if (error) {
-                    sujetProgress.hide(); if (submitBtn) submitBtn.disabled = false;
-                    showToast('Erreur lors du téléchargement du fichier sujet', 'error');
-                } else if (result && result.event === 'progress') {
-                    sujetProgress.update((result.bytesUploaded / result.totalBytes) * 100);
-                } else if (result && result.event === 'queues-start') {
-                    sujetProgress.show(); if (submitBtn) submitBtn.disabled = true;
-                }
-            });
-            corrigeUploadWidget = cloudinary.createUploadWidget({
-                cloudName, uploadPreset, sources: ['local'], multiple: false,
-                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
-            }, (error, result) => {
-                const submitBtn = document.getElementById('add-exam-submit-btn');
-                if (!error && result && result.event === 'success') {
-                    document.getElementById('exam-corrige-url').value = result.info.secure_url;
-                    document.getElementById('corrige-upload').innerHTML = `<p>Fichier corrigé téléchargé: ${result.info.original_filename}</p>`;
-                    corrigeProgress.hide();
-                    if (submitBtn) submitBtn.disabled = false;
-                    showToast('Fichier corrigé uploadé avec succès', 'success');
-                } else if (error) {
-                    corrigeProgress.hide(); if (submitBtn) submitBtn.disabled = false;
-                    showToast('Erreur lors du téléchargement du fichier corrigé', 'error');
-                } else if (result && result.event === 'progress') {
-                    corrigeProgress.update((result.bytesUploaded / result.totalBytes) * 100);
-                } else if (result && result.event === 'queues-start') {
-                    corrigeProgress.show(); if (submitBtn) submitBtn.disabled = true;
-                }
-            });
-            corrigeOnlyUploadWidget = cloudinary.createUploadWidget({
-                cloudName, uploadPreset, sources: ['local'], multiple: false,
-                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
-            }, (error, result) => {
-                const submitBtn = document.getElementById('add-corrige-only-submit-btn');
-                if (!error && result && result.event === 'success') {
-                    document.getElementById('corrige-only-url').value = result.info.secure_url;
-                    document.getElementById('corrige-only-upload').innerHTML = `<p>Fichier corrigé téléchargé: ${result.info.original_filename}</p>`;
-                    corrigeOnlyProgress.hide();
-                    if (submitBtn) submitBtn.disabled = false;
-                    showToast('Fichier corrigé uploadé avec succès', 'success');
-                } else if (error) {
-                    corrigeOnlyProgress.hide(); if (submitBtn) submitBtn.disabled = false;
-                    showToast('Erreur lors du téléchargement du fichier corrigé', 'error');
-                } else if (result && result.event === 'progress') {
-                    corrigeOnlyProgress.update((result.bytesUploaded / result.totalBytes) * 100);
-                } else if (result && result.event === 'queues-start') {
-                    corrigeOnlyProgress.show(); if (submitBtn) submitBtn.disabled = true;
-                }
-            });
-        } catch (error) {
-            console.error('[CLOUDINARY] Erreur:', error);
-            showToast('Erreur d\'initialisation du système de fichier', 'error');
+        // Cloudinary : upload signé via HosBac Quiz. Aucun uploadPreset public n'est utilisé.
+        async function signedCloudinaryUpload(file) {
+            if (!currentUser) throw new Error('Connexion administrateur requise.');
+            if (file.type !== 'application/pdf') throw new Error('Seuls les PDF sont acceptés.');
+            const token=await currentUser.getIdToken(true);
+            const sr=await fetch(HOSBAC_QUIZ_URL+'api/admin/cloudinary-sign',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
+            const sign=await sr.json().catch(()=>({})); if(!sr.ok)throw new Error(sign.error||'Signature Cloudinary refusée.');
+            const fd=new FormData();fd.append('file',file);fd.append('api_key',sign.apiKey);fd.append('timestamp',sign.timestamp);fd.append('folder',sign.folder);fd.append('public_id',sign.publicId);fd.append('signature',sign.signature);
+            const up=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(sign.cloudName)}/raw/upload`,{method:'POST',body:fd});
+            const result=await up.json().catch(()=>({}));if(!up.ok)throw new Error(result.error?.message||`Cloudinary HTTP ${up.status}`);return result;
         }
-
-        document.getElementById('sujet-upload')?.addEventListener('click', () => { if (sujetUploadWidget) sujetUploadWidget.open(); });
-        document.getElementById('corrige-upload')?.addEventListener('click', () => { if (corrigeUploadWidget) corrigeUploadWidget.open(); });
-        document.getElementById('corrige-only-upload')?.addEventListener('click', () => { if (corrigeOnlyUploadWidget) corrigeOnlyUploadWidget.open(); });
+        function bindPdfUploadTrigger(id,inputId,onSuccess){const trigger=document.getElementById(id);if(!trigger)return;const input=document.createElement('input');input.type='file';input.accept='application/pdf';input.hidden=true;input.id=inputId;document.body.appendChild(input);trigger.addEventListener('click',()=>input.click());input.addEventListener('change',async()=>{const f=input.files?.[0];if(!f)return;try{showToast('Téléchargement du PDF…','info');const r=await signedCloudinaryUpload(f);onSuccess(r,f);showToast('PDF téléchargé avec succès','success');}catch(e){console.error('[CLOUDINARY]',e);showToast(e.message,'error')}finally{input.value='';}})}
+        bindPdfUploadTrigger('sujet-upload','__sujet_pdf',(r,f)=>{document.getElementById('exam-sujet-url').value=r.secure_url;document.getElementById('sujet-upload').innerHTML=`<p>Fichier sujet téléchargé : ${f.name}</p>`;});
+        bindPdfUploadTrigger('corrige-upload','__corrige_pdf',(r,f)=>{document.getElementById('exam-corrige-url').value=r.secure_url;document.getElementById('corrige-upload').innerHTML=`<p>Fichier corrigé téléchargé : ${f.name}</p>`;});
+        bindPdfUploadTrigger('corrige-only-upload','__corrige_only_pdf',(r,f)=>{document.getElementById('corrige-only-url').value=r.secure_url;document.getElementById('corrige-only-upload').innerHTML=`<p>Fichier corrigé téléchargé : ${f.name}</p>`;});
         document.getElementById('exam-classe')?.addEventListener('change', toggleSerieField);
         document.getElementById('edit-exam-classe')?.addEventListener('change', toggleEditSerieField);
         toggleSerieField();
@@ -7666,7 +7598,9 @@
         window.showExamDetail = showExamDetail;
         window.approveExamAdmin = function(examId, authorId) {
             if (!isAdmin) return;
-            approveExam(examId, authorId).then(() => setTimeout(() => loadAdminExams(true), 300));
+            const points = 3;
+            approveExam(examId, authorId, points);
+            setTimeout(() => loadAdminExams(true), 300);
         };
         window.rejectExamAdmin = function(examId) {
             if (!isAdmin) return;
@@ -7786,38 +7720,29 @@
     // ============================================================
     // APPROUVER UNE ÉPREUVE
     // ============================================================
-    async function approveExam(examId, authorId) {
+    function approveExam(examId, authorId, points) {
         if (!isAdmin) return;
         try {
-            const ref = db.collection('epreuves').doc(examId);
-            const snap = await ref.get();
-            if (!snap.exists) { showToast('Épreuve introuvable', 'error'); return; }
-            const exam = snap.data();
-            if (exam.status === 'approved') { showToast('Cette épreuve est déjà approuvée.', 'info'); return; }
-            const points = 3;
-            await ref.update({
+            db.collection('epreuves').doc(examId).update({ 
                 status: 'approved',
                 approvedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            examDocCache.delete(examId);
-            if (authorId) {
-                await awardApprovalPoints(authorId, points);
-                await db.collection('notifications').add({
-                    userId: authorId,
-                    type: 'approval',
-                    message: `Épreuve approuvée ! +${points} points.`,
-                    examId,
-                    read: false,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
-            }
-            showToast('Épreuve approuvée : +3 points', 'success');
-            adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0;
-            loadAdminPanel();
-        } catch (error) {
-            console.error('[FIRESTORE] Erreur approbation:', error);
-            showToast('Erreur lors de l’approbation', 'error');
-        }
+            })
+            .then(() => {
+            })
+            .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
+            .then(() => {
+                if (authorId) {
+                    db.collection('notifications').add({
+                        userId: authorId, type: 'approval',
+                        message: `Épreuve approuvée ! +${points} points.`,
+                        examId: examId, read: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
+                }
+            })
+            .then(() => { showToast('Épreuve approuvée', 'success'); adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminPanel(); })
+            .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
+        } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
     }
 
     // ============================================================
@@ -7948,7 +7873,7 @@
                 showToast('Brouillon sauvegardé avec succès', 'success');
             } else if (isAdminUser) {
                 showToast('Épreuve publiée', 'success');
-                awardApprovalPoints(currentUser.uid, fichier_corrige ? 4 : 2);
+                awardApprovalPoints(currentUser.uid, 3);
             } else {
                 showToast('Épreuve soumise, en attente d\'approbation', 'success');
                 }
@@ -7979,14 +7904,16 @@
     // ============================================================
     function updateUserStats(action, examId) {
         if (!currentUser || !userData) return Promise.resolve();
-        const userRef = db.collection('users').doc(currentUser.uid);
-        const updates = {};
-        if (action === 'view') updates.examsViewed = firebase.firestore.FieldValue.increment(1);
-        if (action === 'download') updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
-        if (action === 'upload') updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
-        if (action === 'correction') updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
-        if (!Object.keys(updates).length) return Promise.resolve();
-        return userRef.update(updates).catch(err => console.warn('[STATS] Mise à jour différée:', err.message));
+        const userRef = db.collection('users').doc(currentUser.uid); const updates={};
+        if(action==='view') updates.examsViewed=firebase.firestore.FieldValue.increment(1);
+        if(action==='download') updates.examsDownloaded=firebase.firestore.FieldValue.increment(1);
+        if(action==='upload') updates.examsUploaded=firebase.firestore.FieldValue.increment(1);
+        if(action==='correction') updates.correctionsAdded=firebase.firestore.FieldValue.increment(1);
+        const today=new Date().toISOString().slice(0,10);
+        if(userData.lastActiveDate!==today){updates.lastActiveDate=today;updates.activeDays=firebase.firestore.FieldValue.increment(1);}
+        if(!Object.keys(updates).length)return Promise.resolve();
+        Object.assign(userData,{examsViewed:(userData.examsViewed||0)+(action==='view'?1:0),examsDownloaded:(userData.examsDownloaded||0)+(action==='download'?1:0),examsUploaded:(userData.examsUploaded||0)+(action==='upload'?1:0),correctionsAdded:(userData.correctionsAdded||0)+(action==='correction'?1:0),...(userData.lastActiveDate!==today?{lastActiveDate:today,activeDays:(userData.activeDays||0)+1}:{})});
+        return userRef.update(updates).catch(err=>console.warn('[STATS] Mise à jour différée:',err.message));
     }
 
     // ============================================================
@@ -8571,37 +8498,28 @@
         }catch(error){console.error('[FIRESTORE] Erreur téléchargement:',error);showToast('Erreur lors du téléchargement','error');}
     }
 
-    const correctionAccessInFlight = new Set();
-    async function handleCorrigeAccess(examId, exam, action) {
+    function handleCorrigeAccess(examId, exam, action) {
         if (!checkAuthRequired('accéder au corrigé')) return;
-        if (correctionAccessInFlight.has(examId)) return;
         if (exam.status !== 'approved') { showToast("Cette épreuve n'est pas encore approuvée", 'warning'); return; }
+        if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
         const fileUrl = exam.fichier_corrige;
         if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
-        correctionAccessInFlight.add(examId);
-        try {
-            const userRef = db.collection('users').doc(currentUser.uid);
-            await db.runTransaction(async tx => {
-                const userSnap = await tx.get(userRef);
-                const data = userSnap.exists ? userSnap.data() : {};
-                const points = Number(data.points || 0);
-                if (points < 2) throw new Error('Points insuffisants. 2 points requis.');
-                tx.update(userRef, {
-                    points: firebase.firestore.FieldValue.increment(-2),
-                    examsDownloaded: firebase.firestore.FieldValue.increment(1)
-                });
-            });
-            userData.points = Math.max(0, Number(userData.points || 0) - 2);
-            userData.examsDownloaded = Number(userData.examsDownloaded || 0) + 1;
+        db.collection('users').doc(currentUser.uid).update({
+            points: firebase.firestore.FieldValue.increment(-2),
+            examsDownloaded: firebase.firestore.FieldValue.increment(1)
+        }).then(() => {
+            userData.points = Math.max(0, (userData.points || 0) - 2);
+            userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
             if (exam.auteurId && exam.auteurId !== currentUser.uid) {
-                await db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) });
-                await db.collection('notifications').add({
-                    userId: exam.auteurId, type:'points_received',
-                    message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
-                    examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
-                });
+                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
+                    .then(() => db.collection('notifications').add({
+                        userId: exam.auteurId, type:'points_received',
+                        message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
+                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    }));
             }
-            await db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
+        }).then(() => {
+            db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
             if (action === 'view') window.open(fileUrl, '_blank');
             else {
                 const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve || 'epreuve'}_corrige.pdf`; link.target='_blank';
@@ -8609,12 +8527,10 @@
             }
             showToast('Corrigé accessible (2 points déduits)', 'success');
             updateUserStats('correction', examId);
-        } catch(error) {
+        }).catch(error => {
             console.error('[FIRESTORE] Erreur accès corrigé:', error);
-            showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : (error.message || "Erreur lors de l’accès au corrigé"), 'error');
-        } finally {
-            correctionAccessInFlight.delete(examId);
-        }
+            showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : "Erreur lors de l’accès au corrigé", 'error');
+        });
     }
 
     // ============================================================
@@ -8722,7 +8638,7 @@
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
             if(xpChart && userData.xpHistory){ const history=userData.xpHistory.slice(-4); const xpData=history.map(h=>h.xp||0); while(xpData.length<4) xpData.unshift(0); xpChart.data.datasets[0].data=xpData; xpChart.update(); }
             const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe');
-            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse) editClasse.value=userData.classe||'';
+            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse){editClasse.value=userData.classe||'';populateSeriesSelect(document.getElementById('edit-serie'),editClasse.value,userData.serie||'');const g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(editClasse.value).length?'block':'none';}
             if(welcomeMessage) welcomeMessage.textContent=`Bienvenue sur HosBac, ${userData.prenom||'Utilisateur'} !`;
             if(welcomeSubtitle) welcomeSubtitle.textContent='Prêt à trouver la bonne épreuve ?';
             const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
@@ -8737,20 +8653,20 @@
 
     function updateProfile() {
         if (!currentUser) return;
-        const nom = document.getElementById('edit-nom')?.value || '';
-        const prenom = document.getElementById('edit-prenom')?.value || '';
-        const classe = document.getElementById('edit-classe')?.value || '';
-        try {
-            db.collection('users').doc(currentUser.uid).update({ nom, prenom, classe })
-            .then(() => {
-                userData = { ...(userData || {}), nom, prenom, classe };
-                if (profileName) profileName.textContent = `${prenom} ${nom}`.trim();
-                if (profileClass) profileClass.textContent = `Classe: ${classe || 'Non définie'}`;
-                if (profileAvatar) profileAvatar.textContent = prenom ? prenom.charAt(0).toUpperCase() : 'U';
-                showToast('Profil mis à jour', 'success');
-            })
-            .catch(error => { console.error('[FIRESTORE] Erreur mise à jour profil:', error); showToast('Erreur lors de la mise à jour', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur updateProfile:', error); showToast('Erreur lors de la mise à jour', 'error'); }
+        const nom=document.getElementById('edit-nom')?.value||'';
+        const prenom=document.getElementById('edit-prenom')?.value||'';
+        const classe=document.getElementById('edit-classe')?.value||'';
+        const serie=document.getElementById('edit-serie')?.value||'';
+        if(!nom||!prenom||!classe){showToast('Veuillez remplir tous les champs obligatoires','warning');return;}
+        if(seriesForClass(classe).length&&!serie){showToast('Veuillez sélectionner une série.','warning');return;}
+        const patch={nom,prenom,classe,serie:seriesForClass(classe).length?serie:''};
+        db.collection('users').doc(currentUser.uid).update(patch).then(()=>{
+            userData={...(userData||{}),...patch};
+            if(profileName)profileName.textContent=`${prenom} ${nom}`.trim();
+            if(profileClass)profileClass.textContent=`Classe: ${classe}`;
+            if(profileAvatar)profileAvatar.textContent=prenom?prenom.charAt(0).toUpperCase():'U';
+            showToast('Profil mis à jour','success');
+        }).catch(error=>{console.error('[FIRESTORE] Erreur mise à jour profil:',error);showToast('Erreur lors de la mise à jour','error');});
     }
 
     async function loadFavorites() {
@@ -8889,17 +8805,10 @@
     // ============================================================
     // CORRIGÉ SEUL / CHAMPS SÉRIE
     // ============================================================
-    function toggleSerieField() {
-        const classe = document.getElementById('exam-classe')?.value || '';
-        const container = document.getElementById('exam-serie-container');
-        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
-    }
-
-    function toggleEditSerieField() {
-        const classe = document.getElementById('edit-exam-classe')?.value || '';
-        const container = document.getElementById('edit-exam-serie-container');
-        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
-    }
+    function seriesForClass(classe){if(classe==='2nd')return ['A','B','C','T'];if(classe==='1ère'||classe==='Terminale')return ['A','B','C','D'];return [];}
+function populateSeriesSelect(select,classe,selected=''){if(!select)return;const v=seriesForClass(classe);select.innerHTML='<option value="">Sélectionner une série</option>'+v.map(x=>`<option value="${x}">${x}</option>`).join('');select.value=v.includes(selected)?selected:'';}
+function toggleSerieField(){const c=document.getElementById('exam-classe')?.value||'',box=document.getElementById('exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('exam-serie'),c,document.getElementById('exam-serie')?.value||'');}
+function toggleEditSerieField(){const c=document.getElementById('edit-exam-classe')?.value||'',box=document.getElementById('edit-exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('edit-exam-serie'),c,document.getElementById('edit-exam-serie')?.value||'');}
 
     async function loadExistingExamsForCorrige() {
         const select = document.getElementById('corrige-only-exam');
@@ -9532,23 +9441,23 @@
     function loadLegalPages() {
         db.doc(LEGAL_DOC_PATH).get()
         .then(doc => {
-            const defaults = {
-                cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...",
-                confidentialite: 'Politique de Confidentialité par défaut. En cours de rédaction...',
-                about: 'Présentation de HosBac en cours de rédaction...',
-                faq: 'FAQ en cours de rédaction...'
-            };
-            const data = doc.exists ? doc.data() : defaults;
-            if (legalCgu) legalCgu.value = data.cgu || '';
-            if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
-            if (legalAbout) legalAbout.value = data.about || '';
-            if (legalFaq) legalFaq.value = data.faq || '';
-            if (!doc.exists) db.doc(LEGAL_DOC_PATH).set(defaults).catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
+            if (doc.exists) {
+                const data = doc.data();
+                if (legalCgu) legalCgu.value = data.cgu || '';
+                if (legalAbout) legalAbout.value = data.about || '';
+                if (legalFaq) legalFaq.value = data.faq || '';
+                if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
+            } else {
+                const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..." };
+                db.doc(LEGAL_DOC_PATH).set(defaults)
+                .then(() => { if (legalCgu) legalCgu.value = defaults.cgu; if (legalPrivacy) legalPrivacy.value = defaults.confidentialite; })
+                .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
+            }
         })
         .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
     }
 
-    function saveLegalPages(cgu, confidentialite, about, faq) {
+    function saveLegalPages(cgu, confidentialite, about='', faq='') {
         return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite, about, faq }, { merge: true });
     }
 
@@ -9556,42 +9465,32 @@
         e.preventDefault();
         if (!checkAuthRequired('modifier les pages légales')) return;
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        saveLegalPages(legalCgu?.value || '', legalPrivacy?.value || '', legalAbout?.value || '', legalFaq?.value || '')
-        .then(() => showToast('Textes enregistrés avec succès', 'success'))
-        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast("Erreur lors de l'enregistrement", 'error'); });
+        const cgu = legalCgu?.value || '';
+        const confidentialite = legalPrivacy?.value || '';
+        const about = legalAbout?.value || ''; const faq = legalFaq?.value || '';
+        saveLegalPages(cgu, confidentialite, about, faq)
+        .then(() => showToast('Textes légaux enregistrés avec succès', 'success'))
+        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
     });
 
     function showLegalPopup(type) {
         db.doc(LEGAL_DOC_PATH).get()
         .then(doc => {
-            const data = doc.exists ? doc.data() : {};
-            const map = { cgu: ['terms-content','terms-popup','cgu'], privacy: ['privacy-content','privacy-popup','confidentialite'], about: ['about-content','about-popup','about'], faq: ['faq-content','faq-popup','faq'] };
-            const entry = map[type];
-            if (!entry) return;
-            const contentEl = document.getElementById(entry[0]);
-            const popupEl = document.getElementById(entry[1]);
-            if (contentEl) contentEl.innerHTML = escapeHTML(String(data[entry[2]] || 'Textes en cours de rédaction...')).replace(/\n/g, '<br>');
-            if (popupEl) popupEl.style.display = 'flex';
+            let content = '';
+            if (doc.exists) {
+                const data = doc.data();
+                if (type === 'cgu') { content = data.cgu || 'Textes en cours de rédaction...'; if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>'); if (termsPopup) termsPopup.style.display = 'flex'; }
+                else if (type === 'about') { content=data.about||'Présentation de HosBac en cours de rédaction...'; if(privacyContent)privacyContent.innerHTML=content.replace(/\n/g,'<br>'); if(privacyPopup)privacyPopup.style.display='flex'; }
+                else if (type === 'faq') { content=data.faq||'FAQ en cours de rédaction...'; if(privacyContent)privacyContent.innerHTML=content.replace(/\n/g,'<br>'); if(privacyPopup)privacyPopup.style.display='flex'; }
+                else if (type === 'privacy') { content = data.confidentialite || 'Textes en cours de rédaction...'; if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>'); if (privacyPopup) privacyPopup.style.display = 'flex'; }
+            } else {
+                const defaultMsg = 'Textes en cours de rédaction...';
+                if (type === 'cgu') { if (termsContent) termsContent.innerHTML = defaultMsg; if (termsPopup) termsPopup.style.display = 'flex'; }
+                else { if (privacyContent) privacyContent.innerHTML = defaultMsg; if (privacyPopup) privacyPopup.style.display = 'flex'; }
+            }
         })
         .catch(err => { console.error('[FIRESTORE] Erreur chargement legal:', err); showToast('Erreur lors du chargement des textes', 'error'); });
     }
-
-    function bindLegalLink(id, type) {
-        const el = document.getElementById(id);
-        if (!el || el._legalBound) return;
-        el._legalBound = true;
-        el.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showLegalPopup(type); });
-    }
-    bindLegalLink('terms-link','cgu');
-    bindLegalLink('privacy-link','privacy');
-    bindLegalLink('about-link','about');
-    bindLegalLink('faq-link','faq');
-    document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close, #about-popup .popup-close, #faq-popup .popup-close').forEach(btn => {
-        btn.addEventListener('click', function() { const popup=this.closest('.popup-overlay'); if(popup) popup.style.display='none'; });
-    });
-    document.querySelectorAll('#terms-popup, #privacy-popup, #about-popup, #faq-popup').forEach(popup => {
-        popup.addEventListener('click', e => { if(e.target===popup) popup.style.display='none'; });
-    });
 
     // ============================================================
     // LOGS — DÉSACTIVÉS POUR ÉVITER LES ÉCRITURES INUTILES
