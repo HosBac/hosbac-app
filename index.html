@@ -205,7 +205,7 @@
         .auth-page-logo-text { font-size: 1.35rem; font-weight: 900; line-height:1; }
         .auth-page-logo-text .hos { color:#fff; } .auth-page-logo-text .bac { color:var(--accent-gold); }
         .auth-page-logo-tagline { color:var(--text-light); font-size:.72rem; padding-left:4px; }
-        .auth-close-btn { display:none !important; }
+        .auth-close-btn { display:flex !important; }
         .auth-container { padding-top: clamp(4.5rem, 7vw, 6rem); }
         .auth-form { max-width: 430px; }
         .auth-tabs { margin-bottom: 1rem; }
@@ -2883,8 +2883,15 @@
             .auth-container .auth-brand-panel { display: none; }
             .auth-page-top-brand { top: 14px; left: 50%; transform: translateX(-50%); }
             .auth-page-logo-tagline { display:none; }
+            .auth-close-btn { top: 12px; right: 12px; width: 34px; height: 34px; z-index: 8; }
             .auth-container { padding: 4.5rem 1rem 1.25rem; }
-            .auth-form { max-width: 390px; }
+            .auth-form { max-width: 390px; width: 100%; margin: 0 auto; }
+            .auth-tabs { width: 100%; }
+            .auth-tab { min-width: 0; }
+            .form-group input, .form-group select, .form-group textarea { width: 100%; max-width: 100%; min-width: 0; font-size: .92rem; padding: .58rem .72rem; }
+            .password-input-wrap { width: 100%; min-width: 0; }
+            .password-input-wrap input { padding-right: 2.7rem; }
+            .auth-container { overflow-x: hidden; }
             .fullscreen-menu { padding: 16px; }
             .fullscreen-menu-item { padding: 12px 14px; font-size: 0.95rem; }
             .bottom-nav-item { padding: 2px 8px; min-width: 48px; }
@@ -6700,54 +6707,34 @@
     // ============================================================
     // AUTH STATE CHANGED
     // ============================================================
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
         try {
             if (user) {
                 currentUser = user;
-                if (user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
+                let accountProfile = {};
+                try { const snap = await db.collection('users').doc(user.uid).get(); accountProfile = snap.exists ? snap.data() : {}; } catch (_) {}
+                const requiresVerification = accountProfile.emailVerificationRequired === true;
+                if (requiresVerification && user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
                     if (app) app.style.display = 'none';
                     if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                     showToast('Vérifiez votre adresse email avant de continuer.', 'warning');
                     return;
                 }
+                if (requiresVerification && user.emailVerified) db.collection('users').doc(user.uid).set({emailVerificationRequired:false},{merge:true}).catch(()=>{});
                 if (app) app.style.display = 'block';
                 if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
-                checkUserRole().then(() => {
-                    if (!currentUser) return;
-                    loadUserData();
-                    startAnnouncementsListener();
-                }).catch(() => showToast('Impossible de charger votre profil. Réessayez.', 'error'));
+                checkUserRole().then(() => { if (!currentUser) return; loadUserData(); startAnnouncementsListener(); }).catch(() => showToast('Impossible de charger votre profil. Réessayez.', 'error'));
                 if (menuGuestItem) menuGuestItem.style.display = 'none';
-                if (sharedExamId) {
-                    setTimeout(() => {
-                        showExamDetail(sharedExamId);
-                    }, 500);
-                }
-                loadContactsFromFirestore();
-                loadLegalPages();
-                loadAndInjectGA();
-                setTimeout(() => {
-                    if (assistantMessages.children.length === 0) {
-                        displayWelcomeMessage();
-                    }
-                }, 500);
+                if (sharedExamId) setTimeout(() => showExamDetail(sharedExamId), 500);
+                loadContactsFromFirestore(); loadLegalPages(); loadAndInjectGA();
+                setTimeout(() => { if (assistantMessages.children.length === 0) displayWelcomeMessage(); }, 500);
             } else {
-                currentUser = null;
-                userData = null;
-                isAdmin = false;
-                stopAllListeners();
+                currentUser = null; userData = null; isAdmin = false; stopAllListeners();
                 if (app) app.style.display = 'block';
                 if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
                 if (menuGuestItem) menuGuestItem.style.display = 'flex';
                 if (menuAdminItem) menuAdminItem.style.display = 'none';
-                loadRecentExams();
-                loadPopularExams();
-                loadPlatformStats();
-                loadAnnouncements();
-                updateExamCardsVisibility();
-                loadContactsFromFirestore();
-                loadLegalPages();
-                loadAndInjectGA();
+                loadRecentExams(); loadPopularExams(); loadPlatformStats(); loadAnnouncements(); updateExamCardsVisibility(); loadContactsFromFirestore(); loadLegalPages(); loadAndInjectGA();
             }
             updateMenuItems();
         } catch (error) {
@@ -6757,7 +6744,6 @@
         }
     });
 
-    // ============================================================
     // DOM CONTENT LOADED - INITIALISATION PRINCIPALE
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
@@ -6957,7 +6943,8 @@
                     quizTotal: 0,
                     quizPerfect: 0,
                     revisionPlanCreated: 0,
-                    status: 'active'
+                    status: 'active',
+                    emailVerificationRequired: true
                 });
             })
             .then(() => auth.currentUser?.sendEmailVerification({url: window.location.href}))
@@ -7206,7 +7193,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
             const sr=await fetch(HOSBAC_QUIZ_URL+'api/admin/cloudinary-sign',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
             const sign=await sr.json().catch(()=>({})); if(!sr.ok)throw new Error(sign.error||'Signature Cloudinary refusée.');
             const fd=new FormData();fd.append('file',file);fd.append('api_key',sign.apiKey);fd.append('timestamp',sign.timestamp);fd.append('folder',sign.folder);fd.append('public_id',sign.publicId);fd.append('signature',sign.signature);
-            const up=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(sign.cloudName)}/raw/upload`,{method:'POST',body:fd});
+            const up=await fetch(sign.uploadUrl||`https://api.cloudinary.com/v1_1/${encodeURIComponent(sign.cloudName)}/raw/upload`,{method:'POST',body:fd});
             const result=await up.json().catch(()=>({}));if(!up.ok)throw new Error(result.error?.message||`Cloudinary HTTP ${up.status}`);return result;
         }
         function bindPdfUploadTrigger(id,inputId,onSuccess){const trigger=document.getElementById(id);if(!trigger)return;const input=document.createElement('input');input.type='file';input.accept='application/pdf';input.hidden=true;input.id=inputId;document.body.appendChild(input);trigger.addEventListener('click',()=>input.click());input.addEventListener('change',async()=>{const f=input.files?.[0];if(!f)return;try{showToast('Téléchargement du PDF…','info');const r=await signedCloudinaryUpload(f);onSuccess(r,f);showToast('PDF téléchargé avec succès','success');}catch(e){console.error('[CLOUDINARY]',e);showToast(e.message,'error')}finally{input.value='';}})}
@@ -7723,14 +7710,16 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
     function approveExam(examId, authorId, points) {
         if (!isAdmin) return;
         try {
-            db.collection('epreuves').doc(examId).update({ 
-                status: 'approved',
-                approvedAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-            })
-            .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
-            .then(() => {
+            db.runTransaction(async tx => {
+                const ref = db.collection('epreuves').doc(examId);
+                const snap = await tx.get(ref);
+                if (!snap.exists) throw new Error('Épreuve introuvable');
+                const exam = snap.data();
+                if (exam.status === 'approved' || exam.approvalPointsAwarded === true) return { already: true };
+                tx.update(ref, { status:'approved', approvedAt:firebase.firestore.FieldValue.serverTimestamp(), approvalPointsAwarded:true });
+                if (authorId) tx.update(db.collection('users').doc(authorId), { points:firebase.firestore.FieldValue.increment(Number(points)||3) });
+                return { already:false };
+            }).then(result => { examDocCache.delete(examId); if (result?.already) throw new Error('Cette épreuve est déjà approuvée.'); return null; }).then(() => {
                 if (authorId) {
                     db.collection('notifications').add({
                         userId: authorId, type: 'approval',
@@ -8504,20 +8493,17 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
         if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
         const fileUrl = exam.fichier_corrige;
         if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
-        db.collection('users').doc(currentUser.uid).update({
-            points: firebase.firestore.FieldValue.increment(-2),
-            examsDownloaded: firebase.firestore.FieldValue.increment(1)
-        }).then(() => {
-            userData.points = Math.max(0, (userData.points || 0) - 2);
+        db.runTransaction(async tx => {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const snap = await tx.get(userRef);
+            const u = snap.exists ? snap.data() : {};
+            const balance = Number(u.points || 0);
+            if (balance < 2) throw new Error('Points insuffisants. 2 points requis.');
+            tx.update(userRef, { points: balance - 2, examsDownloaded: firebase.firestore.FieldValue.increment(1) });
+            return balance - 2;
+        }).then(newBalance => {
+            userData.points = newBalance;
             userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
-            if (exam.auteurId && exam.auteurId !== currentUser.uid) {
-                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
-                    .then(() => db.collection('notifications').add({
-                        userId: exam.auteurId, type:'points_received',
-                        message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
-                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
-                    }));
-            }
         }).then(() => {
             db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
             if (action === 'view') window.open(fileUrl, '_blank');
@@ -8805,7 +8791,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
     // ============================================================
     // CORRIGÉ SEUL / CHAMPS SÉRIE
     // ============================================================
-    function seriesForClass(classe){if(classe==='2nd')return ['A','B','C','T'];if(classe==='1ère'||classe==='Terminale')return ['A','B','C','D'];return [];}
+    function seriesForClass(classe){if(['2nd','1ère','Terminale'].includes(classe))return ['A','B','C','D','A+B','C+D'];return [];}
 function populateSeriesSelect(select,classe,selected=''){if(!select)return;const v=seriesForClass(classe);select.innerHTML='<option value="">Sélectionner une série</option>'+v.map(x=>`<option value="${x}">${x}</option>`).join('');select.value=v.includes(selected)?selected:'';}
 function toggleSerieField(){const c=document.getElementById('exam-classe')?.value||'',box=document.getElementById('exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('exam-serie'),c,document.getElementById('exam-serie')?.value||'');}
 function toggleEditSerieField(){const c=document.getElementById('edit-exam-classe')?.value||'',box=document.getElementById('edit-exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('edit-exam-serie'),c,document.getElementById('edit-exam-serie')?.value||'');}
