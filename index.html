@@ -3774,6 +3774,14 @@
                             <label for="legal-privacy" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Politique de Confidentialité</label>
                             <textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
                         </div>
+                        <div class="form-group">
+                            <label for="legal-about" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">À propos</label>
+                            <textarea id="legal-about" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Présentation de HosBac..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="legal-faq" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">FAQ</label>
+                            <textarea id="legal-faq" rows="8" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Questions fréquentes et réponses..."></textarea>
+                        </div>
                         <button type="submit" class="submit-btn" id="update-legal-btn">Enregistrer les textes</button>
                     </form>
                 </div>
@@ -3793,6 +3801,8 @@
             </div>
             <div class="footer-links">
                 <button type="button" class="footer-link footer-quiz-link" id="footer-quiz-btn"><i class="fas fa-graduation-cap"></i> Quiz</button>
+                <div class="footer-link" id="about-link" data-legal="about">À propos</div>
+                <div class="footer-link" id="faq-link" data-legal="faq">FAQ</div>
                 <div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div>
                 <div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
             </div>
@@ -4146,6 +4156,22 @@
     </div>
 </div>
 
+<div id="about-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-circle-info"></i> À propos de HosBac</h2>
+        <div id="about-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<div id="faq-popup" class="popup-overlay">
+    <div class="popup-content">
+        <button class="popup-close"><i class="fas fa-times"></i></button>
+        <h2 class="popup-title"><i class="fas fa-circle-question"></i> FAQ</h2>
+        <div id="faq-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
 <!-- INTERFACE APPEL VOCAL (PLEIN ÉCRAN) -->
 <div id="call-interface" class="call-interface">
     <div class="call-logo"><span class="hos">Hos</span><span class="bac">Bac</span></div>
@@ -4396,6 +4422,8 @@
     const profileForm = document.getElementById('profile-form');
     const termsLink = document.getElementById('terms-link');
     const privacyLink = document.getElementById('privacy-link');
+    const aboutLink = document.getElementById('about-link');
+    const faqLink = document.getElementById('faq-link');
     const popupCloseButtons = document.querySelectorAll('.popup-close');
     const filterClass = document.getElementById('filter-class');
     const filterSubject = document.getElementById('filter-subject');
@@ -4444,6 +4472,8 @@
     const legalForm = document.getElementById('legal-pages-form');
     const legalCgu = document.getElementById('legal-cgu');
     const legalPrivacy = document.getElementById('legal-privacy');
+    const legalAbout = document.getElementById('legal-about');
+    const legalFaq = document.getElementById('legal-faq');
     const termsContent = document.getElementById('terms-content');
     const privacyContent = document.getElementById('privacy-content');
     const termsPopup = document.getElementById('terms-popup');
@@ -5687,7 +5717,7 @@
             const payload = {
                 system_instruction: {
                     parts: [{
-                        text: "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " + 
+                        text: "Tu es l'assistant pédagogique exclusif de la plateforme HosBac. Ton rôle est STRICTEMENT limité à l'aide aux devoirs, l'explication d'exercices scolaires, la correction d'épreuves et l'orientation des élèves sur le site. Pour les mathématiques, affiche toujours les formules en LaTeX lisible avec $...$ pour l'inline et $$...$$ pour les formules en bloc; n'écris jamais les formules mathématiques sous forme de texte brut illisible. Tu NE DOIS EN AUCUN CAS répondre à des requêtes hors de ce cadre éducatif. " + 
                         (isPedagogical ? "L'utilisateur a demandé un mode pédagogique spécifique. Adapte ta réponse en conséquence." : "") +
                         "\n\nVoici la liste des épreuves disponibles sur la plateforme :\n" + examsSummary
                     }]
@@ -7636,9 +7666,7 @@
         window.showExamDetail = showExamDetail;
         window.approveExamAdmin = function(examId, authorId) {
             if (!isAdmin) return;
-            const points = 2;
-            approveExam(examId, authorId, points);
-            setTimeout(() => loadAdminExams(true), 300);
+            approveExam(examId, authorId).then(() => setTimeout(() => loadAdminExams(true), 300));
         };
         window.rejectExamAdmin = function(examId) {
             if (!isAdmin) return;
@@ -7758,29 +7786,38 @@
     // ============================================================
     // APPROUVER UNE ÉPREUVE
     // ============================================================
-    function approveExam(examId, authorId, points) {
+    async function approveExam(examId, authorId) {
         if (!isAdmin) return;
         try {
-            db.collection('epreuves').doc(examId).update({ 
+            const ref = db.collection('epreuves').doc(examId);
+            const snap = await ref.get();
+            if (!snap.exists) { showToast('Épreuve introuvable', 'error'); return; }
+            const exam = snap.data();
+            if (exam.status === 'approved') { showToast('Cette épreuve est déjà approuvée.', 'info'); return; }
+            const points = 3;
+            await ref.update({
                 status: 'approved',
                 approvedAt: firebase.firestore.FieldValue.serverTimestamp()
-            })
-            .then(() => {
-            })
-            .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
-            .then(() => {
-                if (authorId) {
-                    db.collection('notifications').add({
-                        userId: authorId, type: 'approval',
-                        message: `Épreuve approuvée ! +${points} points.`,
-                        examId: examId, read: false,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
-                }
-            })
-            .then(() => { showToast('Épreuve approuvée', 'success'); adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminPanel(); })
-            .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
+            });
+            examDocCache.delete(examId);
+            if (authorId) {
+                await awardApprovalPoints(authorId, points);
+                await db.collection('notifications').add({
+                    userId: authorId,
+                    type: 'approval',
+                    message: `Épreuve approuvée ! +${points} points.`,
+                    examId,
+                    read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
+            }
+            showToast('Épreuve approuvée : +3 points', 'success');
+            adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0;
+            loadAdminPanel();
+        } catch (error) {
+            console.error('[FIRESTORE] Erreur approbation:', error);
+            showToast('Erreur lors de l’approbation', 'error');
+        }
     }
 
     // ============================================================
@@ -7943,31 +7980,12 @@
     function updateUserStats(action, examId) {
         if (!currentUser || !userData) return Promise.resolve();
         const userRef = db.collection('users').doc(currentUser.uid);
-        const xpMap = { view: 5, download: 10, upload: 20, correction: 15 };
-        if (!xpMap[action]) return Promise.resolve();
-        const xpEarned = xpMap[action];
-        const today = new Date().toISOString().slice(0,10);
-        const updates = { totalXp: firebase.firestore.FieldValue.increment(xpEarned) };
+        const updates = {};
         if (action === 'view') updates.examsViewed = firebase.firestore.FieldValue.increment(1);
         if (action === 'download') updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
         if (action === 'upload') updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
         if (action === 'correction') updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
-        if (userData.lastActiveDate !== today) {
-            updates.lastActiveDate = today;
-            updates.activeDays = firebase.firestore.FieldValue.increment(1);
-        }
-        const history = Array.isArray(userData.xpHistory) ? userData.xpHistory.slice(-29) : [];
-        history.push({ date: new Date().toISOString(), xp: xpEarned, action });
-        updates.xpHistory = history;
-        Object.assign(userData, {
-            totalXp: (userData.totalXp || 0) + xpEarned,
-            examsViewed: (userData.examsViewed || 0) + (action === 'view' ? 1 : 0),
-            examsDownloaded: (userData.examsDownloaded || 0) + (action === 'download' ? 1 : 0),
-            examsUploaded: (userData.examsUploaded || 0) + (action === 'upload' ? 1 : 0),
-            correctionsAdded: (userData.correctionsAdded || 0) + (action === 'correction' ? 1 : 0),
-            xpHistory: history,
-            ...(userData.lastActiveDate !== today ? { lastActiveDate: today, activeDays: (userData.activeDays || 0) + 1 } : {})
-        });
+        if (!Object.keys(updates).length) return Promise.resolve();
         return userRef.update(updates).catch(err => console.warn('[STATS] Mise à jour différée:', err.message));
     }
 
@@ -8553,28 +8571,37 @@
         }catch(error){console.error('[FIRESTORE] Erreur téléchargement:',error);showToast('Erreur lors du téléchargement','error');}
     }
 
-    function handleCorrigeAccess(examId, exam, action) {
+    const correctionAccessInFlight = new Set();
+    async function handleCorrigeAccess(examId, exam, action) {
         if (!checkAuthRequired('accéder au corrigé')) return;
+        if (correctionAccessInFlight.has(examId)) return;
         if (exam.status !== 'approved') { showToast("Cette épreuve n'est pas encore approuvée", 'warning'); return; }
-        if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
         const fileUrl = exam.fichier_corrige;
         if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
-        db.collection('users').doc(currentUser.uid).update({
-            points: firebase.firestore.FieldValue.increment(-2),
-            examsDownloaded: firebase.firestore.FieldValue.increment(1)
-        }).then(() => {
-            userData.points = Math.max(0, (userData.points || 0) - 2);
-            userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
+        correctionAccessInFlight.add(examId);
+        try {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            await db.runTransaction(async tx => {
+                const userSnap = await tx.get(userRef);
+                const data = userSnap.exists ? userSnap.data() : {};
+                const points = Number(data.points || 0);
+                if (points < 2) throw new Error('Points insuffisants. 2 points requis.');
+                tx.update(userRef, {
+                    points: firebase.firestore.FieldValue.increment(-2),
+                    examsDownloaded: firebase.firestore.FieldValue.increment(1)
+                });
+            });
+            userData.points = Math.max(0, Number(userData.points || 0) - 2);
+            userData.examsDownloaded = Number(userData.examsDownloaded || 0) + 1;
             if (exam.auteurId && exam.auteurId !== currentUser.uid) {
-                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
-                    .then(() => db.collection('notifications').add({
-                        userId: exam.auteurId, type:'points_received',
-                        message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
-                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
-                    }));
+                await db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) });
+                await db.collection('notifications').add({
+                    userId: exam.auteurId, type:'points_received',
+                    message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
+                    examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                });
             }
-        }).then(() => {
-            db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
+            await db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
             if (action === 'view') window.open(fileUrl, '_blank');
             else {
                 const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve || 'epreuve'}_corrige.pdf`; link.target='_blank';
@@ -8582,10 +8609,12 @@
             }
             showToast('Corrigé accessible (2 points déduits)', 'success');
             updateUserStats('correction', examId);
-        }).catch(error => {
+        } catch(error) {
             console.error('[FIRESTORE] Erreur accès corrigé:', error);
-            showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : "Erreur lors de l’accès au corrigé", 'error');
-        });
+            showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : (error.message || "Erreur lors de l’accès au corrigé"), 'error');
+        } finally {
+            correctionAccessInFlight.delete(examId);
+        }
     }
 
     // ============================================================
@@ -9503,51 +9532,66 @@
     function loadLegalPages() {
         db.doc(LEGAL_DOC_PATH).get()
         .then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                if (legalCgu) legalCgu.value = data.cgu || '';
-                if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
-            } else {
-                const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..." };
-                db.doc(LEGAL_DOC_PATH).set(defaults)
-                .then(() => { if (legalCgu) legalCgu.value = defaults.cgu; if (legalPrivacy) legalPrivacy.value = defaults.confidentialite; })
-                .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
-            }
+            const defaults = {
+                cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...",
+                confidentialite: 'Politique de Confidentialité par défaut. En cours de rédaction...',
+                about: 'Présentation de HosBac en cours de rédaction...',
+                faq: 'FAQ en cours de rédaction...'
+            };
+            const data = doc.exists ? doc.data() : defaults;
+            if (legalCgu) legalCgu.value = data.cgu || '';
+            if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
+            if (legalAbout) legalAbout.value = data.about || '';
+            if (legalFaq) legalFaq.value = data.faq || '';
+            if (!doc.exists) db.doc(LEGAL_DOC_PATH).set(defaults).catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
         })
         .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
     }
 
-    function saveLegalPages(cgu, confidentialite) {
-        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite }, { merge: true });
+    function saveLegalPages(cgu, confidentialite, about, faq) {
+        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite, about, faq }, { merge: true });
     }
 
     legalForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         if (!checkAuthRequired('modifier les pages légales')) return;
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        const cgu = legalCgu?.value || '';
-        const confidentialite = legalPrivacy?.value || '';
-        saveLegalPages(cgu, confidentialite)
-        .then(() => showToast('Textes légaux enregistrés avec succès', 'success'))
-        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
+        saveLegalPages(legalCgu?.value || '', legalPrivacy?.value || '', legalAbout?.value || '', legalFaq?.value || '')
+        .then(() => showToast('Textes enregistrés avec succès', 'success'))
+        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast("Erreur lors de l'enregistrement", 'error'); });
     });
 
     function showLegalPopup(type) {
         db.doc(LEGAL_DOC_PATH).get()
         .then(doc => {
-            let content = '';
-            if (doc.exists) {
-                const data = doc.data();
-                if (type === 'cgu') { content = data.cgu || 'Textes en cours de rédaction...'; if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>'); if (termsPopup) termsPopup.style.display = 'flex'; }
-                else if (type === 'privacy') { content = data.confidentialite || 'Textes en cours de rédaction...'; if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>'); if (privacyPopup) privacyPopup.style.display = 'flex'; }
-            } else {
-                const defaultMsg = 'Textes en cours de rédaction...';
-                if (type === 'cgu') { if (termsContent) termsContent.innerHTML = defaultMsg; if (termsPopup) termsPopup.style.display = 'flex'; }
-                else { if (privacyContent) privacyContent.innerHTML = defaultMsg; if (privacyPopup) privacyPopup.style.display = 'flex'; }
-            }
+            const data = doc.exists ? doc.data() : {};
+            const map = { cgu: ['terms-content','terms-popup','cgu'], privacy: ['privacy-content','privacy-popup','confidentialite'], about: ['about-content','about-popup','about'], faq: ['faq-content','faq-popup','faq'] };
+            const entry = map[type];
+            if (!entry) return;
+            const contentEl = document.getElementById(entry[0]);
+            const popupEl = document.getElementById(entry[1]);
+            if (contentEl) contentEl.innerHTML = escapeHTML(String(data[entry[2]] || 'Textes en cours de rédaction...')).replace(/\n/g, '<br>');
+            if (popupEl) popupEl.style.display = 'flex';
         })
         .catch(err => { console.error('[FIRESTORE] Erreur chargement legal:', err); showToast('Erreur lors du chargement des textes', 'error'); });
     }
+
+    function bindLegalLink(id, type) {
+        const el = document.getElementById(id);
+        if (!el || el._legalBound) return;
+        el._legalBound = true;
+        el.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); showLegalPopup(type); });
+    }
+    bindLegalLink('terms-link','cgu');
+    bindLegalLink('privacy-link','privacy');
+    bindLegalLink('about-link','about');
+    bindLegalLink('faq-link','faq');
+    document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close, #about-popup .popup-close, #faq-popup .popup-close').forEach(btn => {
+        btn.addEventListener('click', function() { const popup=this.closest('.popup-overlay'); if(popup) popup.style.display='none'; });
+    });
+    document.querySelectorAll('#terms-popup, #privacy-popup, #about-popup, #faq-popup').forEach(popup => {
+        popup.addEventListener('click', e => { if(e.target===popup) popup.style.display='none'; });
+    });
 
     // ============================================================
     // LOGS — DÉSACTIVÉS POUR ÉVITER LES ÉCRITURES INUTILES
