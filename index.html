@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script>window.MathJax={tex:{inlineMath:[["$","$"],["\\(","\\)"]],displayMath:[["$$","$$"],["\\[","\\]"]]},svg:{fontCache:"global"}};</script>
+    <script>window.MathJax={tex:{inlineMath:[["$","$"]],displayMath:[["$$","$$"]]},svg:{fontCache:"global"}};</script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
@@ -78,6 +78,7 @@
             font-family: var(--font-family);
         }
 
+        html { overflow-x: hidden; }
         body {
             background: var(--bg-color);
             color: var(--text-color);
@@ -3107,10 +3108,40 @@
                 justify-content: center;
             }
         }
-    </style>
+    
+/* V9.2 responsive + INSPE subscription */
+.profile-stats{min-width:0}
+.stat-card{min-width:0;overflow:hidden}
+#inspe-subscription-card{margin-top:1rem}
+.inspe-sub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.inspe-sub-item{min-width:0;padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.035)}
+.inspe-sub-value{font-size:1.25rem;font-weight:800;word-break:break-word}
+.inspe-sub-actions{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+#inspe-subscription-message{line-height:1.5}
+@media(max-width:760px){.inspe-sub-grid{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.profile-stats{grid-template-columns:1fr}.inspe-sub-actions button{width:100%}}
+.math{display:inline-block;max-width:100%;overflow-x:auto;vertical-align:middle}.MathJax{max-width:100%;overflow-x:auto;overflow-y:hidden}.assistant-messages,.assistant-input-area{max-width:100%;min-width:0}.assistant-messages *{max-width:100%;}
+/* V9.2 responsive + INSPE subscription */
+.profile-stats{min-width:0}
+.stat-card{min-width:0;overflow:hidden}
+#inspe-subscription-card{margin-top:1rem}
+.inspe-sub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.inspe-sub-item{min-width:0;padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.035)}
+.inspe-sub-value{font-size:1.25rem;font-weight:800;word-break:break-word}
+.inspe-sub-actions{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+#inspe-subscription-message{line-height:1.5}
+@media(max-width:760px){.inspe-sub-grid{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.profile-stats{grid-template-columns:1fr}.inspe-sub-actions button{width:100%}}
 
-<style>
-.inspe-subscription-card{margin-top:16px}.inspe-subscription-card p{line-height:1.6}.inspe-subscription-card button{max-width:100%;width:auto}@media(max-width:600px){.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.inspe-subscription-card{padding:14px}.inspe-subscription-card button{width:100%}.assistant-input-area .input-row{gap:6px}.assistant-input-area textarea{min-width:0}.exam-detail-actions .action-btn{max-width:100%;white-space:normal}}
+        /* V9.2 responsive hardening */
+        img, canvas, iframe, video { max-width: 100%; }
+        .exam-detail-grid, .exam-list, .fields, .profile-stats, .inspe-sub-grid { min-width: 0; }
+        .exam-card, .exam-detail-info, .exam-detail-pdf, .assistant-messages, .assistant-input-area, .card { min-width: 0; overflow-wrap: anywhere; }
+        .assistant-input-area textarea { max-width: 100%; }
+        @media (max-width: 560px) {
+          .exam-detail-actions .action-btn, .assistant-input-area .chat-send-btn { min-width: 0; }
+          .inspe-sub-grid { grid-template-columns: 1fr !important; }
+        }
 </style>
 </head>
 <body>
@@ -3492,16 +3523,24 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points corrigé</div></div>
-                <div class="stat-card"><div class="stat-value" id="inspe-balance">0</div><div class="stat-label">INSPE Quiz</div></div>
+                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="inspe-points-balance">0</div><div class="stat-label">INSPE · Quiz</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-downloaded">0</div><div class="stat-label">Épreuves téléchargées</div></div>
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
             </div>
-            <div class="card inspe-subscription-card" id="inspe-subscription-card">
-                <h2 class="card-title"><i class="fas fa-crown"></i> Abonnement HosBac IA</h2>
-                <p id="inspe-subscription-text">Chargement de votre éligibilité…</p>
-                <button id="inspe-subscription-btn" class="primary-btn" type="button">Vérifier mon éligibilité</button>
+            <div id="inspe-subscription-card" class="card">
+                <h2 class="card-title"><i class="fas fa-crown"></i> Abonnement HosBac AI</h2>
+                <div class="inspe-sub-grid">
+                    <div class="inspe-sub-item"><div class="small">Solde INSPE</div><div class="inspe-sub-value" id="inspe-sub-balance">0 INSPE</div></div>
+                    <div class="inspe-sub-item"><div class="small">Minimum requis</div><div class="inspe-sub-value">1 000 INSPE</div></div>
+                    <div class="inspe-sub-item"><div class="small">IA / jour</div><div class="inspe-sub-value">10 requêtes</div></div>
+                </div>
+                <div id="inspe-subscription-status" class="notice" style="margin-top:1rem;">Vérification de votre abonnement…</div>
+                <div class="inspe-sub-actions">
+                    <button id="inspe-subscribe-btn" type="button"><i class="fas fa-crown"></i> Activer l'abonnement</button>
+                    <button id="inspe-refresh-btn" type="button" class="secondary"><i class="fas fa-sync-alt"></i> Actualiser</button>
+                </div>
+                <div id="inspe-subscription-message" class="small muted" style="margin-top:.7rem;"></div>
             </div>
 
             <div class="card">
@@ -4212,6 +4251,7 @@
     // Le token Firebase est transmis uniquement dans le fragment URL (#handoff=...),
     // puis consommé côté Quiz et remplacé par history.replaceState().
     const HOSBAC_QUIZ_URL = 'https://hosbac-quiz.vercel.app/';
+    const HOSBAC_QUIZ_API_BASE = 'https://hosbac-quiz.vercel.app';
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -4241,7 +4281,6 @@
     const ITEMS_PER_PAGE = 12;
     let totalFilteredCount = 0;
     let currentExamId = null;
-    let currentExamData = null;
     let pdfDoc = null;
     let pdfPageNum = 1;
     let pdfTotalPages = 0;
@@ -4623,16 +4662,24 @@
         if (!text) return '';
         let safe = escapeHTML(String(text));
         const math = [];
-        // Preserve all standard LaTeX delimiters.
-        safe = safe.replace(/\\\\[\\s\\S]*?\\\\]/g, m => { math.push({display:true,text:m.slice(2,-2)}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\\\\([\\s\\S]*?\\\\\)/g, m => { math.push({display:false,text:m.slice(2,-2)}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\$\\$([\\s\\S]*?)\\$\\$/g, (_,m) => { math.push({display:true,text:m}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\$([^$\\n]+)\\$/g, (_,m) => { math.push({display:false,text:m}); return `@@MATH${math.length-1}@@`; });
-        // Repair common raw math emitted without delimiters (e.g. i^{5}, x^2, sqrt(x)).
-        safe = safe.replace(/\\bi\\s*\^\s*\{?([0-9]+)\}?\\b/g, (_,n) => { math.push({display:false,text:`i^{${n}}`}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\b([A-Za-z])\s*\^\s*\{([^}]+)\}/g, (_,a,b) => { math.push({display:false,text:`${a}^{${b}}`}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\b([A-Za-z])\s*\^\s*([0-9]+)/g, (_,a,b) => { math.push({display:false,text:`${a}^{${b}}`}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\\bsqrt\\s*\\(([^)]+)\\)/gi, (_,m) => { math.push({display:false,text:`\\sqrt{${m}}`}); return `@@MATH${math.length-1}@@`; });
+        const protect = (display, value) => { math.push({display, text:value}); return `@@MATH${math.length-1}@@`; };
+
+        // Existing TeX delimiters.
+        safe = safe.replace(/\\\[([\s\S]*?)\\\]/g, (_,m)=>protect(true,m));
+        safe = safe.replace(/\$\$([\s\S]*?)\$\$/g, (_,m)=>protect(true,m));
+        safe = safe.replace(/\\\(([\s\S]*?)\\\)/g, (_,m)=>protect(false,m));
+        safe = safe.replace(/\$([^$\n]+)\$/g, (_,m)=>protect(false,m));
+
+        // Raw LaTeX and common school-math notation emitted without delimiters.
+        for (const re of [
+            /\\(?:frac|sqrt|dfrac|tfrac|left|right|sum|prod|int|lim|sin|cos|tan|log|ln|alpha|beta|gamma|delta|theta|pi|infty|leq|geq|neq|pm|times|div|cdot|subseteq|in)\b(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))*/g,
+            /\b[A-Za-z]\s*\^\s*\{[^{}]+\}/g,
+            /\b[A-Za-z]\s*_\s*\{[^{}]+\}/g,
+            /\b[A-Za-z0-9]+\s*\^\s*\d+/g,
+            /\b[A-Za-z0-9]+\s*_\s*\d+/g
+        ]) safe = safe.replace(re, m => protect(false,m.trim()));
+        safe = safe.replace(/\|([^|\n]{1,80}(?:\^|_|\\sqrt|=|[A-Za-z]\d)[^|\n]{0,80})\|/g, (_,m)=>protect(false,`\\left|${m.trim()}\\right|`));
+
         safe = safe.replace(/^#{1,6}\s*(.+)$/gm, '<h4>$1</h4>');
         safe = safe.replace(/^[-*]\s+(.+)$/gm, '• $1');
         safe = safe.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
@@ -4641,7 +4688,7 @@
         safe = safe.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
         safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
         safe = safe.replace(/\n/g, '<br>');
-        math.forEach((m,i) => { safe = safe.replace(`@@MATH${i}@@`, m.display ? `\\[${m.text}\\]` : `\\(${m.text}\\)`); });
+        math.forEach((m,i)=>{ safe=safe.replace(`@@M${i}@@`,m.display?`\\[${m.text}\\]`:`\\(${m.text}\\)`); });
         return safe;
     }
 
@@ -5616,7 +5663,7 @@
         if (!currentUser) return Promise.resolve({ canSend: true, isAdmin: false });
         if (userData?.role === 'admin') return Promise.resolve({ canSend: true, isAdmin: true });
         const count = Number(localStorage.getItem(quotaStorageKey()) || '0');
-        return Promise.resolve({ canSend: count < 15, isAdmin: false });
+        return Promise.resolve({ canSend: count < 10, isAdmin: false });
     }
 
     function incrementQuota() {
@@ -5652,8 +5699,8 @@
                     const pdfDocument = await loadingTask.promise;
                     let pages = [];
                     let totalChars = 0;
-                    const MAX_PDF_TEXT = 60000;
-                    const OCR_MAX_PAGES = Math.min(pdfDocument.numPages, 10);
+                    const MAX_PDF_TEXT = 200000;
+                    const OCR_MAX_PAGES = Math.min(pdfDocument.numPages, 30);
                     for (let pageNum = 1; pageNum <= pdfDocument.numPages && totalChars < MAX_PDF_TEXT; pageNum++) {
                         const page = await pdfDocument.getPage(pageNum);
                         const textContent = await page.getTextContent();
@@ -5715,7 +5762,7 @@
             // « Message trop long » du backend tout en conservant le contenu du PDF.
             const chunks = [];
             const sourceText = finalUserMessage || 'Fichier';
-            for (let i = 0; i < sourceText.length; i += 18000) chunks.push(sourceText.slice(i, i + 18000));
+            for (let i = 0; i < sourceText.length; i += 12000) chunks.push(sourceText.slice(i, i + 18000));
             payload.contents[payload.contents.length - 1].parts = chunks.length ? chunks.map(text => ({ text })) : [{ text: 'Fichier' }];
 
             if (fileData && fileData.type !== 'application/pdf') {
@@ -5819,6 +5866,21 @@
         }
     }
 
+
+    async function consumeServerAIQuota() {
+        if(!currentUser || userData?.role==='admin') return {allowed:true,isAdmin:true};
+        const token=await currentUser.getIdToken();
+        const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/ai/quota`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+            body:JSON.stringify({consume:true})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok || data.success!==true) throw new Error(data.error||data.code||`Quota IA HTTP ${response.status}`);
+        if(data.allowed!==true) throw new Error(data.code==='AI_SUBSCRIPTION_REQUIRED'?'Un abonnement HosBac AI est requis pour utiliser les 10 requêtes IA quotidiennes.':data.code==='AI_DAILY_LIMIT'?'Vous avez atteint vos 10 requêtes IA aujourd’hui.':'Requête IA refusée.');
+        return data;
+    }
+
     // ============================================================
     // FONCTION PRINCIPALE D'ENVOI DE MESSAGE
     // ============================================================
@@ -5834,41 +5896,22 @@
             return;
         }
 
-        checkAndResetQuota().then(quotaResult => {
-            if (!quotaResult.canSend && !quotaResult.isAdmin) {
-                const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de vos 10 requêtes pour aujourd'hui. Votre quota sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
-                addChatMessage(blockMessage, 'bot');
-                return;
-            }
-
-            incrementQuota().then(() => {
-                const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                const fileInfo = attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null;
-                addChatMessage(text || 'Fichier attaché', 'user', time, fileInfo);
-
-                const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
-
-                chatInput.value = '';
-                attachedFile = null;
-                chatFilePreview.style.display = 'none';
-                assistantFileInput.value = '';
-                chatInput.style.height = 'auto';
-                chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-
-                if (cooldownTimeout) {
-                    clearTimeout(cooldownTimeout);
-                    cooldownTimeout = null;
-                }
-
-                showLoading();
-                sendMessageToGemini(text, fileData, 0, false);
-            }).catch(err => {
-                console.error('Erreur incrémentation quota:', err);
-                showToast('Erreur lors de l\'envoi du message', 'error');
-            });
+        consumeServerAIQuota().then(() => {
+            const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const fileInfo = attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null;
+            addChatMessage(text || 'Fichier attaché', 'user', time, fileInfo);
+            const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
+            chatInput.value = '';
+            attachedFile = null;
+            chatFilePreview.style.display = 'none';
+            assistantFileInput.value = '';
+            chatInput.style.height = 'auto';
+            if (cooldownTimeout) { clearTimeout(cooldownTimeout); cooldownTimeout = null; }
+            showLoading();
+            sendMessageToGemini(text, fileData, 0, false);
         }).catch(err => {
-            console.error('Erreur vérification quota:', err);
-            showToast('Erreur lors de la vérification du quota', 'error');
+            console.error('Erreur quota IA:', err);
+            showToast(err.message || 'Accès IA refusé.', 'warning');
         });
     }
 
@@ -6104,7 +6147,6 @@
             }
             
             const exam = doc.data();
-            currentExamData = exam;
             examDocCache.set(examId, { data: exam, timestamp: Date.now() });
             
             if (detailBreadcrumbCurrent) {
@@ -7095,30 +7137,64 @@
                 .catch(err => console.error('Erreur favori:', err));
             }
         });
+
+        async function prepareExamForAI(examId) {
+            const snap = await db.collection('epreuves').doc(examId).get();
+            if (!snap.exists) throw new Error('Épreuve introuvable.');
+            const exam = snap.data();
+            if (!exam.fichier_sujet) throw new Error('Le PDF de cette épreuve est indisponible.');
+            const response = await fetch(exam.fichier_sujet);
+            if (!response.ok) throw new Error('Impossible de récupérer le PDF de cette épreuve.');
+            const blob = await response.blob();
+            const buffer = await blob.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+            }
+            attachedFile = {
+                name: exam.nom_epreuve ? `${cleanFileName(exam.nom_epreuve)}.pdf` : 'epreuve-hosbac.pdf',
+                type: 'application/pdf',
+                size: blob.size,
+                data: btoa(binary)
+            };
+            if (chatFilePreview) {
+                chatFilePreview.style.display = 'flex';
+                if (chatFileName) chatFileName.textContent = attachedFile.name;
+            }
+            return exam;
+        }
+
         detailIaBtn?.addEventListener('click', async () => {
             if (!currentUser) {
                 showToast('Connectez-vous pour utiliser l\'assistant IA.', 'warning');
                 if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                 return;
             }
-            navigateTo('assistant');
-            setTimeout(async () => {
-                if (chatInput) {
-                    const title = detailTitle?.textContent || 'cette épreuve';
-                    chatInput.value = `Peux-tu m'aider à résoudre "${title}" ?`;
-                    chatInput.dispatchEvent(new Event('input'));
-                    chatInput.focus();
-                    if (currentExamData?.fichier_sujet && !attachedFile) {
-                        try {
-                            const r=await fetch(currentExamData.fichier_sujet); const blob=await r.blob();
-                            if(blob.size>5*1024*1024) throw new Error('Le PDF de cette épreuve dépasse la limite de traitement direct.');
-                            const reader=new FileReader(); reader.onload=()=>{attachedFile={name:currentExamData.nom_epreuve||'epreuve.pdf',type:'application/pdf',size:blob.size,data:String(reader.result).split(',')[1]};if(chatFileName)chatFileName.textContent=attachedFile.name;if(chatFilePreview)chatFilePreview.style.display='flex';const send=document.getElementById('chat-send-btn');if(send)send.disabled=false;showToast('Épreuve ajoutée automatiquement à HosBac IA. Appuyez sur Envoyer.','success')};reader.readAsDataURL(blob);
-                        } catch(e){showToast('Impossible d’attacher automatiquement le PDF : '+e.message,'warning');}
+            try {
+                showToast('Préparation du PDF pour HosBac IA…', 'info');
+                const exam = await prepareExamForAI(currentExamId);
+                navigateTo('assistant');
+                setTimeout(() => {
+                    if (chatInput) {
+                        const title = exam.nom_epreuve || detailTitle?.textContent || 'cette épreuve';
+                        chatInput.value = `Peux-tu m'aider à résoudre cette épreuve, étape par étape ?`;
+                        chatInput.focus();
+                        chatInput.style.height = 'auto';
+                        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+                        showToast(`« ${title} » est déjà attachée à la conversation. Appuie sur Envoyer.`, 'success');
                     }
-                }
-            }, 500);
+                }, 350);
+            } catch (error) {
+                console.error('[EXAM IA]', error);
+                showToast(error.message || 'Impossible de préparer le PDF pour l’IA.', 'error');
+            }
         });
         
+        document.getElementById('inspe-subscribe-btn')?.addEventListener('click', activateInspeSubscription);
+        document.getElementById('inspe-refresh-btn')?.addEventListener('click', async()=>{try{await loadProfileData();showToast('Profil actualisé.','success')}catch(e){showToast(e.message,'error')}});
+
         detailBackBtn?.addEventListener('click', () => {
             if (examDetailView) examDetailView.classList.remove('active');
             navigateTo('exams');
@@ -7964,7 +8040,7 @@
     function updateUserStats(action, examId) {
         if (!currentUser || !userData) return Promise.resolve();
         const userRef = db.collection('users').doc(currentUser.uid);
-        const xpMap = { view: 5, download: 10, upload: 20, correction: 15 };
+        const xpMap = { download: 10, upload: 20, correction: 15 };
         if (!xpMap[action]) return Promise.resolve();
         const xpEarned = xpMap[action];
         const today = new Date().toISOString().slice(0,10);
@@ -8669,12 +8745,15 @@
                     if (email) email.textContent = user.email || '';
                     if (classe) classe.textContent = `Classe: ${user.classe || 'Non définie'}`;
                     if (points) points.textContent = user.points || 0;
+                    const inspePoints = document.getElementById('inspe-points-balance'); if (inspePoints) inspePoints.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR');
+                    const inspeSubBalance = document.getElementById('inspe-sub-balance'); if (inspeSubBalance) inspeSubBalance.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
                     if (uploaded) uploaded.textContent = user.examsUploaded || 0;
                     if (downloaded) downloaded.textContent = user.examsDownloaded || 0;
                     const profileFormEl = document.getElementById('profile-form');
                     const favList = document.getElementById('favorites-list');
                     const cardTitle = document.querySelector('#profile-view .card:nth-of-type(2) .card-title');
                     if (profileFormEl) profileFormEl.style.display = 'none';
+                    const subCard=document.getElementById('inspe-subscription-card'); if(subCard) subCard.style.display='none';
                     if (favList) favList.style.display = 'none';
                     if (cardTitle) cardTitle.style.display = 'none';
                     const logoutBtnEl = document.getElementById('logout-btn');
@@ -8683,6 +8762,57 @@
             })
             .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); showToast('Erreur lors du chargement du profil', 'error'); });
         } catch (error) { console.error('[FIRESTORE] Erreur loadUserProfile:', error); showToast('Erreur lors du chargement du profil', 'error'); }
+    }
+
+
+    async function loadInspeSubscription() {
+        const statusEl=document.getElementById('inspe-subscription-status');
+        const balanceEl=document.getElementById('inspe-sub-balance');
+        const msgEl=document.getElementById('inspe-subscription-message');
+        const btn=document.getElementById('inspe-subscribe-btn');
+        if(!statusEl||!currentUser)return;
+        const balance=Number(userData?.inspe_points||0);
+        if(balanceEl) balanceEl.textContent=balance.toLocaleString('fr-FR')+' INSPE';
+        const sub=userData?.quiz_subscription||{};
+        const active=sub.active===true && (!sub.expiresAt || new Date(sub.expiresAt).getTime()>Date.now());
+        if(active){
+            statusEl.className='notice success';
+            statusEl.textContent=`Abonnement actif jusqu’au ${new Date(sub.expiresAt).toLocaleDateString('fr-FR')}.`;
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-check"></i> Abonnement actif';}
+            return;
+        }
+        if(balance>=1000){
+            statusEl.className='notice success';
+            statusEl.textContent='Vous êtes éligible : 1 000 INSPE sont disponibles pour activer l’abonnement.';
+            if(btn) btn.disabled=false;
+        }else{
+            statusEl.className='notice';
+            statusEl.textContent=`Il vous manque ${Math.max(0,1000-balance).toLocaleString('fr-FR')} INSPE pour être éligible.`;
+            if(btn) btn.disabled=true;
+        }
+        if(msgEl) msgEl.textContent='L’abonnement donne accès à 10 requêtes IA par jour pendant 30 jours.';
+    }
+
+    async function activateInspeSubscription() {
+        if(!currentUser)return;
+        const btn=document.getElementById('inspe-subscribe-btn');
+        try{
+            if(Number(userData?.inspe_points||0)<1000)return showToast('Il faut au moins 1 000 INSPE.', 'warning');
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Activation…';}
+            const token=await currentUser.getIdToken();
+            const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/admin/subscription`,{
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body:'{}'
+            });
+            const data=await response.json().catch(()=>({}));
+            if(!response.ok||data.success!==true)throw new Error(data.error||data.code||`HTTP ${response.status}`);
+            userData={...(userData||{}),inspe_points:Number(data.remainingInspe??0),quiz_subscription:{active:true,startedAt:new Date().toISOString(),expiresAt:data.expiresAt}};
+            showToast('Abonnement HosBac AI activé.', 'success');
+            await db.collection('users').doc(currentUser.uid).get().then(doc=>{if(doc.exists)userData={...userData,...doc.data()};});
+            loadProfileData();
+        }catch(e){console.error('[SUBSCRIPTION]',e);showToast(e.message||'Activation impossible.','error');}
+        finally{if(btn)btn.disabled=false;loadInspeSubscription();}
     }
 
     async function loadProfileData() {
@@ -8709,6 +8839,9 @@
             if(profileTotalXp) profileTotalXp.textContent=totalXp;
             const points=document.getElementById('points-balance'), uploaded=document.getElementById('exams-uploaded'), downloaded=document.getElementById('exams-downloaded');
             if(points) points.textContent=userData.points||0;
+            const inspePoints=document.getElementById('inspe-points-balance'), inspeSubBalance=document.getElementById('inspe-sub-balance');
+            if(inspePoints) inspePoints.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR');
+            if(inspeSubBalance) inspeSubBalance.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
             if(uploaded) uploaded.textContent=userData.examsUploaded||0;
             if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
@@ -8720,24 +8853,13 @@
             const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
             if(homePoints) homePoints.textContent=userData.points||0; if(homeUploaded) homeUploaded.textContent=userData.examsUploaded||0; if(homeDownloaded) homeDownloaded.textContent=userData.examsDownloaded||0;
             const profileFormEl=document.getElementById('profile-form'), favList=document.getElementById('favorites-list'), cardTitle=document.querySelector('#profile-view .card:nth-of-type(2) .card-title'), logoutBtnEl=document.getElementById('logout-btn');
-            if(profileFormEl) profileFormEl.style.display='block'; if(favList) favList.style.display='grid'; if(cardTitle) cardTitle.style.display='block'; if(logoutBtnEl) logoutBtnEl.style.display='block';
-            await refreshInspeSubscription();
+            if(profileFormEl) profileFormEl.style.display='block';
+            const subCard=document.getElementById('inspe-subscription-card'); if(subCard) subCard.style.display='block'; if(favList) favList.style.display='grid'; if(cardTitle) cardTitle.style.display='block'; if(logoutBtnEl) logoutBtnEl.style.display='block';
             await loadFavorites();
             await loadLeaderboard();
             await loadSubjectStats();
+            await loadInspeSubscription();
         } catch(error) { console.error('[PROFILE] Erreur affichage profil:',error); }
-    }
-
-    async function refreshInspeSubscription() {
-        const el=document.getElementById('inspe-subscription-text'); const btn=document.getElementById('inspe-subscription-btn');
-        if(!el||!currentUser)return;
-        try{
-            const snap=await db.collection('users').doc(currentUser.uid).get(); const u=snap.exists?snap.data():{}; const inspe=Number(u.quiz_xp||u.inspe||0); const threshold=1000; const active=u.quiz_subscription?.active&&u.quiz_subscription?.expiresAt&&new Date(u.quiz_subscription.expiresAt).getTime()>Date.now();
-            const balance=document.getElementById('inspe-balance'); if(balance)balance.textContent=inspe;
-            if(active){el.textContent='Abonnement HosBac IA actif jusqu’au '+new Date(u.quiz_subscription.expiresAt).toLocaleDateString('fr-FR')+'.';btn.textContent='Abonnement déjà actif';btn.disabled=true;return;}
-            if(inspe>=threshold){el.textContent=`Vous êtes éligible : ${inspe} INSPE disponibles. ${threshold} INSPE sont requis pour 30 jours d’accès IA.`;btn.textContent='Activer avec 1 000 INSPE';btn.disabled=false;btn.onclick=async()=>{try{btn.disabled=true;const token=await currentUser.getIdToken();const r=await fetch('https://hosbac-quiz.vercel.app/api/admin/subscription',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:'{}'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||`HTTP ${r.status}`);showToast('Abonnement HosBac IA activé.','success');await refreshInspeSubscription();}catch(e){btn.disabled=false;showToast(e.message,'error')}};
-            }else{el.textContent=`Solde : ${inspe} INSPE. Il faut encore ${threshold-inspe} INSPE pour activer l’abonnement de 30 jours.`;btn.textContent='Pas encore éligible';btn.disabled=true;}
-        }catch(e){el.textContent='Impossible de vérifier l’éligibilité pour le moment.';btn.disabled=true;}
     }
 
     function updateProfile() {
