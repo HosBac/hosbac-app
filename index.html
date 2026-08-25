@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -205,7 +206,7 @@
         .auth-page-logo-text { font-size: 1.35rem; font-weight: 900; line-height:1; }
         .auth-page-logo-text .hos { color:#fff; } .auth-page-logo-text .bac { color:var(--accent-gold); }
         .auth-page-logo-tagline { color:var(--text-light); font-size:.72rem; padding-left:4px; }
-        .auth-close-btn { display:flex !important; }
+        .auth-close-btn { display:none !important; }
         .auth-container { padding-top: clamp(4.5rem, 7vw, 6rem); }
         .auth-form { max-width: 430px; }
         .auth-tabs { margin-bottom: 1rem; }
@@ -2883,15 +2884,8 @@
             .auth-container .auth-brand-panel { display: none; }
             .auth-page-top-brand { top: 14px; left: 50%; transform: translateX(-50%); }
             .auth-page-logo-tagline { display:none; }
-            .auth-close-btn { top: 12px; right: 12px; width: 34px; height: 34px; z-index: 8; }
             .auth-container { padding: 4.5rem 1rem 1.25rem; }
-            .auth-form { max-width: 390px; width: 100%; margin: 0 auto; }
-            .auth-tabs { width: 100%; }
-            .auth-tab { min-width: 0; }
-            .form-group input, .form-group select, .form-group textarea { width: 100%; max-width: 100%; min-width: 0; font-size: .92rem; padding: .58rem .72rem; }
-            .password-input-wrap { width: 100%; min-width: 0; }
-            .password-input-wrap input { padding-right: 2.7rem; }
-            .auth-container { overflow-x: hidden; }
+            .auth-form { max-width: 390px; }
             .fullscreen-menu { padding: 16px; }
             .fullscreen-menu-item { padding: 12px 14px; font-size: 0.95rem; }
             .bottom-nav-item { padding: 2px 8px; min-width: 48px; }
@@ -3113,7 +3107,31 @@
                 justify-content: center;
             }
         }
-    </style>
+    
+/* V9.2 responsive + INSPE subscription */
+.profile-stats{min-width:0}
+.stat-card{min-width:0;overflow:hidden}
+#inspe-subscription-card{margin-top:1rem}
+.inspe-sub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.inspe-sub-item{min-width:0;padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.035)}
+.inspe-sub-value{font-size:1.25rem;font-weight:800;word-break:break-word}
+.inspe-sub-actions{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+#inspe-subscription-message{line-height:1.5}
+@media(max-width:760px){.inspe-sub-grid{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.profile-stats{grid-template-columns:1fr}.inspe-sub-actions button{width:100%}}
+.math{display:inline-block;max-width:100%;overflow-x:auto;vertical-align:middle}.MathJax{max-width:100%;overflow-x:auto;overflow-y:hidden}.assistant-messages,.assistant-input-area{max-width:100%;min-width:0}.assistant-messages *{max-width:100%;}
+/* V9.2 responsive + INSPE subscription */
+.profile-stats{min-width:0}
+.stat-card{min-width:0;overflow:hidden}
+#inspe-subscription-card{margin-top:1rem}
+.inspe-sub-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+.inspe-sub-item{min-width:0;padding:1rem;border:1px solid var(--border-color);border-radius:14px;background:rgba(255,255,255,.035)}
+.inspe-sub-value{font-size:1.25rem;font-weight:800;word-break:break-word}
+.inspe-sub-actions{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+#inspe-subscription-message{line-height:1.5}
+@media(max-width:760px){.inspe-sub-grid{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.profile-stats{grid-template-columns:1fr}.inspe-sub-actions button{width:100%}}
+</style>
 </head>
 <body>
     
@@ -3175,13 +3193,10 @@
             <div class="auth-switch-link">Vous n'avez pas de compte ? <span id="switch-to-signup">S'inscrire</span></div>
         </form>
         <form id="signup-form" class="auth-form">
-            <div class="form-group"><label for="signup-nom">Nom *</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
-            <div class="form-group"><label for="signup-prenom">Prénom *</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
-            
-            <div class="form-group"><label for="signup-classe">Classe *</label><select id="signup-classe" required><option value="">Sélectionner une classe</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div>
-            <div class="form-group" id="signup-serie-group" style="display:none"><label for="signup-serie">Série *</label><select id="signup-serie"></select></div>
-            <div class="form-group"><label for="signup-ecole">Établissement <span style="opacity:.65">(optionnel)</span></label><input type="text" id="signup-ecole" placeholder="Votre établissement" maxlength="120"></div><div class="form-group"><label for="signup-region">Région *</label><input type="text" id="signup-region" placeholder="Ex. Littoral" required maxlength="80" autocomplete="address-level1"></div>
-            <div class="form-group"><label for="signup-email">Adresse email *</label><input type="email" id="signup-email" placeholder="votre@email.com" required autocomplete="email"></div>
+            <div class="form-group"><label for="signup-nom">Nom</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
+            <div class="form-group"><label for="signup-prenom">Prénom</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
+            <div class="form-group"><label for="signup-ecole">École</label><input type="text" id="signup-ecole" placeholder="Votre établissement" required></div>
+            <div class="form-group"><label for="signup-email">Email</label><input type="email" id="signup-email" placeholder="votre@email.com" required></div>
             <div class="form-group password-field"><label for="signup-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <div class="form-group" id="confirm-password-group">
                 <label for="signup-confirm-password">Confirmer le mot de passe</label>
@@ -3497,10 +3512,24 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div>
+                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="inspe-points-balance">0</div><div class="stat-label">INSPE · Quiz</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-downloaded">0</div><div class="stat-label">Épreuves téléchargées</div></div>
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
+            </div>
+            <div id="inspe-subscription-card" class="card">
+                <h2 class="card-title"><i class="fas fa-crown"></i> Abonnement HosBac AI</h2>
+                <div class="inspe-sub-grid">
+                    <div class="inspe-sub-item"><div class="small">Solde INSPE</div><div class="inspe-sub-value" id="inspe-sub-balance">0 INSPE</div></div>
+                    <div class="inspe-sub-item"><div class="small">Minimum requis</div><div class="inspe-sub-value">1 000 INSPE</div></div>
+                    <div class="inspe-sub-item"><div class="small">IA / jour</div><div class="inspe-sub-value">10 requêtes</div></div>
+                </div>
+                <div id="inspe-subscription-status" class="notice" style="margin-top:1rem;">Vérification de votre abonnement…</div>
+                <div class="inspe-sub-actions">
+                    <button id="inspe-subscribe-btn" type="button"><i class="fas fa-crown"></i> Activer l'abonnement</button>
+                    <button id="inspe-refresh-btn" type="button" class="secondary"><i class="fas fa-sync-alt"></i> Actualiser</button>
+                </div>
+                <div id="inspe-subscription-message" class="small muted" style="margin-top:.7rem;"></div>
             </div>
 
             <div class="card">
@@ -3544,7 +3573,7 @@
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-nom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Nom</label><input type="text" id="edit-nom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-prenom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Prénom</label><input type="text" id="edit-prenom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                     </div>
-                    <div class="form-group"><label for="edit-region">Région *</label><input type="text" id="edit-region" maxlength="80" placeholder="Ex. Littoral"></div><div class="form-group"><label for="edit-classe">Classe *</label><select id="edit-classe"><option value="">Sélectionner</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div><div class="form-group" id="edit-serie-group" style="display:none"><label for="edit-serie">Série</label><select id="edit-serie"></select></div>
+                    <div class="form-group"><label for="edit-classe" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Classe</label><input type="text" id="edit-classe" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                     <button type="submit" class="submit-btn">Sauvegarder</button>
                 </form>
             </div>
@@ -3781,7 +3810,7 @@
                         </div>
                         <div class="form-group">
                             <label for="legal-privacy" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Politique de Confidentialité</label>
-                            <label style="display:block;margin:.6rem 0 .3rem;font-weight:600">À propos</label><textarea id="legal-about" rows="6" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);resize:vertical;" placeholder="Présentation de HosBac..."></textarea><label style="display:block;margin:.6rem 0 .3rem;font-weight:600">FAQ</label><textarea id="legal-faq" rows="6" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);resize:vertical;" placeholder="Questions fréquentes..."></textarea><textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
+                            <textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
                         </div>
                         <button type="submit" class="submit-btn" id="update-legal-btn">Enregistrer les textes</button>
                     </form>
@@ -3802,7 +3831,8 @@
             </div>
             <div class="footer-links">
                 <button type="button" class="footer-link footer-quiz-link" id="footer-quiz-btn"><i class="fas fa-graduation-cap"></i> Quiz</button>
-                <div class="footer-link" id="about-link" data-legal="about">À propos</div><div class="footer-link" id="faq-link" data-legal="faq">FAQ</div><div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div><div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
+                <div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div>
+                <div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
             </div>
         </div>
     </footer>
@@ -4210,11 +4240,13 @@
     // Le token Firebase est transmis uniquement dans le fragment URL (#handoff=...),
     // puis consommé côté Quiz et remplacé par history.replaceState().
     const HOSBAC_QUIZ_URL = 'https://hosbac-quiz.vercel.app/';
+    const HOSBAC_QUIZ_API_BASE = 'https://hosbac-quiz.vercel.app';
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const cloudName = "dqn1dbimm";
+    const uploadPreset = "hosbac_preset";
     
     const pdfjsLib = window.pdfjsLib;
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
@@ -4451,8 +4483,6 @@
     const legalForm = document.getElementById('legal-pages-form');
     const legalCgu = document.getElementById('legal-cgu');
     const legalPrivacy = document.getElementById('legal-privacy');
-    const legalAbout = document.getElementById('legal-about');
-    const legalFaq = document.getElementById('legal-faq');
     const termsContent = document.getElementById('terms-content');
     const privacyContent = document.getElementById('privacy-content');
     const termsPopup = document.getElementById('terms-popup');
@@ -4620,23 +4650,36 @@
     function formatMessage(text) {
         if (!text) return '';
         let safe = escapeHTML(String(text));
-        // Protect LaTeX blocks from markdown processing.
         const math = [];
-        safe = safe.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => { math.push({display:true, text:m}); return `@@MATH${math.length-1}@@`; });
-        safe = safe.replace(/\$([^$\n]+)\$/g, (_, m) => { math.push({display:false, text:m}); return `@@MATH${math.length-1}@@`; });
+        const protect = (display, value) => { math.push({display, text:value}); return `@@MATH${math.length-1}@@`; };
+
+        safe = safe.replace(/\\\[([\s\S]*?)\\\]/g, (_,m)=>protect(true,m));
+        safe = safe.replace(/\$\$([\s\S]*?)\$\$/g, (_,m)=>protect(true,m));
+        safe = safe.replace(/\\\(([\s\S]*?)\\\)/g, (_,m)=>protect(false,m));
+        safe = safe.replace(/\$([^$\n]+)\$/g, (_,m)=>protect(false,m));
+
+        // Raw LaTeX frequently returned by AI without delimiters.
+        for (const re of [
+            /\\(?:frac|sqrt|left|right|sum|prod|int|lim|sin|cos|tan|log|ln|alpha|beta|gamma|delta|theta|pi|infty|leq|geq|neq|pm|times|div|cdot)\b(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))*/g,
+            /\b[A-Za-z]\s*\^\s*\{[^{}]+\}/g,
+            /\b[A-Za-z]\s*_\s*\{[^{}]+\}/g,
+            /\b[A-Za-z0-9]+\s*\^\s*\d+/g,
+            /\b[A-Za-z0-9]+\s*_\s*\d+/g
+        ]) {
+            safe = safe.replace(re, m => protect(false,m.trim()));
+        }
+
+        safe = safe.replace(/\|([^|\n]{1,40}(?:\^|_|\\sqrt|=|[A-Za-z]\d)[^|\n]{0,40})\|/g, (_,m)=>protect(false,`\\left|${m.trim()}\\right|`));
+
         safe = safe.replace(/^#{1,6}\s*(.+)$/gm, '<h4>$1</h4>');
         safe = safe.replace(/^[-*]\s+(.+)$/gm, '• $1');
-        safe = safe.replace(/^\d+\.\s+(.+)$/gm, '$&');
         safe = safe.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
         safe = safe.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         safe = safe.replace(/__(.*?)__/g, '<strong>$1</strong>');
         safe = safe.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
         safe = safe.replace(/`([^`\n]+)`/g, '<code>$1</code>');
         safe = safe.replace(/\n/g, '<br>');
-        math.forEach((m, i) => {
-            const value = escapeHTML(m.text);
-            safe = safe.replace(`@@MATH${i}@@`, m.display ? `\\[${value}\\]` : `\\(${value}\\)`);
-        });
+        math.forEach((m,i)=>{ safe=safe.replace(`@@MATH${i}@@`,m.display?`\\[${m.text}\\]`:`\\(${m.text}\\)`); });
         return safe;
     }
 
@@ -5611,7 +5654,7 @@
         if (!currentUser) return Promise.resolve({ canSend: true, isAdmin: false });
         if (userData?.role === 'admin') return Promise.resolve({ canSend: true, isAdmin: true });
         const count = Number(localStorage.getItem(quotaStorageKey()) || '0');
-        return Promise.resolve({ canSend: count < 15, isAdmin: false });
+        return Promise.resolve({ canSend: count < 10, isAdmin: false });
     }
 
     function incrementQuota() {
@@ -5647,8 +5690,8 @@
                     const pdfDocument = await loadingTask.promise;
                     let pages = [];
                     let totalChars = 0;
-                    const MAX_PDF_TEXT = 60000;
-                    const OCR_MAX_PAGES = Math.min(pdfDocument.numPages, 10);
+                    const MAX_PDF_TEXT = 200000;
+                    const OCR_MAX_PAGES = Math.min(pdfDocument.numPages, 30);
                     for (let pageNum = 1; pageNum <= pdfDocument.numPages && totalChars < MAX_PDF_TEXT; pageNum++) {
                         const page = await pdfDocument.getPage(pageNum);
                         const textContent = await page.getTextContent();
@@ -5710,7 +5753,7 @@
             // « Message trop long » du backend tout en conservant le contenu du PDF.
             const chunks = [];
             const sourceText = finalUserMessage || 'Fichier';
-            for (let i = 0; i < sourceText.length; i += 18000) chunks.push(sourceText.slice(i, i + 18000));
+            for (let i = 0; i < sourceText.length; i += 12000) chunks.push(sourceText.slice(i, i + 18000));
             payload.contents[payload.contents.length - 1].parts = chunks.length ? chunks.map(text => ({ text })) : [{ text: 'Fichier' }];
 
             if (fileData && fileData.type !== 'application/pdf') {
@@ -5814,6 +5857,21 @@
         }
     }
 
+
+    async function consumeServerAIQuota() {
+        if(!currentUser || userData?.role==='admin') return {allowed:true,isAdmin:true};
+        const token=await currentUser.getIdToken();
+        const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/ai/quota`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+            body:JSON.stringify({consume:true})
+        });
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok || data.success!==true) throw new Error(data.error||data.code||`Quota IA HTTP ${response.status}`);
+        if(data.allowed!==true) throw new Error(data.code==='AI_SUBSCRIPTION_REQUIRED'?'Un abonnement HosBac AI est requis pour utiliser les 10 requêtes IA quotidiennes.':data.code==='AI_DAILY_LIMIT'?'Vous avez atteint vos 10 requêtes IA aujourd’hui.':'Requête IA refusée.');
+        return data;
+    }
+
     // ============================================================
     // FONCTION PRINCIPALE D'ENVOI DE MESSAGE
     // ============================================================
@@ -5829,41 +5887,22 @@
             return;
         }
 
-        checkAndResetQuota().then(quotaResult => {
-            if (!quotaResult.canSend && !quotaResult.isAdmin) {
-                const blockMessage = "Limite quotidienne atteinte : Vous avez utilisé l'intégralité de vos 15 questions pour aujourd'hui. Votre quota sera automatiquement réinitialisé demain à minuit. Merci de votre fidélité à la plateforme HosBac et à demain pour la suite de vos révisions.";
-                addChatMessage(blockMessage, 'bot');
-                return;
-            }
-
-            incrementQuota().then(() => {
-                const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                const fileInfo = attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null;
-                addChatMessage(text || 'Fichier attaché', 'user', time, fileInfo);
-
-                const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
-
-                chatInput.value = '';
-                attachedFile = null;
-                chatFilePreview.style.display = 'none';
-                assistantFileInput.value = '';
-                chatInput.style.height = 'auto';
-                chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-
-                if (cooldownTimeout) {
-                    clearTimeout(cooldownTimeout);
-                    cooldownTimeout = null;
-                }
-
-                showLoading();
-                sendMessageToGemini(text, fileData, 0, false);
-            }).catch(err => {
-                console.error('Erreur incrémentation quota:', err);
-                showToast('Erreur lors de l\'envoi du message', 'error');
-            });
+        consumeServerAIQuota().then(() => {
+            const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            const fileInfo = attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null;
+            addChatMessage(text || 'Fichier attaché', 'user', time, fileInfo);
+            const fileData = attachedFile ? { data: attachedFile.data, type: attachedFile.type, name: attachedFile.name } : null;
+            chatInput.value = '';
+            attachedFile = null;
+            chatFilePreview.style.display = 'none';
+            assistantFileInput.value = '';
+            chatInput.style.height = 'auto';
+            if (cooldownTimeout) { clearTimeout(cooldownTimeout); cooldownTimeout = null; }
+            showLoading();
+            sendMessageToGemini(text, fileData, 0, false);
         }).catch(err => {
-            console.error('Erreur vérification quota:', err);
-            showToast('Erreur lors de la vérification du quota', 'error');
+            console.error('Erreur quota IA:', err);
+            showToast(err.message || 'Accès IA refusé.', 'warning');
         });
     }
 
@@ -6707,35 +6746,48 @@
     // ============================================================
     // AUTH STATE CHANGED
     // ============================================================
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(user => {
         try {
             if (user) {
                 currentUser = user;
-                let accountProfile = {};
-                try { const snap = await db.collection('users').doc(user.uid).get(); accountProfile = snap.exists ? snap.data() : {}; } catch (_) {}
-                const requiresVerification = accountProfile.emailVerificationRequired === true && Number(accountProfile.verificationPolicyVersion||0) >= 8;
-                const isAdminAccount = accountProfile.role === 'admin' || accountProfile.isAdmin === true;
-                if (requiresVerification && !isAdminAccount && user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
-                    if (app) app.style.display = 'none';
-                    if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
-                    showToast('Vérifiez votre adresse email avant de continuer.', 'warning');
-                    return;
-                }
-                if (requiresVerification && user.emailVerified) db.collection('users').doc(user.uid).set({emailVerificationRequired:false},{merge:true}).catch(()=>{});
                 if (app) app.style.display = 'block';
                 if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
-                checkUserRole().then(() => { if (!currentUser) return; loadUserData(); startAnnouncementsListener(); }).catch(() => showToast('Impossible de charger votre profil. Réessayez.', 'error'));
+                checkUserRole().then(() => {
+                    if (!currentUser) return;
+                    loadUserData();
+                    startAnnouncementsListener();
+                }).catch(() => showToast('Impossible de charger votre profil. Réessayez.', 'error'));
                 if (menuGuestItem) menuGuestItem.style.display = 'none';
-                if (sharedExamId) setTimeout(() => showExamDetail(sharedExamId), 500);
-                loadContactsFromFirestore(); loadLegalPages(); loadAndInjectGA();
-                setTimeout(() => { if (assistantMessages.children.length === 0) displayWelcomeMessage(); }, 500);
+                if (sharedExamId) {
+                    setTimeout(() => {
+                        showExamDetail(sharedExamId);
+                    }, 500);
+                }
+                loadContactsFromFirestore();
+                loadLegalPages();
+                loadAndInjectGA();
+                setTimeout(() => {
+                    if (assistantMessages.children.length === 0) {
+                        displayWelcomeMessage();
+                    }
+                }, 500);
             } else {
-                currentUser = null; userData = null; isAdmin = false; stopAllListeners();
+                currentUser = null;
+                userData = null;
+                isAdmin = false;
+                stopAllListeners();
                 if (app) app.style.display = 'block';
                 if (authScreen) { authScreen.style.display = 'none'; authScreen.classList.remove('auth-page-visible'); }
                 if (menuGuestItem) menuGuestItem.style.display = 'flex';
                 if (menuAdminItem) menuAdminItem.style.display = 'none';
-                loadRecentExams(); loadPopularExams(); loadPlatformStats(); loadAnnouncements(); updateExamCardsVisibility(); loadContactsFromFirestore(); loadLegalPages(); loadAndInjectGA();
+                loadRecentExams();
+                loadPopularExams();
+                loadPlatformStats();
+                loadAnnouncements();
+                updateExamCardsVisibility();
+                loadContactsFromFirestore();
+                loadLegalPages();
+                loadAndInjectGA();
             }
             updateMenuItems();
         } catch (error) {
@@ -6745,6 +6797,7 @@
         }
     });
 
+    // ============================================================
     // DOM CONTENT LOADED - INITIALISATION PRINCIPALE
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
@@ -6863,7 +6916,7 @@
             const prenom = display.shift() || 'Utilisateur';
             const nom = display.join(' ');
             const data = {
-                nom, prenom, ecole:'', region:'', email:user.email || '', classe:'', serie:'', points:0,
+                nom, prenom, ecole:'', email:user.email || '', classe:'', points:0,
                 examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
                 dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
                 totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
@@ -6879,8 +6932,7 @@
                 const provider = new firebase.auth.GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 const credential = await auth.signInWithPopup(provider);
-                const googleProfile=await ensureGoogleUserProfile(credential.user);
-                if(!googleProfile.classe){showToast('Compte Google créé. Complétez maintenant votre classe et votre série depuis le profil.', 'warning');navigateTo('profile');return;}
+                await ensureGoogleUserProfile(credential.user);
                 showToast('Connexion Google réussie', 'success');
             } catch (error) {
                 console.error('[AUTH] Google:', error);
@@ -6914,13 +6966,7 @@
             }
             const nom = document.getElementById('signup-nom')?.value || '';
             const prenom = document.getElementById('signup-prenom')?.value || '';
-            const ecole = document.getElementById('signup-ecole')?.value.trim() || '';
-            const region = document.getElementById('signup-region')?.value.trim() || '';
-            if(!region){showToast('La région est obligatoire.','warning');return;}
-            const classe = document.getElementById('signup-classe')?.value || '';
-            const serie = document.getElementById('signup-serie')?.value || '';
-            if(!classe){showToast('La classe est obligatoire.','warning');return;}
-            if(seriesForClass(classe).length&&!serie){showToast('La série est obligatoire pour cette classe.','warning');return;}
+            const ecole = document.getElementById('signup-ecole')?.value || '';
             const email = document.getElementById('signup-email')?.value || '';
             const password = document.getElementById('signup-password')?.value || '';
             if (password.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'warning'); return; }
@@ -6928,7 +6974,7 @@
             .then(userCredential => {
                 currentUser = userCredential.user;
                 return db.collection('users').doc(currentUser.uid).set({
-                    nom, prenom, ecole, region, email, classe, serie: seriesForClass(classe).length ? serie : '', points: 0,
+                    nom, prenom, ecole, email, classe: '', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'student',
                     likedAnnouncements: [], favorites: [],
                     dailyMessageCount: 0,
@@ -6945,13 +6991,10 @@
                     quizTotal: 0,
                     quizPerfect: 0,
                     revisionPlanCreated: 0,
-                    status: 'active',
-                    emailVerificationRequired: true,
-                    verificationPolicyVersion: 8
+                    status: 'active'
                 });
             })
-            .then(() => auth.currentUser?.sendEmailVerification({url: window.location.href}))
-            .then(() => { showToast('Compte créé. Un email de vérification vient de vous être envoyé. Vérifiez votre boîte mail avant de continuer.', 'success'); return auth.signOut(); })
+            .then(() => showToast('Inscription réussie', 'success'))
             .catch(error => {
                 console.error('[AUTH] Erreur inscription:', error);
                 const messages = {
@@ -7042,10 +7085,7 @@
             .catch(error => console.error('[AUTH] Erreur déconnexion:', error));
         });
 
-        function toggleSignupSerie(){const c=document.getElementById('signup-classe')?.value||'',g=document.getElementById('signup-serie-group');if(g)g.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('signup-serie'),c);}
-function toggleEditProfileSerie(){const c=document.getElementById('edit-classe')?.value||'',g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('edit-serie'),c,document.getElementById('edit-serie')?.value||'');}
-document.getElementById('signup-classe')?.addEventListener('change',toggleSignupSerie);document.getElementById('edit-classe')?.addEventListener('change',toggleEditProfileSerie);toggleSignupSerie();
-profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile(); });
+        profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile(); });
 
         popupCloseButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -7088,24 +7128,64 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
                 .catch(err => console.error('Erreur favori:', err));
             }
         });
-        detailIaBtn?.addEventListener('click', () => {
+
+        async function prepareExamForAI(examId) {
+            const snap = await db.collection('epreuves').doc(examId).get();
+            if (!snap.exists) throw new Error('Épreuve introuvable.');
+            const exam = snap.data();
+            if (!exam.fichier_sujet) throw new Error('Le PDF de cette épreuve est indisponible.');
+            const response = await fetch(exam.fichier_sujet);
+            if (!response.ok) throw new Error('Impossible de récupérer le PDF de cette épreuve.');
+            const blob = await response.blob();
+            const buffer = await blob.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+            }
+            attachedFile = {
+                name: exam.nom_epreuve ? `${cleanFileName(exam.nom_epreuve)}.pdf` : 'epreuve-hosbac.pdf',
+                type: 'application/pdf',
+                size: blob.size,
+                data: btoa(binary)
+            };
+            if (chatFilePreview) {
+                chatFilePreview.style.display = 'flex';
+                if (chatFileName) chatFileName.textContent = attachedFile.name;
+            }
+            return exam;
+        }
+
+        detailIaBtn?.addEventListener('click', async () => {
             if (!currentUser) {
                 showToast('Connectez-vous pour utiliser l\'assistant IA.', 'warning');
                 if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                 return;
             }
-            navigateTo('assistant');
-            setTimeout(() => {
-                if (chatInput) {
-                    const title = detailTitle?.textContent || 'cette épreuve';
-                    chatInput.value = `Peux-tu m'aider à résoudre "${title}" ?`;
-                    chatInput.focus();
-                    chatInput.style.height = 'auto';
-                    chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-                }
-            }, 500);
+            try {
+                showToast('Préparation du PDF pour HosBac IA…', 'info');
+                const exam = await prepareExamForAI(currentExamId);
+                navigateTo('assistant');
+                setTimeout(() => {
+                    if (chatInput) {
+                        const title = exam.nom_epreuve || detailTitle?.textContent || 'cette épreuve';
+                        chatInput.value = `Peux-tu m'aider à résoudre cette épreuve, étape par étape ?`;
+                        chatInput.focus();
+                        chatInput.style.height = 'auto';
+                        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+                        showToast(`« ${title} » est déjà attachée à la conversation. Appuie sur Envoyer.`, 'success');
+                    }
+                }, 350);
+            } catch (error) {
+                console.error('[EXAM IA]', error);
+                showToast(error.message || 'Impossible de préparer le PDF pour l’IA.', 'error');
+            }
         });
         
+        document.getElementById('inspe-subscribe-btn')?.addEventListener('click', activateInspeSubscription);
+        document.getElementById('inspe-refresh-btn')?.addEventListener('click', async()=>{try{await loadProfileData();showToast('Profil actualisé.','success')}catch(e){showToast(e.message,'error')}});
+
         detailBackBtn?.addEventListener('click', () => {
             if (examDetailView) examDetailView.classList.remove('active');
             navigateTo('exams');
@@ -7188,21 +7268,77 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
             rejectionReason.value = '';
         });
 
-        // Cloudinary : upload signé via HosBac Quiz. Aucun uploadPreset public n'est utilisé.
-        async function signedCloudinaryUpload(file) {
-            if (!currentUser) throw new Error('Connexion administrateur requise.');
-            if (file.type !== 'application/pdf') throw new Error('Seuls les PDF sont acceptés.');
-            const token=await currentUser.getIdToken(true);
-            const sr=await fetch(HOSBAC_QUIZ_URL+'api/admin/cloudinary-sign',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
-            const sign=await sr.json().catch(()=>({})); if(!sr.ok)throw new Error(sign.error||'Signature Cloudinary refusée.');
-            const fd=new FormData();fd.append('file',file);fd.append('api_key',sign.apiKey);fd.append('timestamp',sign.timestamp);fd.append('folder',sign.folder);fd.append('public_id',sign.publicId);fd.append('signature',sign.signature);
-            const up=await fetch(sign.uploadUrl||`https://api.cloudinary.com/v1_1/${encodeURIComponent(sign.cloudName)}/raw/upload`,{method:'POST',body:fd});
-            const result=await up.json().catch(()=>({}));if(!up.ok)throw new Error(result.error?.message||`Cloudinary HTTP ${up.status}`);return result;
+        // Cloudinary Upload Widgets
+        let sujetUploadWidget, corrigeUploadWidget, corrigeOnlyUploadWidget;
+        try {
+            sujetUploadWidget = cloudinary.createUploadWidget({
+                cloudName, uploadPreset, sources: ['local'], multiple: false,
+                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
+            }, (error, result) => {
+                const submitBtn = document.getElementById('add-exam-submit-btn');
+                if (!error && result && result.event === 'success') {
+                    document.getElementById('exam-sujet-url').value = result.info.secure_url;
+                    document.getElementById('sujet-upload').innerHTML = `<p>Fichier sujet téléchargé: ${result.info.original_filename}</p>`;
+                    sujetProgress.hide();
+                    if (submitBtn) submitBtn.disabled = false;
+                    showToast('Fichier sujet uploadé avec succès', 'success');
+                } else if (error) {
+                    sujetProgress.hide(); if (submitBtn) submitBtn.disabled = false;
+                    showToast('Erreur lors du téléchargement du fichier sujet', 'error');
+                } else if (result && result.event === 'progress') {
+                    sujetProgress.update((result.bytesUploaded / result.totalBytes) * 100);
+                } else if (result && result.event === 'queues-start') {
+                    sujetProgress.show(); if (submitBtn) submitBtn.disabled = true;
+                }
+            });
+            corrigeUploadWidget = cloudinary.createUploadWidget({
+                cloudName, uploadPreset, sources: ['local'], multiple: false,
+                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
+            }, (error, result) => {
+                const submitBtn = document.getElementById('add-exam-submit-btn');
+                if (!error && result && result.event === 'success') {
+                    document.getElementById('exam-corrige-url').value = result.info.secure_url;
+                    document.getElementById('corrige-upload').innerHTML = `<p>Fichier corrigé téléchargé: ${result.info.original_filename}</p>`;
+                    corrigeProgress.hide();
+                    if (submitBtn) submitBtn.disabled = false;
+                    showToast('Fichier corrigé uploadé avec succès', 'success');
+                } else if (error) {
+                    corrigeProgress.hide(); if (submitBtn) submitBtn.disabled = false;
+                    showToast('Erreur lors du téléchargement du fichier corrigé', 'error');
+                } else if (result && result.event === 'progress') {
+                    corrigeProgress.update((result.bytesUploaded / result.totalBytes) * 100);
+                } else if (result && result.event === 'queues-start') {
+                    corrigeProgress.show(); if (submitBtn) submitBtn.disabled = true;
+                }
+            });
+            corrigeOnlyUploadWidget = cloudinary.createUploadWidget({
+                cloudName, uploadPreset, sources: ['local'], multiple: false,
+                resourceType: 'raw', clientAllowedFormats: ['pdf'], maxFileSize: 5000000
+            }, (error, result) => {
+                const submitBtn = document.getElementById('add-corrige-only-submit-btn');
+                if (!error && result && result.event === 'success') {
+                    document.getElementById('corrige-only-url').value = result.info.secure_url;
+                    document.getElementById('corrige-only-upload').innerHTML = `<p>Fichier corrigé téléchargé: ${result.info.original_filename}</p>`;
+                    corrigeOnlyProgress.hide();
+                    if (submitBtn) submitBtn.disabled = false;
+                    showToast('Fichier corrigé uploadé avec succès', 'success');
+                } else if (error) {
+                    corrigeOnlyProgress.hide(); if (submitBtn) submitBtn.disabled = false;
+                    showToast('Erreur lors du téléchargement du fichier corrigé', 'error');
+                } else if (result && result.event === 'progress') {
+                    corrigeOnlyProgress.update((result.bytesUploaded / result.totalBytes) * 100);
+                } else if (result && result.event === 'queues-start') {
+                    corrigeOnlyProgress.show(); if (submitBtn) submitBtn.disabled = true;
+                }
+            });
+        } catch (error) {
+            console.error('[CLOUDINARY] Erreur:', error);
+            showToast('Erreur d\'initialisation du système de fichier', 'error');
         }
-        function bindPdfUploadTrigger(id,inputId,onSuccess){const trigger=document.getElementById(id);if(!trigger)return;const input=document.createElement('input');input.type='file';input.accept='application/pdf';input.hidden=true;input.id=inputId;document.body.appendChild(input);trigger.addEventListener('click',()=>input.click());input.addEventListener('change',async()=>{const f=input.files?.[0];if(!f)return;try{showToast('Téléchargement du PDF…','info');const r=await signedCloudinaryUpload(f);onSuccess(r,f);showToast('PDF téléchargé avec succès','success');}catch(e){console.error('[CLOUDINARY]',e);showToast(e.message,'error')}finally{input.value='';}})}
-        bindPdfUploadTrigger('sujet-upload','__sujet_pdf',(r,f)=>{document.getElementById('exam-sujet-url').value=r.secure_url;document.getElementById('sujet-upload').innerHTML=`<p>Fichier sujet téléchargé : ${f.name}</p>`;});
-        bindPdfUploadTrigger('corrige-upload','__corrige_pdf',(r,f)=>{document.getElementById('exam-corrige-url').value=r.secure_url;document.getElementById('corrige-upload').innerHTML=`<p>Fichier corrigé téléchargé : ${f.name}</p>`;});
-        bindPdfUploadTrigger('corrige-only-upload','__corrige_only_pdf',(r,f)=>{document.getElementById('corrige-only-url').value=r.secure_url;document.getElementById('corrige-only-upload').innerHTML=`<p>Fichier corrigé téléchargé : ${f.name}</p>`;});
+
+        document.getElementById('sujet-upload')?.addEventListener('click', () => { if (sujetUploadWidget) sujetUploadWidget.open(); });
+        document.getElementById('corrige-upload')?.addEventListener('click', () => { if (corrigeUploadWidget) corrigeUploadWidget.open(); });
+        document.getElementById('corrige-only-upload')?.addEventListener('click', () => { if (corrigeOnlyUploadWidget) corrigeOnlyUploadWidget.open(); });
         document.getElementById('exam-classe')?.addEventListener('change', toggleSerieField);
         document.getElementById('edit-exam-classe')?.addEventListener('change', toggleEditSerieField);
         toggleSerieField();
@@ -7588,7 +7724,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
         window.showExamDetail = showExamDetail;
         window.approveExamAdmin = function(examId, authorId) {
             if (!isAdmin) return;
-            const points = 3;
+            const points = 2;
             approveExam(examId, authorId, points);
             setTimeout(() => loadAdminExams(true), 300);
         };
@@ -7713,16 +7849,14 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
     function approveExam(examId, authorId, points) {
         if (!isAdmin) return;
         try {
-            db.runTransaction(async tx => {
-                const ref = db.collection('epreuves').doc(examId);
-                const snap = await tx.get(ref);
-                if (!snap.exists) throw new Error('Épreuve introuvable');
-                const exam = snap.data();
-                if (exam.status === 'approved' || exam.approvalPointsAwarded === true) return { already: true };
-                tx.update(ref, { status:'approved', approvedAt:firebase.firestore.FieldValue.serverTimestamp(), approvalPointsAwarded:true });
-                if (authorId) tx.update(db.collection('users').doc(authorId), { points:firebase.firestore.FieldValue.increment(Number(points)||3) });
-                return { already:false };
-            }).then(result => { examDocCache.delete(examId); if (result?.already) throw new Error('Cette épreuve est déjà approuvée.'); return null; }).then(() => {
+            db.collection('epreuves').doc(examId).update({ 
+                status: 'approved',
+                approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+            })
+            .then(() => {
+            })
+            .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
+            .then(() => {
                 if (authorId) {
                     db.collection('notifications').add({
                         userId: authorId, type: 'approval',
@@ -7865,7 +7999,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
                 showToast('Brouillon sauvegardé avec succès', 'success');
             } else if (isAdminUser) {
                 showToast('Épreuve publiée', 'success');
-                awardApprovalPoints(currentUser.uid, 3);
+                awardApprovalPoints(currentUser.uid, fichier_corrige ? 4 : 2);
             } else {
                 showToast('Épreuve soumise, en attente d\'approbation', 'success');
                 }
@@ -7896,16 +8030,33 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
     // ============================================================
     function updateUserStats(action, examId) {
         if (!currentUser || !userData) return Promise.resolve();
-        const userRef = db.collection('users').doc(currentUser.uid); const updates={};
-        if(action==='view') updates.examsViewed=firebase.firestore.FieldValue.increment(1);
-        if(action==='download') updates.examsDownloaded=firebase.firestore.FieldValue.increment(1);
-        if(action==='upload') updates.examsUploaded=firebase.firestore.FieldValue.increment(1);
-        if(action==='correction') updates.correctionsAdded=firebase.firestore.FieldValue.increment(1);
-        const today=new Date().toISOString().slice(0,10);
-        if(userData.lastActiveDate!==today){updates.lastActiveDate=today;updates.activeDays=firebase.firestore.FieldValue.increment(1);}
-        if(!Object.keys(updates).length)return Promise.resolve();
-        Object.assign(userData,{examsViewed:(userData.examsViewed||0)+(action==='view'?1:0),examsDownloaded:(userData.examsDownloaded||0)+(action==='download'?1:0),examsUploaded:(userData.examsUploaded||0)+(action==='upload'?1:0),correctionsAdded:(userData.correctionsAdded||0)+(action==='correction'?1:0),...(userData.lastActiveDate!==today?{lastActiveDate:today,activeDays:(userData.activeDays||0)+1}:{})});
-        return userRef.update(updates).catch(err=>console.warn('[STATS] Mise à jour différée:',err.message));
+        const userRef = db.collection('users').doc(currentUser.uid);
+        const xpMap = { download: 10, upload: 20, correction: 15 };
+        if (!xpMap[action]) return Promise.resolve();
+        const xpEarned = xpMap[action];
+        const today = new Date().toISOString().slice(0,10);
+        const updates = { totalXp: firebase.firestore.FieldValue.increment(xpEarned) };
+        if (action === 'view') updates.examsViewed = firebase.firestore.FieldValue.increment(1);
+        if (action === 'download') updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
+        if (action === 'upload') updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
+        if (action === 'correction') updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
+        if (userData.lastActiveDate !== today) {
+            updates.lastActiveDate = today;
+            updates.activeDays = firebase.firestore.FieldValue.increment(1);
+        }
+        const history = Array.isArray(userData.xpHistory) ? userData.xpHistory.slice(-29) : [];
+        history.push({ date: new Date().toISOString(), xp: xpEarned, action });
+        updates.xpHistory = history;
+        Object.assign(userData, {
+            totalXp: (userData.totalXp || 0) + xpEarned,
+            examsViewed: (userData.examsViewed || 0) + (action === 'view' ? 1 : 0),
+            examsDownloaded: (userData.examsDownloaded || 0) + (action === 'download' ? 1 : 0),
+            examsUploaded: (userData.examsUploaded || 0) + (action === 'upload' ? 1 : 0),
+            correctionsAdded: (userData.correctionsAdded || 0) + (action === 'correction' ? 1 : 0),
+            xpHistory: history,
+            ...(userData.lastActiveDate !== today ? { lastActiveDate: today, activeDays: (userData.activeDays || 0) + 1 } : {})
+        });
+        return userRef.update(updates).catch(err => console.warn('[STATS] Mise à jour différée:', err.message));
     }
 
     // ============================================================
@@ -8496,17 +8647,20 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
         if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
         const fileUrl = exam.fichier_corrige;
         if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
-        db.runTransaction(async tx => {
-            const userRef = db.collection('users').doc(currentUser.uid);
-            const snap = await tx.get(userRef);
-            const u = snap.exists ? snap.data() : {};
-            const balance = Number(u.points || 0);
-            if (balance < 2) throw new Error('Points insuffisants. 2 points requis.');
-            tx.update(userRef, { points: balance - 2, examsDownloaded: firebase.firestore.FieldValue.increment(1) });
-            return balance - 2;
-        }).then(newBalance => {
-            userData.points = newBalance;
+        db.collection('users').doc(currentUser.uid).update({
+            points: firebase.firestore.FieldValue.increment(-2),
+            examsDownloaded: firebase.firestore.FieldValue.increment(1)
+        }).then(() => {
+            userData.points = Math.max(0, (userData.points || 0) - 2);
             userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
+            if (exam.auteurId && exam.auteurId !== currentUser.uid) {
+                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
+                    .then(() => db.collection('notifications').add({
+                        userId: exam.auteurId, type:'points_received',
+                        message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
+                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                    }));
+            }
         }).then(() => {
             db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
             if (action === 'view') window.open(fileUrl, '_blank');
@@ -8582,12 +8736,15 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
                     if (email) email.textContent = user.email || '';
                     if (classe) classe.textContent = `Classe: ${user.classe || 'Non définie'}`;
                     if (points) points.textContent = user.points || 0;
+                    const inspePoints = document.getElementById('inspe-points-balance'); if (inspePoints) inspePoints.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR');
+                    const inspeSubBalance = document.getElementById('inspe-sub-balance'); if (inspeSubBalance) inspeSubBalance.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
                     if (uploaded) uploaded.textContent = user.examsUploaded || 0;
                     if (downloaded) downloaded.textContent = user.examsDownloaded || 0;
                     const profileFormEl = document.getElementById('profile-form');
                     const favList = document.getElementById('favorites-list');
                     const cardTitle = document.querySelector('#profile-view .card:nth-of-type(2) .card-title');
                     if (profileFormEl) profileFormEl.style.display = 'none';
+                    const subCard=document.getElementById('inspe-subscription-card'); if(subCard) subCard.style.display='none';
                     if (favList) favList.style.display = 'none';
                     if (cardTitle) cardTitle.style.display = 'none';
                     const logoutBtnEl = document.getElementById('logout-btn');
@@ -8596,6 +8753,57 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
             })
             .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); showToast('Erreur lors du chargement du profil', 'error'); });
         } catch (error) { console.error('[FIRESTORE] Erreur loadUserProfile:', error); showToast('Erreur lors du chargement du profil', 'error'); }
+    }
+
+
+    async function loadInspeSubscription() {
+        const statusEl=document.getElementById('inspe-subscription-status');
+        const balanceEl=document.getElementById('inspe-sub-balance');
+        const msgEl=document.getElementById('inspe-subscription-message');
+        const btn=document.getElementById('inspe-subscribe-btn');
+        if(!statusEl||!currentUser)return;
+        const balance=Number(userData?.inspe_points||0);
+        if(balanceEl) balanceEl.textContent=balance.toLocaleString('fr-FR')+' INSPE';
+        const sub=userData?.quiz_subscription||{};
+        const active=sub.active===true && (!sub.expiresAt || new Date(sub.expiresAt).getTime()>Date.now());
+        if(active){
+            statusEl.className='notice success';
+            statusEl.textContent=`Abonnement actif jusqu’au ${new Date(sub.expiresAt).toLocaleDateString('fr-FR')}.`;
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-check"></i> Abonnement actif';}
+            return;
+        }
+        if(balance>=1000){
+            statusEl.className='notice success';
+            statusEl.textContent='Vous êtes éligible : 1 000 INSPE sont disponibles pour activer l’abonnement.';
+            if(btn) btn.disabled=false;
+        }else{
+            statusEl.className='notice';
+            statusEl.textContent=`Il vous manque ${Math.max(0,1000-balance).toLocaleString('fr-FR')} INSPE pour être éligible.`;
+            if(btn) btn.disabled=true;
+        }
+        if(msgEl) msgEl.textContent='L’abonnement donne accès à 10 requêtes IA par jour pendant 30 jours.';
+    }
+
+    async function activateInspeSubscription() {
+        if(!currentUser)return;
+        const btn=document.getElementById('inspe-subscribe-btn');
+        try{
+            if(Number(userData?.inspe_points||0)<1000)return showToast('Il faut au moins 1 000 INSPE.', 'warning');
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Activation…';}
+            const token=await currentUser.getIdToken();
+            const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/admin/subscription`,{
+                method:'POST',
+                headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                body:'{}'
+            });
+            const data=await response.json().catch(()=>({}));
+            if(!response.ok||data.success!==true)throw new Error(data.error||data.code||`HTTP ${response.status}`);
+            userData={...(userData||{}),inspe_points:Number(data.remainingInspe??0),quiz_subscription:{active:true,startedAt:new Date().toISOString(),expiresAt:data.expiresAt}};
+            showToast('Abonnement HosBac AI activé.', 'success');
+            await db.collection('users').doc(currentUser.uid).get().then(doc=>{if(doc.exists)userData={...userData,...doc.data()};});
+            loadProfileData();
+        }catch(e){console.error('[SUBSCRIPTION]',e);showToast(e.message||'Activation impossible.','error');}
+        finally{if(btn)btn.disabled=false;loadInspeSubscription();}
     }
 
     async function loadProfileData() {
@@ -8622,41 +8830,45 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
             if(profileTotalXp) profileTotalXp.textContent=totalXp;
             const points=document.getElementById('points-balance'), uploaded=document.getElementById('exams-uploaded'), downloaded=document.getElementById('exams-downloaded');
             if(points) points.textContent=userData.points||0;
+            const inspePoints=document.getElementById('inspe-points-balance'), inspeSubBalance=document.getElementById('inspe-sub-balance');
+            if(inspePoints) inspePoints.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR');
+            if(inspeSubBalance) inspeSubBalance.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
             if(uploaded) uploaded.textContent=userData.examsUploaded||0;
             if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
             if(xpChart && userData.xpHistory){ const history=userData.xpHistory.slice(-4); const xpData=history.map(h=>h.xp||0); while(xpData.length<4) xpData.unshift(0); xpChart.data.datasets[0].data=xpData; xpChart.update(); }
-            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe'), editRegion=document.getElementById('edit-region');
-            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editRegion) editRegion.value=userData.region||''; if(editClasse){editClasse.value=userData.classe||'';populateSeriesSelect(document.getElementById('edit-serie'),editClasse.value,userData.serie||'');const g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(editClasse.value).length?'block':'none';}
+            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe');
+            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse) editClasse.value=userData.classe||'';
             if(welcomeMessage) welcomeMessage.textContent=`Bienvenue sur HosBac, ${userData.prenom||'Utilisateur'} !`;
             if(welcomeSubtitle) welcomeSubtitle.textContent='Prêt à trouver la bonne épreuve ?';
             const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
             if(homePoints) homePoints.textContent=userData.points||0; if(homeUploaded) homeUploaded.textContent=userData.examsUploaded||0; if(homeDownloaded) homeDownloaded.textContent=userData.examsDownloaded||0;
             const profileFormEl=document.getElementById('profile-form'), favList=document.getElementById('favorites-list'), cardTitle=document.querySelector('#profile-view .card:nth-of-type(2) .card-title'), logoutBtnEl=document.getElementById('logout-btn');
-            if(profileFormEl) profileFormEl.style.display='block'; if(favList) favList.style.display='grid'; if(cardTitle) cardTitle.style.display='block'; if(logoutBtnEl) logoutBtnEl.style.display='block';
+            if(profileFormEl) profileFormEl.style.display='block';
+            const subCard=document.getElementById('inspe-subscription-card'); if(subCard) subCard.style.display='block'; if(favList) favList.style.display='grid'; if(cardTitle) cardTitle.style.display='block'; if(logoutBtnEl) logoutBtnEl.style.display='block';
             await loadFavorites();
             await loadLeaderboard();
             await loadSubjectStats();
+            await loadInspeSubscription();
         } catch(error) { console.error('[PROFILE] Erreur affichage profil:',error); }
     }
 
     function updateProfile() {
         if (!currentUser) return;
-        const nom=document.getElementById('edit-nom')?.value||'';
-        const prenom=document.getElementById('edit-prenom')?.value||'';
-        const classe=document.getElementById('edit-classe')?.value||'';
-        const region=document.getElementById('edit-region')?.value.trim()||'';
-        const serie=document.getElementById('edit-serie')?.value||'';
-        if(!nom||!prenom||!classe||!region){showToast('Veuillez remplir tous les champs obligatoires','warning');return;}
-        if(seriesForClass(classe).length&&!serie){showToast('Veuillez sélectionner une série.','warning');return;}
-        const patch={nom,prenom,region,classe,serie:seriesForClass(classe).length?serie:''};
-        db.collection('users').doc(currentUser.uid).update(patch).then(()=>{
-            userData={...(userData||{}),...patch};
-            if(profileName)profileName.textContent=`${prenom} ${nom}`.trim();
-            if(profileClass)profileClass.textContent=`Classe: ${classe}`;
-            if(profileAvatar)profileAvatar.textContent=prenom?prenom.charAt(0).toUpperCase():'U';
-            showToast('Profil mis à jour','success');
-        }).catch(error=>{console.error('[FIRESTORE] Erreur mise à jour profil:',error);showToast('Erreur lors de la mise à jour','error');});
+        const nom = document.getElementById('edit-nom')?.value || '';
+        const prenom = document.getElementById('edit-prenom')?.value || '';
+        const classe = document.getElementById('edit-classe')?.value || '';
+        try {
+            db.collection('users').doc(currentUser.uid).update({ nom, prenom, classe })
+            .then(() => {
+                userData = { ...(userData || {}), nom, prenom, classe };
+                if (profileName) profileName.textContent = `${prenom} ${nom}`.trim();
+                if (profileClass) profileClass.textContent = `Classe: ${classe || 'Non définie'}`;
+                if (profileAvatar) profileAvatar.textContent = prenom ? prenom.charAt(0).toUpperCase() : 'U';
+                showToast('Profil mis à jour', 'success');
+            })
+            .catch(error => { console.error('[FIRESTORE] Erreur mise à jour profil:', error); showToast('Erreur lors de la mise à jour', 'error'); });
+        } catch (error) { console.error('[FIRESTORE] Erreur updateProfile:', error); showToast('Erreur lors de la mise à jour', 'error'); }
     }
 
     async function loadFavorites() {
@@ -8779,7 +8991,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
                             item.style.cursor = 'pointer';
                             item.style.transition = 'var(--transition)';
                             item.style.borderRadius = '6px';
-                            safeInnerHTML(item, `<p><strong>${escapeHTML(user.prenom || '')} ${escapeHTML(user.nom || '')}</strong> - ${escapeHTML(user.email || '')}</p><small>${escapeHTML(user.ecole || '')}${user.region ? ' · '+escapeHTML(user.region) : ''}</small>`);
+                            safeInnerHTML(item, `<p><strong>${escapeHTML(user.prenom || '')} ${escapeHTML(user.nom || '')}</strong> - ${escapeHTML(user.email || '')}</p><small>${escapeHTML(user.ecole || '')}</small>`);
                             item.addEventListener('click', () => { if (checkAuthRequired('voir le profil')) viewUserProfile(doc.id); });
                             searchResults.appendChild(item);
                             hasResults = true;
@@ -8795,10 +9007,17 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
     // ============================================================
     // CORRIGÉ SEUL / CHAMPS SÉRIE
     // ============================================================
-    function seriesForClass(classe){if(['2nd','1ère','Terminale'].includes(classe))return ['A','B','C','D','A+B','C+D'];return [];}
-function populateSeriesSelect(select,classe,selected=''){if(!select)return;const v=seriesForClass(classe);select.innerHTML='<option value="">Sélectionner une série</option>'+v.map(x=>`<option value="${x}">${x}</option>`).join('');select.value=v.includes(selected)?selected:'';}
-function toggleSerieField(){const c=document.getElementById('exam-classe')?.value||'',box=document.getElementById('exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('exam-serie'),c,document.getElementById('exam-serie')?.value||'');}
-function toggleEditSerieField(){const c=document.getElementById('edit-exam-classe')?.value||'',box=document.getElementById('edit-exam-serie-container');if(box)box.style.display=seriesForClass(c).length?'block':'none';populateSeriesSelect(document.getElementById('edit-exam-serie'),c,document.getElementById('edit-exam-serie')?.value||'');}
+    function toggleSerieField() {
+        const classe = document.getElementById('exam-classe')?.value || '';
+        const container = document.getElementById('exam-serie-container');
+        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
+    }
+
+    function toggleEditSerieField() {
+        const classe = document.getElementById('edit-exam-classe')?.value || '';
+        const container = document.getElementById('edit-exam-serie-container');
+        if (container) container.style.display = ['2nd','1ère','Terminale'].includes(classe) ? 'block' : 'none';
+    }
 
     async function loadExistingExamsForCorrige() {
         const select = document.getElementById('corrige-only-exam');
@@ -9434,8 +9653,6 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
             if (doc.exists) {
                 const data = doc.data();
                 if (legalCgu) legalCgu.value = data.cgu || '';
-                if (legalAbout) legalAbout.value = data.about || '';
-                if (legalFaq) legalFaq.value = data.faq || '';
                 if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
             } else {
                 const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..." };
@@ -9447,8 +9664,8 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
         .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
     }
 
-    function saveLegalPages(cgu, confidentialite, about='', faq='') {
-        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite, about, faq }, { merge: true });
+    function saveLegalPages(cgu, confidentialite) {
+        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite }, { merge: true });
     }
 
     legalForm?.addEventListener('submit', function(e) {
@@ -9457,8 +9674,7 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         const cgu = legalCgu?.value || '';
         const confidentialite = legalPrivacy?.value || '';
-        const about = legalAbout?.value || ''; const faq = legalFaq?.value || '';
-        saveLegalPages(cgu, confidentialite, about, faq)
+        saveLegalPages(cgu, confidentialite)
         .then(() => showToast('Textes légaux enregistrés avec succès', 'success'))
         .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
     });
@@ -9470,8 +9686,6 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
             if (doc.exists) {
                 const data = doc.data();
                 if (type === 'cgu') { content = data.cgu || 'Textes en cours de rédaction...'; if (termsContent) termsContent.innerHTML = content.replace(/\n/g, '<br>'); if (termsPopup) termsPopup.style.display = 'flex'; }
-                else if (type === 'about') { content=data.about||'Présentation de HosBac en cours de rédaction...'; if(privacyContent)privacyContent.innerHTML=content.replace(/\n/g,'<br>'); if(privacyPopup)privacyPopup.style.display='flex'; }
-                else if (type === 'faq') { content=data.faq||'FAQ en cours de rédaction...'; if(privacyContent)privacyContent.innerHTML=content.replace(/\n/g,'<br>'); if(privacyPopup)privacyPopup.style.display='flex'; }
                 else if (type === 'privacy') { content = data.confidentialite || 'Textes en cours de rédaction...'; if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>'); if (privacyPopup) privacyPopup.style.display = 'flex'; }
             } else {
                 const defaultMsg = 'Textes en cours de rédaction...';
@@ -9553,6 +9767,5 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
     console.log('   ✅ Performance : listeners uniques, pas de boucle infinie');
     console.log('   ✅ Toutes les fonctionnalités sont conservées');
 </script>
-<script>window.HOSBAC_VERSION="8.0.0";</script>
 </body>
 </html>
