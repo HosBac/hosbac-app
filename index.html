@@ -3523,16 +3523,16 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="inspe-points-balance">0</div><div class="stat-label">INSPE · Quiz</div></div><div class="stat-card"><div class="stat-value" id="profile-quiz-xp">0</div><div class="stat-label">XP HosBac Quiz</div></div>
+                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="profile-quiz-xp">0</div><div class="stat-label">XP HosBac Quiz</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-downloaded">0</div><div class="stat-label">Épreuves téléchargées</div></div>
-                <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
+                
             </div>
             <div id="inspe-subscription-card" class="card">
                 <h2 class="card-title"><i class="fas fa-crown"></i> Abonnement HosBac AI</h2>
                 <div class="inspe-sub-grid">
-                    <div class="inspe-sub-item"><div class="small">Solde INSPE</div><div class="inspe-sub-value" id="inspe-sub-balance">0 INSPE</div></div>
-                    <div class="inspe-sub-item"><div class="small">Minimum requis</div><div class="inspe-sub-value">1 000 INSPE</div></div>
+                    <div class="inspe-sub-item"><div class="small">Solde XP HosBac</div><div class="inspe-sub-value" id="inspe-sub-balance">0 XP</div></div>
+                    <div class="inspe-sub-item"><div class="small">Minimum requis</div><div class="inspe-sub-value">1 000 XP</div></div>
                     <div class="inspe-sub-item"><div class="small">IA / jour</div><div class="inspe-sub-value">10 requêtes</div></div>
                 </div>
                 <div id="inspe-subscription-status" class="notice" style="margin-top:1rem;">Vérification de votre abonnement…</div>
@@ -4565,7 +4565,7 @@
     const profileLevelText = document.getElementById('profile-level-text');
     const profileXpBar = document.getElementById('profile-xp-bar');
     const profileXpText = document.getElementById('profile-xp-text');
-    const profileTotalXp = document.getElementById('profile-total-xp');
+    const profileTotalXp = null;
     const badgesContainer = document.getElementById('badges-container');
     const leaderboardList = document.getElementById('leaderboard-list');
     const weeklyChartCanvas = document.getElementById('weekly-chart');
@@ -8745,8 +8745,8 @@
                     if (email) email.textContent = user.email || '';
                     if (classe) classe.textContent = `Classe: ${user.classe || 'Non définie'}`;
                     if (points) points.textContent = user.points || 0;
-                    const inspePoints = document.getElementById('inspe-points-balance'); if (inspePoints) inspePoints.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR');
-                    const inspeSubBalance = document.getElementById('inspe-sub-balance'); if (inspeSubBalance) inspeSubBalance.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
+                    
+                    const inspeSubBalance = document.getElementById('inspe-sub-balance'); if (inspeSubBalance) inspeSubBalance.textContent = Number(user.inspe_points||0).toLocaleString('fr-FR')+' XP';
                     if (uploaded) uploaded.textContent = user.examsUploaded || 0;
                     if (downloaded) downloaded.textContent = user.examsDownloaded || 0;
                     const profileFormEl = document.getElementById('profile-form');
@@ -8772,11 +8772,11 @@
         const btn=document.getElementById('inspe-subscribe-btn');
         if(!statusEl||!currentUser)return;
         const balance=Number(userData?.inspe_points||0);
-        if(balanceEl) balanceEl.textContent=balance.toLocaleString('fr-FR')+' INSPE';
+        if(balanceEl) balanceEl.textContent=balance.toLocaleString('fr-FR')+' XP';
         let quizCfg={xpSubscriptionThreshold:1000,dailyAiRequests:10,subscriptionDays:30};
         try{const tk=await currentUser.getIdToken();const rr=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/quiz/status`,{headers:{Authorization:`Bearer ${tk}`}});const qj=await rr.json().catch(()=>({}));if(rr.ok&&qj.config)quizCfg={...quizCfg,...qj.config};}catch(e){console.debug('[SUB CONFIG]',e.message)}
         const threshold=Number(quizCfg.xpSubscriptionThreshold||1000),dailyLimit=Number(quizCfg.dailyAiRequests||10),subscriptionDays=Number(quizCfg.subscriptionDays||30);
-        const minEl=document.querySelector('#inspe-subscription-card .inspe-sub-item:nth-child(2) .inspe-sub-value');if(minEl)minEl.textContent=threshold.toLocaleString('fr-FR')+' INSPE';
+        const minEl=document.querySelector('#inspe-subscription-card .inspe-sub-item:nth-child(2) .inspe-sub-value');if(minEl)minEl.textContent=threshold.toLocaleString('fr-FR')+' XP';
         const aiEl=document.querySelector('#inspe-subscription-card .inspe-sub-item:nth-child(3) .inspe-sub-value');if(aiEl)aiEl.textContent=dailyLimit.toLocaleString('fr-FR')+' requêtes';
         const sub=userData?.quiz_subscription||{};
         const active=sub.active===true && (!sub.expiresAt || new Date(sub.expiresAt).getTime()>Date.now());
@@ -8788,11 +8788,11 @@
         }
         if(balance>=threshold){
             statusEl.className='notice success';
-            statusEl.textContent=`Vous êtes éligible : ${threshold.toLocaleString('fr-FR')} INSPE sont disponibles pour activer l’abonnement.`;
+            statusEl.textContent=`Vous êtes éligible : ${threshold.toLocaleString('fr-FR')} XP sont disponibles pour activer l’abonnement.`;
             if(btn) btn.disabled=false;
         }else{
             statusEl.className='notice';
-            statusEl.textContent=`Il vous manque ${Math.max(0,threshold-balance).toLocaleString('fr-FR')} INSPE pour être éligible.`;
+            statusEl.textContent=`Il vous manque ${Math.max(0,threshold-balance).toLocaleString('fr-FR')} XP pour être éligible.`;
             if(btn) btn.disabled=true;
         }
         if(msgEl) msgEl.textContent=`L’abonnement donne accès à ${dailyLimit} requêtes IA par jour pendant ${subscriptionDays} jours.`;
@@ -8802,7 +8802,7 @@
         if(!currentUser)return;
         const btn=document.getElementById('inspe-subscribe-btn');
         try{
-            let threshold=1000;try{const tk=await currentUser.getIdToken();const rr=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/quiz/status`,{headers:{Authorization:`Bearer ${tk}`}});const qj=await rr.json().catch(()=>({}));threshold=Number(qj.config?.xpSubscriptionThreshold||1000);}catch(e){}if(Number(userData?.inspe_points||0)<threshold)return showToast(`Il faut au moins ${threshold.toLocaleString('fr-FR')} INSPE.`, 'warning');
+            let threshold=1000;try{const tk=await currentUser.getIdToken();const rr=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/quiz/status`,{headers:{Authorization:`Bearer ${tk}`}});const qj=await rr.json().catch(()=>({}));threshold=Number(qj.config?.xpSubscriptionThreshold||1000);}catch(e){}if(Number(userData?.inspe_points||0)<threshold)return showToast(`Il faut au moins ${threshold.toLocaleString('fr-FR')} XP.`, 'warning');
             if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Activation…';}
             const token=await currentUser.getIdToken();
             const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/admin/subscription`,{
@@ -8841,12 +8841,11 @@
             if(profileLevelText) profileLevelText.textContent=`Niveau ${levelInfo.level}`;
             if(profileXpBar) profileXpBar.style.width=`${levelInfo.progress}%`;
             if(profileXpText) profileXpText.textContent=`${levelInfo.xpInLevel} / ${levelInfo.xpForNextLevel} XP`;
-            if(profileTotalXp) profileTotalXp.textContent=totalXp;
+            
             const points=document.getElementById('points-balance'), uploaded=document.getElementById('exams-uploaded'), downloaded=document.getElementById('exams-downloaded');
             if(points) points.textContent=userData.points||0;
-            const inspePoints=document.getElementById('inspe-points-balance'), inspeSubBalance=document.getElementById('inspe-sub-balance');
-            if(inspePoints) inspePoints.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR');
-            if(inspeSubBalance) inspeSubBalance.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR')+' INSPE';
+            const inspeSubBalance=document.getElementById('inspe-sub-balance');
+            if(inspeSubBalance) inspeSubBalance.textContent=Number(userData.inspe_points||0).toLocaleString('fr-FR')+' XP';
             if(uploaded) uploaded.textContent=userData.examsUploaded||0;
             if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
