@@ -3206,7 +3206,12 @@
         <form id="signup-form" class="auth-form">
             <div class="form-group"><label for="signup-nom">Nom</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
             <div class="form-group"><label for="signup-prenom">Prénom</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
-            <div class="form-group"><label for="signup-ecole">École</label><input type="text" id="signup-ecole" placeholder="Votre établissement" required></div>
+            <div class="form-group"><label for="signup-ecole">Établissement</label><input type="text" id="signup-ecole" placeholder="Votre établissement" required></div>
+            <div class="form-group"><label for="signup-region">Région</label><input type="text" id="signup-region" placeholder="Votre région" required></div>
+            <div class="form-row" style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:150px;"><label for="signup-classe">Classe</label><select id="signup-classe" required style="width:100%;"><option value="">Sélectionner une classe</option><option value="6ème">6ème</option><option value="5ème">5ème</option><option value="4ème">4ème</option><option value="3ème">3ème</option><option value="2nd">2nd</option><option value="1ère">1ère</option><option value="Terminale">Terminale</option></select></div>
+                <div class="form-group" id="signup-serie-wrap" style="flex:1;min-width:150px;display:none;"><label for="signup-serie">Série</label><select id="signup-serie" style="width:100%;"><option value="">Sélectionner une série</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="AB">AB</option><option value="CD">CD</option></select></div>
+            </div>
             <div class="form-group"><label for="signup-email">Email</label><input type="email" id="signup-email" placeholder="votre@email.com" required></div>
             <div class="form-group password-field"><label for="signup-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <div class="form-group" id="confirm-password-group">
@@ -3523,7 +3528,7 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="profile-quiz-xp">0</div><div class="stat-label">XP HosBac Quiz</div></div>
+                <div class="stat-card"><div class="stat-value" id="profile-quiz-xp">0</div><div class="stat-label">XP HosBac Quiz</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-downloaded">0</div><div class="stat-label">Épreuves téléchargées</div></div>
                 
@@ -3584,7 +3589,14 @@
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-nom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Nom</label><input type="text" id="edit-nom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-prenom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Prénom</label><input type="text" id="edit-prenom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                     </div>
-                    <div class="form-group"><label for="edit-classe" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Classe</label><input type="text" id="edit-classe" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
+                    <div class="form-row" style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-ecole">Établissement</label><input type="text" id="edit-ecole" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);"></div>
+                        <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-region">Région</label><input type="text" id="edit-region" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);"></div>
+                    </div>
+                    <div class="form-row" style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+                        <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-classe">Classe</label><select id="edit-classe" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);"><option value="">Sélectionner</option><option value="6ème">6ème</option><option value="5ème">5ème</option><option value="4ème">4ème</option><option value="3ème">3ème</option><option value="2nd">2nd</option><option value="1ère">1ère</option><option value="Terminale">Terminale</option></select></div>
+                        <div class="form-group" id="edit-serie-wrap" style="flex:1;min-width:150px;display:none;"><label for="edit-serie">Série</label><select id="edit-serie" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);color:var(--text-color);"><option value="">Sélectionner</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="AB">AB</option><option value="CD">CD</option></select></div>
+                    </div>
                     <button type="submit" class="submit-btn">Sauvegarder</button>
                 </form>
             </div>
@@ -3823,6 +3835,8 @@
                             <label for="legal-privacy" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Politique de Confidentialité</label>
                             <textarea id="legal-privacy" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Texte de la politique de confidentialité..."></textarea>
                         </div>
+                        <div class="form-group"><label for="legal-about" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">À propos</label><textarea id="legal-about" rows="6" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);font-size:0.95rem;color:var(--text-color);resize:vertical;" placeholder="Présentation de HosBac..."></textarea></div>
+                        <div class="form-group"><label style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">FAQ — plusieurs questions/réponses</label><div id="faq-admin-items" style="display:grid;gap:10px;"></div><button type="button" class="secondary" id="faq-add-item" style="margin-top:10px;"><i class="fas fa-plus"></i> Ajouter une question</button><textarea id="legal-faq" rows="2" style="display:none"></textarea></div>
                         <button type="submit" class="submit-btn" id="update-legal-btn">Enregistrer les textes</button>
                     </form>
                 </div>
@@ -3844,6 +3858,8 @@
                 <button type="button" class="footer-link footer-quiz-link" id="footer-quiz-btn"><i class="fas fa-graduation-cap"></i> Quiz</button>
                 <div class="footer-link" id="terms-link" data-legal="cgu">Conditions Générales</div>
                 <div class="footer-link" id="privacy-link" data-legal="privacy">Confidentialité</div>
+                <div class="footer-link" id="about-link" data-legal="about">À propos</div>
+                <div class="footer-link" id="faq-link" data-legal="faq">FAQ</div>
             </div>
         </div>
     </footer>
@@ -4194,6 +4210,8 @@
         <div id="privacy-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div>
     </div>
 </div>
+<div id="about-popup" class="popup-overlay"><div class="popup-content"><button class="popup-close"><i class="fas fa-times"></i></button><h2 class="popup-title"><i class="fas fa-circle-info"></i> À propos</h2><div id="about-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div></div></div>
+<div id="faq-popup" class="popup-overlay"><div class="popup-content"><button class="popup-close"><i class="fas fa-times"></i></button><h2 class="popup-title"><i class="fas fa-circle-question"></i> FAQ</h2><div id="faq-content" style="color:var(--text-light);line-height:1.6;max-height:60vh;overflow-y:auto;"></div></div></div>
 
 <!-- INTERFACE APPEL VOCAL (PLEIN ÉCRAN) -->
 <div id="call-interface" class="call-interface">
@@ -4446,6 +4464,8 @@
     const profileForm = document.getElementById('profile-form');
     const termsLink = document.getElementById('terms-link');
     const privacyLink = document.getElementById('privacy-link');
+    const aboutLink = document.getElementById('about-link');
+    const faqLink = document.getElementById('faq-link');
     const popupCloseButtons = document.querySelectorAll('.popup-close');
     const filterClass = document.getElementById('filter-class');
     const filterSubject = document.getElementById('filter-subject');
@@ -4671,6 +4691,10 @@
         safe = safe.replace(/\$([^$\n]+)\$/g, (_,m)=>protect(false,m));
 
         // Raw LaTeX and common school-math notation emitted without delimiters.
+        safe = safe.replace(/\b([A-Za-z])\s*\^\s*(\d+)\b/g, (_,b,e)=>protect(false,`${b}^{${e}}`));
+        safe = safe.replace(/\b([A-Za-z0-9])\s*\/\s*([A-Za-z0-9])\b/g, (_,a,b)=>protect(false,`\\frac{${a}}{${b}}`));
+        safe = safe.replace(/(?<![A-Za-z])frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/gi, (_,a,b)=>protect(false,`\\frac{${a}}{${b}}`));
+        safe = safe.replace(/(?<![A-Za-z])sqrt\s*\(([^()]+)\)/gi, (_,x)=>protect(false,`\\sqrt{${x}}`));
         for (const re of [
             /\\(?:frac|sqrt|dfrac|tfrac|left|right|sum|prod|int|lim|sin|cos|tan|log|ln|alpha|beta|gamma|delta|theta|pi|infty|leq|geq|neq|pm|times|div|cdot|subseteq|in)\b(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))(?:\s*(?:\{[^{}]*\}|[A-Za-z0-9]))*/g,
             /\b[A-Za-z]\s*\^\s*\{[^{}]+\}/g,
@@ -6902,6 +6926,10 @@
             return ok;
         }
 
+        const signupClasseEl=document.getElementById('signup-classe'), signupSerieWrap=document.getElementById('signup-serie-wrap');
+        signupClasseEl?.addEventListener('change',()=>{const show=['2nd','1ère','Terminale'].includes(signupClasseEl.value);if(signupSerieWrap)signupSerieWrap.style.display=show?'block':'none';if(!show){const ss=document.getElementById('signup-serie');if(ss)ss.value='';}});
+        const editClasseEl=document.getElementById('edit-classe'), editSerieWrap=document.getElementById('edit-serie-wrap');
+        editClasseEl?.addEventListener('change',()=>{const show=['2nd','1ère','Terminale'].includes(editClasseEl.value);if(editSerieWrap)editSerieWrap.style.display=show?'block':'none';if(!show){const ss=document.getElementById('edit-serie');if(ss)ss.value='';}});
         document.querySelectorAll('.password-toggle').forEach(btn => {
             btn.addEventListener('click', () => {
                 const input = document.getElementById(btn.dataset.target);
@@ -6925,7 +6953,7 @@
             const prenom = display.shift() || 'Utilisateur';
             const nom = display.join(' ');
             const data = {
-                nom, prenom, ecole:'', email:user.email || '', classe:'', points:0,
+                nom, prenom, ecole:'', region:'', email:user.email || '', classe:'', serie:'', points:0,
                 examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
                 dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
                 totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
@@ -6976,14 +7004,19 @@
             const nom = document.getElementById('signup-nom')?.value || '';
             const prenom = document.getElementById('signup-prenom')?.value || '';
             const ecole = document.getElementById('signup-ecole')?.value || '';
+            const region = document.getElementById('signup-region')?.value || '';
+            const classe = document.getElementById('signup-classe')?.value || '';
+            const serie = document.getElementById('signup-serie')?.value || '';
             const email = document.getElementById('signup-email')?.value || '';
             const password = document.getElementById('signup-password')?.value || '';
+            if (!classe) { showToast('La classe est obligatoire.', 'warning'); return; }
+            if (['2nd','1ère','Terminale'].includes(classe) && !serie) { showToast('La série est obligatoire pour la seconde, la première et la terminale.', 'warning'); return; }
             if (password.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'warning'); return; }
             auth.createUserWithEmailAndPassword(email, password)
             .then(userCredential => {
                 currentUser = userCredential.user;
                 return db.collection('users').doc(currentUser.uid).set({
-                    nom, prenom, ecole, email, classe: '', points: 0,
+                    nom, prenom, ecole, region, email, classe, serie: ['2nd','1ère','Terminale'].includes(classe)?serie:'', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'student',
                     likedAnnouncements: [], favorites: [],
                     dailyMessageCount: 0,
@@ -7550,6 +7583,15 @@
                         title = 'Politique de Confidentialité';
                         if (privacyContent) privacyContent.innerHTML = content.replace(/\n/g, '<br>');
                         if (privacyPopup) privacyPopup.style.display = 'flex';
+                    } else if (type === 'about') {
+                        content = data.about || 'Présentation de HosBac en cours de rédaction...';
+                        const el=document.getElementById('about-content'); if(el) el.innerHTML=escapeHTML(content).replace(/\n/g,'<br>');
+                        const pop=document.getElementById('about-popup'); if(pop) pop.style.display='flex';
+                    } else if (type === 'faq') {
+                        const items=Array.isArray(data.faqItems)?data.faqItems:[];
+                        const el=document.getElementById('faq-content');
+                        if(el){el.innerHTML=items.length?items.map((x,i)=>`<div style="padding:12px 0;border-bottom:1px solid var(--border-color);"><strong>${escapeHTML(x.question||'Question')}</strong><div style="margin-top:6px;">${escapeHTML(x.answer||'').replace(/\n/g,'<br>')}</div></div>`).join(''):escapeHTML(data.faq||'FAQ HosBac en cours de rédaction...').replace(/\n/g,'<br>');}
+                        const pop=document.getElementById('faq-popup'); if(pop) pop.style.display='flex';
                     }
                 } else {
                     const defaultMsg = 'Textes en cours de rédaction...';
@@ -7592,6 +7634,9 @@
                 showLegalPopup('privacy');
             });
         }
+
+        const aboutLinkElement=document.getElementById('about-link'); if(aboutLinkElement){aboutLinkElement.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();showLegalPopup('about');});}
+        const faqLinkElement=document.getElementById('faq-link'); if(faqLinkElement){faqLinkElement.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();showLegalPopup('faq');});}
 
         document.querySelectorAll('#terms-popup .popup-close, #privacy-popup .popup-close').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -8850,8 +8895,8 @@
             if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
             if(xpChart && userData.xpHistory){ const history=userData.xpHistory.slice(-4); const xpData=history.map(h=>h.xp||0); while(xpData.length<4) xpData.unshift(0); xpChart.data.datasets[0].data=xpData; xpChart.update(); }
-            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe');
-            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse) editClasse.value=userData.classe||'';
+            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editEcole=document.getElementById('edit-ecole'), editRegion=document.getElementById('edit-region'), editClasse=document.getElementById('edit-classe'), editSerie=document.getElementById('edit-serie'), editSerieWrap=document.getElementById('edit-serie-wrap');
+            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editEcole) editEcole.value=userData.ecole||''; if(editRegion) editRegion.value=userData.region||''; if(editClasse) editClasse.value=userData.classe||''; if(editSerie) editSerie.value=userData.serie||''; if(editSerieWrap) editSerieWrap.style.display=['2nd','1ère','Terminale'].includes(userData.classe)?'block':'none';
             if(welcomeMessage) welcomeMessage.textContent=`Bienvenue sur HosBac, ${userData.prenom||'Utilisateur'} !`;
             if(welcomeSubtitle) welcomeSubtitle.textContent='Prêt à trouver la bonne épreuve ?';
             const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
@@ -8870,13 +8915,20 @@
         if (!currentUser) return;
         const nom = document.getElementById('edit-nom')?.value || '';
         const prenom = document.getElementById('edit-prenom')?.value || '';
+        const ecole = document.getElementById('edit-ecole')?.value || '';
+        const region = document.getElementById('edit-region')?.value || '';
         const classe = document.getElementById('edit-classe')?.value || '';
+        const serie = document.getElementById('edit-serie')?.value || '';
+        const secondary=['2nd','1ère','Terminale'].includes(classe);
+        if(!classe){ showToast('Veuillez sélectionner une classe.','warning'); return; }
+        if(secondary && !serie){ showToast('Veuillez sélectionner une série pour cette classe.','warning'); return; }
+        const cleanSerie=secondary?serie:'';
         try {
-            db.collection('users').doc(currentUser.uid).update({ nom, prenom, classe })
+            db.collection('users').doc(currentUser.uid).update({ nom, prenom, ecole, region, classe, serie:cleanSerie })
             .then(() => {
-                userData = { ...(userData || {}), nom, prenom, classe };
+                userData = { ...(userData || {}), nom, prenom, ecole, region, classe, serie:cleanSerie };
                 if (profileName) profileName.textContent = `${prenom} ${nom}`.trim();
-                if (profileClass) profileClass.textContent = `Classe: ${classe || 'Non définie'}`;
+                if (profileClass) profileClass.textContent = `Classe: ${classe || 'Non définie'}${['2nd','1ère','Terminale'].includes(classe)?` · Série ${cleanSerie || 'non définie'}`:''}`;
                 if (profileAvatar) profileAvatar.textContent = prenom ? prenom.charAt(0).toUpperCase() : 'U';
                 showToast('Profil mis à jour', 'success');
             })
@@ -9660,6 +9712,15 @@
     // GESTION DES PAGES LÉGALES
     // ============================================================
     const LEGAL_DOC_PATH = 'settings/legal';
+    function renderAdminFaqItems(items){
+        const box=document.getElementById('faq-admin-items'); if(!box)return;
+        const rows=Array.isArray(items)&&items.length?items:[{question:'',answer:''}];
+        box.innerHTML=rows.map((it,i)=>`<div class="faq-admin-row" data-index="${i}" style="padding:12px;border:1px solid var(--border-color);border-radius:12px;background:rgba(255,255,255,.025);"><div class="form-group"><label>Question ${i+1}</label><input class="faq-q" value="${escapeHTML(it.question||'')}" placeholder="Ex. Comment accéder au Quiz ?"></div><div class="form-group"><label>Réponse</label><textarea class="faq-a" rows="3" placeholder="Réponse claire et précise...">${escapeHTML(it.answer||'')}</textarea></div><button type="button" class="danger faq-remove" ${rows.length===1?'disabled':''}>Supprimer</button></div>`).join('');
+        box.querySelectorAll('.faq-remove').forEach(btn=>btn.addEventListener('click',()=>{btn.closest('.faq-admin-row')?.remove();if(!box.children.length)renderAdminFaqItems([]);}));
+    }
+    function collectAdminFaqItems(){const box=document.getElementById('faq-admin-items');if(!box)return [];return [...box.querySelectorAll('.faq-admin-row')].map(row=>({question:row.querySelector('.faq-q')?.value?.trim()||'',answer:row.querySelector('.faq-a')?.value?.trim()||''})).filter(x=>x.question||x.answer);}
+    document.getElementById('faq-add-item')?.addEventListener('click',()=>{const box=document.getElementById('faq-admin-items');if(!box)return;const items=collectAdminFaqItems();items.push({question:'',answer:''});renderAdminFaqItems(items);});
+
     function loadLegalPages() {
         db.doc(LEGAL_DOC_PATH).get()
         .then(doc => {
@@ -9667,18 +9728,20 @@
                 const data = doc.data();
                 if (legalCgu) legalCgu.value = data.cgu || '';
                 if (legalPrivacy) legalPrivacy.value = data.confidentialite || '';
+                if (document.getElementById('legal-about')) document.getElementById('legal-about').value = data.about || '';
+                if (document.getElementById('legal-faq')) document.getElementById('legal-faq').value = data.faq || ''; renderAdminFaqItems(Array.isArray(data.faqItems)?data.faqItems:[]);
             } else {
-                const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction..." };
+                const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction...", about: "Présentation de HosBac en cours de rédaction...", faq: "FAQ HosBac en cours de rédaction..." };
                 db.doc(LEGAL_DOC_PATH).set(defaults)
-                .then(() => { if (legalCgu) legalCgu.value = defaults.cgu; if (legalPrivacy) legalPrivacy.value = defaults.confidentialite; })
+                .then(() => { if (legalCgu) legalCgu.value = defaults.cgu; if (legalPrivacy) legalPrivacy.value = defaults.confidentialite; renderAdminFaqItems([]); })
                 .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
             }
         })
         .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
     }
 
-    function saveLegalPages(cgu, confidentialite) {
-        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite }, { merge: true });
+    function saveLegalPages(cgu, confidentialite, about='', faq='', faqItems=[]) {
+        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite, about, faq, faqItems }, { merge: true });
     }
 
     legalForm?.addEventListener('submit', function(e) {
@@ -9687,7 +9750,8 @@
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         const cgu = legalCgu?.value || '';
         const confidentialite = legalPrivacy?.value || '';
-        saveLegalPages(cgu, confidentialite)
+        const about=document.getElementById('legal-about')?.value||''; const faqItems=collectAdminFaqItems(); const faq=faqItems.map(x=>`Q: ${x.question}\nR: ${x.answer}`).join('\n\n');
+        saveLegalPages(cgu, confidentialite, about, faq, faqItems)
         .then(() => showToast('Textes légaux enregistrés avec succès', 'success'))
         .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
     });
