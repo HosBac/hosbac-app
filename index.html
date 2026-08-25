@@ -3177,10 +3177,10 @@
         <form id="signup-form" class="auth-form">
             <div class="form-group"><label for="signup-nom">Nom *</label><input type="text" id="signup-nom" placeholder="Votre nom" required></div>
             <div class="form-group"><label for="signup-prenom">Prénom *</label><input type="text" id="signup-prenom" placeholder="Votre prénom" required></div>
-            <div class="form-group"><label for="signup-phone">Numéro de téléphone *</label><input type="tel" id="signup-phone" placeholder="Ex. +229 01 90 00 00 00" required autocomplete="tel"></div>
+            
             <div class="form-group"><label for="signup-classe">Classe *</label><select id="signup-classe" required><option value="">Sélectionner une classe</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div>
             <div class="form-group" id="signup-serie-group" style="display:none"><label for="signup-serie">Série *</label><select id="signup-serie"></select></div>
-            <div class="form-group"><label for="signup-ecole">Établissement <span style="opacity:.65">(optionnel)</span></label><input type="text" id="signup-ecole" placeholder="Votre établissement"></div>
+            <div class="form-group"><label for="signup-ecole">Établissement <span style="opacity:.65">(optionnel)</span></label><input type="text" id="signup-ecole" placeholder="Votre établissement" maxlength="120"></div><div class="form-group"><label for="signup-region">Région *</label><input type="text" id="signup-region" placeholder="Ex. Littoral" required maxlength="80" autocomplete="address-level1"></div>
             <div class="form-group"><label for="signup-email">Adresse email *</label><input type="email" id="signup-email" placeholder="votre@email.com" required autocomplete="email"></div>
             <div class="form-group password-field"><label for="signup-password">Mot de passe</label><div class="password-input-wrap"><input type="password" id="signup-password" placeholder="••••••••" required autocomplete="new-password"><button type="button" class="password-toggle" data-target="signup-password" aria-label="Afficher le mot de passe"><i class="fas fa-eye"></i></button></div></div>
             <div class="form-group" id="confirm-password-group">
@@ -3544,7 +3544,7 @@
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-nom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Nom</label><input type="text" id="edit-nom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                         <div class="form-group" style="flex:1;min-width:150px;"><label for="edit-prenom" style="display:block;margin-bottom:0.4rem;font-weight:600;font-size:0.85rem;color:var(--text-color);">Prénom</label><input type="text" id="edit-prenom" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid var(--border-color);border-radius:var(--border-radius-sm);background:var(--bg-color);transition:var(--transition);font-size:0.95rem;color:var(--text-color);"></div>
                     </div>
-                    <div class="form-group"><label for="edit-classe">Classe *</label><select id="edit-classe"><option value="">Sélectionner</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div><div class="form-group" id="edit-serie-group" style="display:none"><label for="edit-serie">Série</label><select id="edit-serie"></select></div>
+                    <div class="form-group"><label for="edit-region">Région *</label><input type="text" id="edit-region" maxlength="80" placeholder="Ex. Littoral"></div><div class="form-group"><label for="edit-classe">Classe *</label><select id="edit-classe"><option value="">Sélectionner</option><option>6ème</option><option>5ème</option><option>4ème</option><option>3ème</option><option>2nd</option><option>1ère</option><option>Terminale</option></select></div><div class="form-group" id="edit-serie-group" style="display:none"><label for="edit-serie">Série</label><select id="edit-serie"></select></div>
                     <button type="submit" class="submit-btn">Sauvegarder</button>
                 </form>
             </div>
@@ -6713,8 +6713,9 @@
                 currentUser = user;
                 let accountProfile = {};
                 try { const snap = await db.collection('users').doc(user.uid).get(); accountProfile = snap.exists ? snap.data() : {}; } catch (_) {}
-                const requiresVerification = accountProfile.emailVerificationRequired === true;
-                if (requiresVerification && user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
+                const requiresVerification = accountProfile.emailVerificationRequired === true && Number(accountProfile.verificationPolicyVersion||0) >= 8;
+                const isAdminAccount = accountProfile.role === 'admin' || accountProfile.isAdmin === true;
+                if (requiresVerification && !isAdminAccount && user.providerData?.some(p => p.providerId === 'password') && !user.emailVerified) {
                     if (app) app.style.display = 'none';
                     if (authScreen) { authScreen.style.display = 'flex'; authScreen.classList.add('auth-page-visible'); }
                     showToast('Vérifiez votre adresse email avant de continuer.', 'warning');
@@ -6862,7 +6863,7 @@
             const prenom = display.shift() || 'Utilisateur';
             const nom = display.join(' ');
             const data = {
-                nom, prenom, phone:'', ecole:'', email:user.email || '', classe:'', serie:'', points:0,
+                nom, prenom, ecole:'', region:'', email:user.email || '', classe:'', serie:'', points:0,
                 examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
                 dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
                 totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
@@ -6913,8 +6914,9 @@
             }
             const nom = document.getElementById('signup-nom')?.value || '';
             const prenom = document.getElementById('signup-prenom')?.value || '';
-            const ecole = document.getElementById('signup-ecole')?.value || '';
-            const phone = document.getElementById('signup-phone')?.value.trim() || '';
+            const ecole = document.getElementById('signup-ecole')?.value.trim() || '';
+            const region = document.getElementById('signup-region')?.value.trim() || '';
+            if(!region){showToast('La région est obligatoire.','warning');return;}
             const classe = document.getElementById('signup-classe')?.value || '';
             const serie = document.getElementById('signup-serie')?.value || '';
             if(!classe){showToast('La classe est obligatoire.','warning');return;}
@@ -6926,7 +6928,7 @@
             .then(userCredential => {
                 currentUser = userCredential.user;
                 return db.collection('users').doc(currentUser.uid).set({
-                    nom, prenom, phone, ecole, email, classe, serie: seriesForClass(classe).length ? serie : '', points: 0,
+                    nom, prenom, ecole, region, email, classe, serie: seriesForClass(classe).length ? serie : '', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'student',
                     likedAnnouncements: [], favorites: [],
                     dailyMessageCount: 0,
@@ -6944,7 +6946,8 @@
                     quizPerfect: 0,
                     revisionPlanCreated: 0,
                     status: 'active',
-                    emailVerificationRequired: true
+                    emailVerificationRequired: true,
+                    verificationPolicyVersion: 8
                 });
             })
             .then(() => auth.currentUser?.sendEmailVerification({url: window.location.href}))
@@ -8623,8 +8626,8 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
             if(downloaded) downloaded.textContent=userData.examsDownloaded||0;
             renderBadges({ examsUploaded:userData.examsUploaded||0, examsViewed:userData.examsViewed||0, examsDownloaded:userData.examsDownloaded||0, correctionsAdded:userData.correctionsAdded||0, activeDays:userData.activeDays||0, totalXp:userData.totalXp||0, aiConversations:userData.aiConversations||0, quizTotal:userData.quizTotal||0, quizPerfect:userData.quizPerfect||0, revisionPlanCreated:userData.revisionPlanCreated||0 });
             if(xpChart && userData.xpHistory){ const history=userData.xpHistory.slice(-4); const xpData=history.map(h=>h.xp||0); while(xpData.length<4) xpData.unshift(0); xpChart.data.datasets[0].data=xpData; xpChart.update(); }
-            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe');
-            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editClasse){editClasse.value=userData.classe||'';populateSeriesSelect(document.getElementById('edit-serie'),editClasse.value,userData.serie||'');const g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(editClasse.value).length?'block':'none';}
+            const editNom=document.getElementById('edit-nom'), editPrenom=document.getElementById('edit-prenom'), editClasse=document.getElementById('edit-classe'), editRegion=document.getElementById('edit-region');
+            if(editNom) editNom.value=userData.nom||''; if(editPrenom) editPrenom.value=userData.prenom||''; if(editRegion) editRegion.value=userData.region||''; if(editClasse){editClasse.value=userData.classe||'';populateSeriesSelect(document.getElementById('edit-serie'),editClasse.value,userData.serie||'');const g=document.getElementById('edit-serie-group');if(g)g.style.display=seriesForClass(editClasse.value).length?'block':'none';}
             if(welcomeMessage) welcomeMessage.textContent=`Bienvenue sur HosBac, ${userData.prenom||'Utilisateur'} !`;
             if(welcomeSubtitle) welcomeSubtitle.textContent='Prêt à trouver la bonne épreuve ?';
             const homePoints=document.getElementById('home-points-balance'), homeUploaded=document.getElementById('home-exams-uploaded'), homeDownloaded=document.getElementById('home-exams-downloaded');
@@ -8642,10 +8645,11 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
         const nom=document.getElementById('edit-nom')?.value||'';
         const prenom=document.getElementById('edit-prenom')?.value||'';
         const classe=document.getElementById('edit-classe')?.value||'';
+        const region=document.getElementById('edit-region')?.value.trim()||'';
         const serie=document.getElementById('edit-serie')?.value||'';
-        if(!nom||!prenom||!classe){showToast('Veuillez remplir tous les champs obligatoires','warning');return;}
+        if(!nom||!prenom||!classe||!region){showToast('Veuillez remplir tous les champs obligatoires','warning');return;}
         if(seriesForClass(classe).length&&!serie){showToast('Veuillez sélectionner une série.','warning');return;}
-        const patch={nom,prenom,classe,serie:seriesForClass(classe).length?serie:''};
+        const patch={nom,prenom,region,classe,serie:seriesForClass(classe).length?serie:''};
         db.collection('users').doc(currentUser.uid).update(patch).then(()=>{
             userData={...(userData||{}),...patch};
             if(profileName)profileName.textContent=`${prenom} ${nom}`.trim();
@@ -8775,7 +8779,7 @@ profileForm?.addEventListener('submit', e => { e.preventDefault(); updateProfile
                             item.style.cursor = 'pointer';
                             item.style.transition = 'var(--transition)';
                             item.style.borderRadius = '6px';
-                            safeInnerHTML(item, `<p><strong>${escapeHTML(user.prenom || '')} ${escapeHTML(user.nom || '')}</strong> - ${escapeHTML(user.email || '')}</p><small>${escapeHTML(user.ecole || '')}</small>`);
+                            safeInnerHTML(item, `<p><strong>${escapeHTML(user.prenom || '')} ${escapeHTML(user.nom || '')}</strong> - ${escapeHTML(user.email || '')}</p><small>${escapeHTML(user.ecole || '')}${user.region ? ' · '+escapeHTML(user.region) : ''}</small>`);
                             item.addEventListener('click', () => { if (checkAuthRequired('voir le profil')) viewUserProfile(doc.id); });
                             searchResults.appendChild(item);
                             hasResults = true;
@@ -9549,5 +9553,6 @@ function toggleEditSerieField(){const c=document.getElementById('edit-exam-class
     console.log('   ✅ Performance : listeners uniques, pas de boucle infinie');
     console.log('   ✅ Toutes les fonctionnalités sont conservées');
 </script>
+<script>window.HOSBAC_VERSION="8.0.0";</script>
 </body>
 </html>
