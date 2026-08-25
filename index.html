@@ -3523,7 +3523,7 @@
             </div>
 
             <div class="profile-stats">
-                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="inspe-points-balance">0</div><div class="stat-label">INSPE · Quiz</div></div>
+                <div class="stat-card"><div class="stat-value" id="points-balance">0</div><div class="stat-label">Points</div></div><div class="stat-card"><div class="stat-value" id="inspe-points-balance">0</div><div class="stat-label">INSPE · Quiz</div></div><div class="stat-card"><div class="stat-value" id="profile-quiz-xp">0</div><div class="stat-label">XP HosBac Quiz</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-uploaded">0</div><div class="stat-label">Épreuves partagées</div></div>
                 <div class="stat-card"><div class="stat-value" id="exams-downloaded">0</div><div class="stat-label">Épreuves téléchargées</div></div>
                 <div class="stat-card"><div class="stat-value" id="profile-total-xp">0</div><div class="stat-label">XP Total</div></div>
@@ -8773,6 +8773,11 @@
         if(!statusEl||!currentUser)return;
         const balance=Number(userData?.inspe_points||0);
         if(balanceEl) balanceEl.textContent=balance.toLocaleString('fr-FR')+' INSPE';
+        let quizCfg={xpSubscriptionThreshold:1000,dailyAiRequests:10,subscriptionDays:30};
+        try{const tk=await currentUser.getIdToken();const rr=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/quiz/status`,{headers:{Authorization:`Bearer ${tk}`}});const qj=await rr.json().catch(()=>({}));if(rr.ok&&qj.config)quizCfg={...quizCfg,...qj.config};}catch(e){console.debug('[SUB CONFIG]',e.message)}
+        const threshold=Number(quizCfg.xpSubscriptionThreshold||1000),dailyLimit=Number(quizCfg.dailyAiRequests||10),subscriptionDays=Number(quizCfg.subscriptionDays||30);
+        const minEl=document.querySelector('#inspe-subscription-card .inspe-sub-item:nth-child(2) .inspe-sub-value');if(minEl)minEl.textContent=threshold.toLocaleString('fr-FR')+' INSPE';
+        const aiEl=document.querySelector('#inspe-subscription-card .inspe-sub-item:nth-child(3) .inspe-sub-value');if(aiEl)aiEl.textContent=dailyLimit.toLocaleString('fr-FR')+' requêtes';
         const sub=userData?.quiz_subscription||{};
         const active=sub.active===true && (!sub.expiresAt || new Date(sub.expiresAt).getTime()>Date.now());
         if(active){
@@ -8781,23 +8786,23 @@
             if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-check"></i> Abonnement actif';}
             return;
         }
-        if(balance>=1000){
+        if(balance>=threshold){
             statusEl.className='notice success';
-            statusEl.textContent='Vous êtes éligible : 1 000 INSPE sont disponibles pour activer l’abonnement.';
+            statusEl.textContent=`Vous êtes éligible : ${threshold.toLocaleString('fr-FR')} INSPE sont disponibles pour activer l’abonnement.`;
             if(btn) btn.disabled=false;
         }else{
             statusEl.className='notice';
-            statusEl.textContent=`Il vous manque ${Math.max(0,1000-balance).toLocaleString('fr-FR')} INSPE pour être éligible.`;
+            statusEl.textContent=`Il vous manque ${Math.max(0,threshold-balance).toLocaleString('fr-FR')} INSPE pour être éligible.`;
             if(btn) btn.disabled=true;
         }
-        if(msgEl) msgEl.textContent='L’abonnement donne accès à 10 requêtes IA par jour pendant 30 jours.';
+        if(msgEl) msgEl.textContent=`L’abonnement donne accès à ${dailyLimit} requêtes IA par jour pendant ${subscriptionDays} jours.`;
     }
 
     async function activateInspeSubscription() {
         if(!currentUser)return;
         const btn=document.getElementById('inspe-subscribe-btn');
         try{
-            if(Number(userData?.inspe_points||0)<1000)return showToast('Il faut au moins 1 000 INSPE.', 'warning');
+            let threshold=1000;try{const tk=await currentUser.getIdToken();const rr=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/quiz/status`,{headers:{Authorization:`Bearer ${tk}`}});const qj=await rr.json().catch(()=>({}));threshold=Number(qj.config?.xpSubscriptionThreshold||1000);}catch(e){}if(Number(userData?.inspe_points||0)<threshold)return showToast(`Il faut au moins ${threshold.toLocaleString('fr-FR')} INSPE.`, 'warning');
             if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Activation…';}
             const token=await currentUser.getIdToken();
             const response=await fetch(`${HOSBAC_QUIZ_API_BASE}/api/admin/subscription`,{
@@ -8831,7 +8836,7 @@
             if (profileName) profileName.textContent = `${userData.prenom || ''} ${userData.nom || ''}`.trim();
             if (profileEmail) profileEmail.textContent = userData.email || currentUser.email || '';
             if (profileClass) profileClass.textContent = `Classe: ${userData.classe || 'Non définie'}`;
-            const totalXp=userData.totalXp||0; const levelInfo=getLevelAndXP(totalXp);
+            const totalXp=Number(userData.totalXp||0); const quizXp=Number(userData.quiz_xp||0); const levelInfo=getLevelAndXP(totalXp); const quizXpEl=document.getElementById('profile-quiz-xp'); if(quizXpEl) quizXpEl.textContent=quizXp.toLocaleString('fr-FR');
             if(profileLevelBadge) profileLevelBadge.textContent=levelInfo.level;
             if(profileLevelText) profileLevelText.textContent=`Niveau ${levelInfo.level}`;
             if(profileXpBar) profileXpBar.style.width=`${levelInfo.progress}%`;
