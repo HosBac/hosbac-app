@@ -1,5 +1,4 @@
 // HosBac - suppression complète d'un compte utilisateur par un administrateur.
-// Les épreuves de /epreuves NE SONT PAS supprimées.
 const admin = require('firebase-admin');
 const { turso } = require('../db');
 
@@ -27,15 +26,14 @@ async function verifyAdmin(authHeader) {
   if (!authHeader?.startsWith('Bearer ')) throw new Error('AUTH_REQUIRED');
   const decoded = await sdk.auth().verifyIdToken(authHeader.slice(7));
   
-  // 1. Détection si l'utilisateur est admin via claim Firebase
   if (decoded.admin === true) {
     return decoded;
   }
 
-  // 2. Sinon vérification dans la base Turso (champs uid ou id)
+  // Requête corrigée : sélection uniquement via la colonne 'uid'
   const userRes = await turso.execute({
-    sql: "SELECT role FROM users WHERE uid = ? OR id = ?",
-    args: [decoded.uid, decoded.uid]
+    sql: "SELECT role FROM users WHERE uid = ?",
+    args: [decoded.uid]
   });
 
   const user = userRes.rows[0];
@@ -58,12 +56,11 @@ module.exports = async (req, res) => {
     const sdk = getFirebaseAdmin();
     const adminUser = await verifyAdmin(req.headers.authorization);
 
-    // Récupération de l'ID via userId ou uid
     const userId = String(req.body?.userId || req.body?.uid || '').trim();
-    if (!userId) return res.status(400).json({ error: 'ID utilisateur manquant (userId ou uid).' });
+    if (!userId) return res.status(400).json({ error: 'ID utilisateur manquant.' });
     if (userId === adminUser.uid) return res.status(400).json({ error: 'Suppression de son propre compte interdite.' });
 
-    // 1. Supprime de Firebase Auth (tolérant si déjà supprimé)
+    // 1. Suppression de Firebase Auth
     try {
       await sdk.auth().deleteUser(userId);
     } catch (authErr) {
@@ -73,22 +70,22 @@ module.exports = async (req, res) => {
       console.warn(`[ADMIN DELETE] L'utilisateur ${userId} n'existait plus dans Firebase Auth.`);
     }
 
-    // 2. Supprime l'utilisateur de Turso SQL (compatible uid ou id)
+    // 2. Suppression dans la table users (colonne uid)
     await turso.execute({
-      sql: "DELETE FROM users WHERE uid = ? OR id = ?",
-      args: [userId, userId]
+      sql: "DELETE FROM users WHERE uid = ?",
+      args: [userId]
     });
 
-    // 3. Nettoyage des données secondaires
+    // 3. Nettoyage des favoris, notifications et signalements
     const tables = ['favorites', 'notifications', 'reports'];
     for (const table of tables) {
       try {
         await turso.execute({
-          sql: `DELETE FROM ${table} WHERE user_id = ? OR userId = ?`,
-          args: [userId, userId]
+          sql: `DELETE FROM ${table} WHERE user_id = ?`,
+          args: [userId]
         });
       } catch (e) {
-        // La table peut ne pas encore exister
+        // Ignorer si la table n'existe pas
       }
     }
 
