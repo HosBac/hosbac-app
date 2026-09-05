@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { createClient } from '@libsql/client/http';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -31,7 +31,17 @@ export default async function handler(req, res) {
     }
 
     const result = await db.execute({ sql: 'SELECT * FROM epreuves WHERE id = ? LIMIT 1', args: [id] });
-    return res.status(200).json(result.rows[0] || null);
+    if (!result.rows || result.rows.length === 0) {
+      return res.status(404).json({ error: 'Épreuve non trouvée' });
+    }
+
+    const row = result.rows[0];
+    return res.status(200).json({
+      ...row,
+      title: row.nom_epreuve || row.title || row.nom || 'Épreuve sans titre',
+      authorName: row.auteur_nom || row.authorName || 'Anonyme',
+      createdAt: row.created_at || row.createdAt || '-'
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
