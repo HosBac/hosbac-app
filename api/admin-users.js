@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { createClient } from '@libsql/client/http';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await db.execute('SELECT * FROM users ORDER BY created_at DESC');
-    
+
     const formattedRows = (result.rows || []).map(row => ({
       ...row,
       classe: row.classe || row.class || '-',
