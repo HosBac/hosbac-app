@@ -1,4 +1,5 @@
 import { execute } from '../lib/db.js';
+
 const createClient = () => ({
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
   batch: async (stmts) => {
@@ -7,49 +8,8 @@ const createClient = () => ({
     }
   }
 });
+
 const db = createClient();
-
-  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
-  batch: async (stmts) => {
-    for (const stmt of stmts) {
-      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
-    }
-  }
-});
-
-
-  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
-  batch: async (stmts) => {
-    for (const stmt of stmts) {
-      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
-    }
-  }
-});
-
-
-  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
-  batch: async (stmts) => {
-    for (const stmt of stmts) {
-      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
-    }
-  }
-});
-
-
-  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
-  batch: async (stmts) => {
-    for (const stmt of stmts) {
-      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
-    }
-  }
-});
-
-
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'hosbac-app';
 
 async function fetchFirestoreCollection(collectionName) {
   try {
