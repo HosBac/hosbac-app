@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { createClient } from '@libsql/client/http';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -13,8 +13,24 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const result = await db.execute('SELECT * FROM epreuves ORDER BY created_at DESC');
-    
+    const { status, limit } = req.query || {};
+    let sql = 'SELECT * FROM epreuves';
+    const args = [];
+
+    if (status) {
+      sql += ' WHERE status = ?';
+      args.push(status);
+    }
+
+    sql += ' ORDER BY created_at DESC';
+
+    if (limit) {
+      sql += ' LIMIT ?';
+      args.push(parseInt(limit, 10));
+    }
+
+    const result = await db.execute({ sql, args });
+
     const formattedRows = (result.rows || []).map(row => ({
       ...row,
       title: row.nom_epreuve || row.title || row.nom || 'Épreuve sans titre',
@@ -23,6 +39,8 @@ export default async function handler(req, res) {
       authorName: row.auteur_nom || row.authorName || 'Anonyme',
       auteur: row.auteur_nom || row.authorName || 'Anonyme',
       status: row.status || 'approved',
+      downloadCount: row.download_count || 0,
+      viewCount: row.view_count || 0,
       date: row.created_at || row.createdAt || '-',
       createdAt: row.created_at || row.createdAt || '-'
     }));
