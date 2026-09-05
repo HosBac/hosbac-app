@@ -15,7 +15,6 @@
     <!-- Firebase, Cloudinary, FontAwesome -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -4258,12 +4257,6 @@
         appId: "1:770406769367:web:8e2a3f27ce0044fd120692"
     };
 
-    // API HosBac : si le frontend est hébergé sur GitHub Pages, les routes serveur
-    // restent sur Vercel. Sur Vercel/local, les routes sont relatives.
-    const HOSBAC_API_BASE = location.hostname.endsWith('github.io') ? 'https://hosbac-app.vercel.app' : '';
-    const HOSBAC_GEMINI_ENDPOINT = `${HOSBAC_API_BASE}/api/gemini-fallback`;
-    const HOSBAC_ADMIN_DELETE_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-delete-user`;
-    const HOSBAC_ADMIN_STATS_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-stats`;
 
     // Intégration HosBac → HosBac Quiz : le Quiz utilise le même projet Firebase.
     // Le token Firebase est transmis uniquement dans le fragment URL (#handoff=...),
@@ -4273,7 +4266,180 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const HOSBAC_API_BASE = location.hostname.endsWith('github.io') ? 'https://hosbac-app.vercel.app' : '';
+    const HOSBAC_GEMINI_ENDPOINT = `${HOSBAC_API_BASE}/api/gemini-fallback`;
+    const HOSBAC_ADMIN_DELETE_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-delete-user`;
+    const HOSBAC_ADMIN_STATS_ENDPOINT = `${HOSBAC_API_BASE}/api/admin-stats`;
+    const HOSBAC_API_TIMEOUT = 15000;
+
+    async function getAuthHeaders() {
+        const user = firebase.auth().currentUser;
+        const headers = { 'Content-Type': 'application/json' };
+        if (user) {
+            const token = await user.getIdToken();
+            headers.Authorization = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
+    function apiEndpoint(resource, id = null) {
+        const base = HOSBAC_API_BASE;
+        if (resource === 'users') {
+            if (id !== null && id !== undefined) return `${base}/api/user-profile`;
+            return `${base}/api/admin-users`;
+        }
+        if (resource === 'settings') {
+            if (id === 'contacts') return `${base}/api/contacts`;
+            if (id === 'legal') return `${base}/api/legal`;
+            if (id === 'public') return `${base}/api/stats`;
+            if (id === 'analytics') return `${base}/api/settings/analytics`;
+            return `${base}/api/settings`;
+        }
+        const routes = {
+            epreuves: '/api/epreuves',
+            reports: '/api/signalements',
+            notifications: '/api/notifications',
+            announcements: '/api/announcements',
+            stats: '/api/stats'
+        };
+        const route = routes[resource];
+        if (!route) throw new Error(`Ressource API inconnue: ${resource}`);
+        return `${base}${route}${id !== null && id !== undefined ? `/${encodeURIComponent(id)}` : ''}`;
+    }
+
+    function hydrateApiValue(value) {
+        if (value && typeof value === 'object' && typeof value.toDate === 'function') return value;
+        if (typeof value === 'string' && !Number.isNaN(Date.parse(value))) {
+            const date = new Date(value);
+            return { valueOf: () => date.valueOf(), toDate: () => date };
+        }
+        if (Array.isArray(value)) return value.map(hydrateApiValue);
+        if (value && typeof value === 'object') {
+            const out = {};
+            Object.entries(value).forEach(([k, v]) => { out[k] = hydrateApiValue(v); });
+            return out;
+        }
+        return value;
+    }
+
+    function normalizeApiRow(row) {
+        if (!row || typeof row !== 'object') return {};
+        const raw = row.data && typeof row.data === 'object' && !Array.isArray(row.data) ? row.data : row;
+        const id = row.id ?? row.uid ?? raw.id ?? raw.uid ?? null;
+        const data = hydrateApiValue({ ...raw });
+        if (data.uid == null && id != null && raw.uid == null && raw.id == null) data.uid = id;
+        return { id, data };
+    }
+
+    function makeApiDoc(row) {
+        const normalized = normalizeApiRow(row);
+        return {
+            exists: normalized.id !== null || Object.keys(normalized.data).length > 0,
+            id: normalized.id,
+            data: () => normalized.data
+        };
+    }
+
+    function makeApiSnapshot(rows) {
+        const docs = (Array.isArray(rows) ? rows : []).map(makeApiDoc);
+        return {
+            docs,
+            size: docs.length,
+            empty: docs.length === 0,
+            forEach(callback) { docs.forEach(callback); }
+        };
+    }
+
+    function extractApiRows(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.items)) return payload.items;
+        if (Array.isArray(payload?.results)) return payload.results;
+        if (Array.isArray(payload?.epreuves)) return payload.epreuves;
+        if (Array.isArray(payload?.users)) return payload.users;
+        if (Array.isArray(payload?.reports)) return payload.reports;
+        if (Array.isArray(payload?.announcements)) return payload.announcements;
+        if (Array.isArray(payload?.notifications)) return payload.notifications;
+        if (Array.isArray(payload?.data)) return payload.data;
+        return payload && typeof payload === 'object' ? [payload] : [];
+    }
+
+    async function apiFetch(resource, options = {}) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), options.timeout || HOSBAC_API_TIMEOUT);
+        try {
+            const headers = await getAuthHeaders();
+            const response = await fetch(resource, {
+                ...options,
+                headers: { ...headers, ...(options.headers || {}) },
+                signal: controller.signal
+            });
+            const text = await response.text();
+            let payload = {};
+            try { payload = text ? JSON.parse(text) : {}; } catch (_) { payload = { raw: text }; }
+            if (!response.ok) {
+                const error = new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
+                error.status = response.status;
+                error.payload = payload;
+                throw error;
+            }
+            return payload;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    async function apiRead(resource, id, params = {}) {
+        const url = new URL(apiEndpoint(resource, id), window.location.origin);
+        const readParams = { ...(params || {}) };
+        if (resource === 'users' && id !== null && id !== undefined) readParams.uid = id;
+        Object.entries(readParams).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        });
+        try {
+            const payload = await apiFetch(url.toString(), { method: 'GET' });
+            const row = payload?.data && !Array.isArray(payload.data) && payload?.id ? payload : (payload?.data && !Array.isArray(payload.data) ? { id, data: payload.data } : { id, data: payload });
+            return makeApiDoc(row);
+        } catch (error) {
+            if (error.status === 404) return { exists: false, id, data: () => ({}) };
+            throw error;
+        }
+    }
+
+    async function apiList(resource, params = {}) {
+        const url = new URL(apiEndpoint(resource), window.location.origin);
+        Object.entries(params || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, value);
+        });
+        const payload = await apiFetch(url.toString(), { method: 'GET' });
+        return makeApiSnapshot(extractApiRows(payload));
+    }
+
+    async function apiWrite(resource, id, data) {
+        const url = apiEndpoint(resource, id);
+        const body = resource === 'users' ? { uid: id, data, ...data } : { id, data, merge: true };
+        return apiFetch(url, { method: 'POST', body: JSON.stringify(body) });
+    }
+
+    async function apiUpdate(resource, id, data) {
+        let url = apiEndpoint(resource, id);
+        if (resource === 'users' && id !== firebase.auth().currentUser?.uid && firebase.auth().currentUser) url = `${HOSBAC_API_BASE}/api/admin-users`;
+        const body = resource === 'users' ? { uid: id, userId: id, data, updates: data, ...data } : { id, data, updates: data };
+        return apiFetch(url, { method: 'PATCH', body: JSON.stringify(body) });
+    }
+
+    async function apiCreate(resource, data) {
+        const url = apiEndpoint(resource);
+        return apiFetch(url, { method: 'POST', body: JSON.stringify(data) });
+    }
+
+    async function apiDelete(resource, id) {
+        if (resource === 'users') {
+            return apiFetch(apiEndpoint('users'), { method: 'POST', body: JSON.stringify({ action: 'delete', uid: id, userId: id }) });
+        }
+        const url = apiEndpoint(resource, id);
+        return apiFetch(url, { method: 'DELETE', body: JSON.stringify({ id }) });
+    }
+
     const cloudName = "dqn1dbimm";
     const uploadPreset = "hosbac_preset";
     
@@ -4870,8 +5036,8 @@
     const CONTACTS_DOC_PATH = 'settings/contacts';
     const ANALYTICS_DOC_PATH = 'settings/analytics';
 
-    function loadContactsFromFirestore() {
-        db.doc(CONTACTS_DOC_PATH).get()
+    function loadContactsFromApi() {
+        apiRead('settings', 'contacts')
         .then(doc => {
             if (doc.exists) {
                 const data = doc.data();
@@ -4883,14 +5049,14 @@
                 updateFooterContacts({ whatsapp:'', facebook:'', email:'' });
             }
         })
-        .catch(err => console.error('[FIRESTORE] Erreur chargement contacts:', err));
+        .catch(err => console.error('[API/TURSO] Erreur chargement contacts API:', err));
     }
 
-    function saveContactsToFirestore(whatsapp, facebook, email, gaId) {
+    function saveContactsToApi(whatsapp, facebook, email, gaId) {
         const promises = [];
-        promises.push(db.doc(CONTACTS_DOC_PATH).set({ whatsapp, facebook, email }, { merge: true }));
+        promises.push(apiWrite('settings', 'contacts', { whatsapp, facebook, email }));
         if (gaId !== undefined) {
-            promises.push(db.doc(ANALYTICS_DOC_PATH).set({ ga_measurement_id: gaId }, { merge: true }));
+            promises.push(apiWrite('settings', 'analytics', { ga_measurement_id: gaId }));
         }
         return Promise.all(promises);
     }
@@ -4926,7 +5092,7 @@
     }
 
     function loadAndInjectGA() {
-        db.doc(ANALYTICS_DOC_PATH).get()
+        apiRead('settings', 'analytics')
         .then(doc => {
             if (doc.exists) {
                 const gaId = doc.data().ga_measurement_id || '';
@@ -4938,7 +5104,7 @@
                 // Aucun document analytics : rien à créer côté client.
             }
         })
-        .catch(err => console.error('[FIRESTORE] Erreur chargement GA:', err));
+        .catch(err => console.error('[API/TURSO] Erreur chargement GA API:', err));
     }
 
     function injectGAScript(measurementId) {
@@ -4971,11 +5137,7 @@
         }
         try {
             // Limite volontaire : l'IA n'a pas besoin de charger toute la base à chaque message.
-            const snapshot = await db.collection('epreuves')
-                .where('status', '==', 'approved')
-                .orderBy('createdAt', 'desc')
-                .limit(100)
-                .get();
+            const snapshot = await apiList('epreuves', { status: 'approved', sort: 'createdAt', order: 'desc', limit: 100 });
             const examsList = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
@@ -5653,7 +5815,7 @@
         callInterface.classList.remove('active');
         callStatus.textContent = 'Appel terminé';
         callSubStatus.textContent = 'Conversation vocale supprimée.';
-        // AUCUNE transcription n’est injectée dans le chat et rien n’est enregistré dans Firestore.
+        // AUCUNE transcription n’est injectée dans le chat et rien n’est enregistré dans API/Turso.
         voiceChatHistory = [];
         callTranscript = [];
         voiceRequestInFlight = false;
@@ -6036,7 +6198,7 @@
             });
         }
 
-        console.log('[ASSISTANT] Contrôles initialisés (mode live, pas de Firestore)');
+        console.log('[ASSISTANT] Contrôles initialisés (mode live, pas de API/Turso)');
     }
 
     if (document.readyState === 'loading') {
@@ -6161,7 +6323,7 @@
         const cached = examDocCache.get(examId);
         const loadPromise = cached && (Date.now() - cached.timestamp < HOSBAC_CACHE_TTL)
             ? Promise.resolve({ exists: true, id: examId, data: () => cached.data })
-            : db.collection('epreuves').doc(examId).get();
+            : apiRead('epreuves', examId);
         loadPromise
         .then(doc => {
             if (!doc.exists) {
@@ -6296,7 +6458,7 @@
                 exam.viewCount = Number(exam.viewCount || 0) + 1;
                 examDocCache.set(examId, { data: exam, timestamp: Date.now() });
                 updateUserStats('view', examId);
-                db.collection('epreuves').doc(examId).update({ viewCount: firebase.firestore.FieldValue.increment(1) })
+                apiUpdate('epreuves', examId, { viewCountDelta: 1 })
                     .catch(err => console.warn('Erreur incrémentation vues:', err.message));
             }
             
@@ -6324,7 +6486,7 @@
         }
         try{
             // UNE seule lecture légère. Les statistiques lourdes sont agrégées par l'admin.
-            const snap=await db.doc('settings/public').get();
+            const snap=await apiRead('settings', 'public');
             const d=snap.exists ? (snap.data()||{}) : {};
             const st={
                 exams:Number(d.examCount ?? d.exams ?? 0) || 0,
@@ -6339,7 +6501,7 @@
             document.getElementById('stat-users').textContent=st.users;
             return st;
         }catch(error){
-            console.error('[FIRESTORE] Erreur statistiques plateforme:',error);
+            console.error('[API/TURSO] Erreur statistiques plateforme:',error);
             ['stat-exams','stat-corriges','stat-matieres','stat-users'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
             return null;
         }
@@ -6354,12 +6516,12 @@
         if(!force && window._hosbacPopularCache.data.length && now-window._hosbacPopularCache.timestamp<HOSBAC_CACHE_TTL) return renderPopularExams(window._hosbacPopularCache.data,container);
         container.innerHTML='<p style="color:var(--text-light);">Chargement des épreuves populaires...</p>';
         try{
-            const snap=await db.collection('epreuves').where('status','==','approved').orderBy('downloadCount','desc').limit(5).get();
+            const snap=await apiList('epreuves', { status: 'approved', sort: 'downloadCount', order: 'desc', limit: 5 });
             const data=snap.docs.map(d=>({id:d.id,...d.data()}));
             data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
             window._hosbacPopularCache={data,timestamp:now};
             renderPopularExams(data,container);
-        }catch(error){console.error('[FIRESTORE] Erreur épreuves populaires:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves populaires.</p>'; }
+        }catch(error){console.error('[API/TURSO] Erreur épreuves populaires:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves populaires.</p>'; }
     }
 
     function renderPopularExams(data,container){
@@ -6600,11 +6762,11 @@
         subjectStatsGrid.innerHTML='<p style="color:var(--text-light);grid-column:1/-1;">Chargement des statistiques...</p>';
         try{
             let subjects={};
-            const publicSnap=await db.doc('settings/public').get();
+            const publicSnap=await apiRead('settings', 'public');
             const publicData=publicSnap.exists ? (publicSnap.data()||{}) : {};
             if(publicData.subjectDistribution && typeof publicData.subjectDistribution==='object') subjects=publicData.subjectDistribution;
             else {
-                const snap=await db.collection('epreuves').where('status','==','approved').get();
+                const snap=await apiList('epreuves', { status: 'approved' });
                 snap.forEach(doc=>{const m=doc.data().matiere;if(m)subjects[m]=(subjects[m]||0)+1;});
             }
             const sorted=Object.entries(subjects).sort((a,b)=>b[1]-a[1]).slice(0,8);
@@ -6624,7 +6786,7 @@
         leaderboardList.innerHTML='<p style="color:var(--text-light);">Chargement du classement...</p>';
         try{
             // Anti-quota : le classement public est servi depuis l'agrégat, pas depuis toute la collection users.
-            const snap=await db.doc('settings/public').get();
+            const snap=await apiRead('settings', 'public');
             const publicData=snap.exists ? (snap.data()||{}) : {};
             const data=Array.isArray(publicData.leaderboard) ? publicData.leaderboard.slice(0,10).map((u,i)=>({id:u.id||String(i),...u})) : [];
             leaderboardCache={data,timestamp:now};
@@ -6796,7 +6958,7 @@
                         showExamDetail(sharedExamId);
                     }, 500);
                 }
-                loadContactsFromFirestore();
+                loadContactsFromApi();
                 loadLegalPages();
                 loadAndInjectGA();
                 setTimeout(() => {
@@ -6818,7 +6980,7 @@
                 loadPlatformStats();
                 loadAnnouncements();
                 updateExamCardsVisibility();
-                loadContactsFromFirestore();
+                loadContactsFromApi();
                 loadLegalPages();
                 loadAndInjectGA();
             }
@@ -6946,8 +7108,7 @@
         document.getElementById('signup-confirm-password')?.addEventListener('input', validatePasswordMatch);
 
         async function ensureGoogleUserProfile(user) {
-            const ref = db.collection('users').doc(user.uid);
-            const snap = await ref.get();
+            const snap = await apiRead('users', user.uid);
             if (snap.exists) return snap.data();
             const display = (user.displayName || '').trim().split(/\s+/);
             const prenom = display.shift() || 'Utilisateur';
@@ -6955,7 +7116,7 @@
             const data = {
                 nom, prenom, ecole:'', region:'', email:user.email || '', classe:'', serie:'', points:0,
                 examsUploaded:0, examsDownloaded:0, role:'student', likedAnnouncements:[], favorites:[],
-                dailyMessageCount:0, lastResetDate:null, createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+                dailyMessageCount:0, lastResetDate:null, createdAt:new Date().toISOString(),
                 totalXp:0, examsViewed:0, correctionsAdded:0, activeDays:0, lastActiveDate:null,
                 xpHistory:[], avatarColor:'#1a2a4a', aiConversations:0, quizTotal:0, quizPerfect:0,
                 revisionPlanCreated:0, status:'active'
@@ -7015,13 +7176,13 @@
             auth.createUserWithEmailAndPassword(email, password)
             .then(userCredential => {
                 currentUser = userCredential.user;
-                return db.collection('users').doc(currentUser.uid).set({
+                return apiWrite('users', currentUser.uid, {
                     nom, prenom, ecole, region, email, classe, serie: ['2nd','1ère','Terminale'].includes(classe)?serie:'', points: 0,
                     examsUploaded: 0, examsDownloaded: 0, role: 'student',
                     likedAnnouncements: [], favorites: [],
                     dailyMessageCount: 0,
                     lastResetDate: null,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: new Date().toISOString(),
                     totalXp: 0,
                     examsViewed: 0,
                     correctionsAdded: 0,
@@ -7152,7 +7313,7 @@
         detailFavoriteBtn?.addEventListener('click', () => {
             if (!checkAuthRequired('ajouter aux favoris')) return;
             if (currentExamId) {
-                db.collection('epreuves').doc(currentExamId).get()
+                apiRead('epreuves', currentExamId)
                 .then(doc => {
                     if (doc.exists) {
                         const exam = doc.data();
@@ -7172,7 +7333,7 @@
         });
 
         async function prepareExamForAI(examId) {
-            const snap = await db.collection('epreuves').doc(examId).get();
+            const snap = await apiRead('epreuves', examId);
             if (!snap.exists) throw new Error('Épreuve introuvable.');
             const exam = snap.data();
             if (!exam.fichier_sujet) throw new Error('Le PDF de cette épreuve est indisponible.');
@@ -7262,13 +7423,13 @@
             }
             const reason = selected.value;
             if (currentExamId && currentUser) {
-                db.collection('reports').add({
+                apiCreate('reports', {
                     examId: currentExamId,
                     userId: currentUser.uid,
                     reason: reason,
                     userEmail: currentUser.email,
                     status: 'pending',
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    createdAt: new Date().toISOString()
                 })
                 .then(() => {
                     showToast('Signalement envoyé avec succès', 'success');
@@ -7420,7 +7581,7 @@
                 if (profileAvatar) profileAvatar.style.background = color;
                 window.updateAvatarColorPicker(color);
                 if (currentUser) {
-                    db.collection('users').doc(currentUser.uid).update({ avatarColor: color })
+                    apiUpdate('users', currentUser.uid, { avatarColor: color })
                     .catch(err => console.error('Erreur sauvegarde couleur avatar:', err));
                 }
             }
@@ -7473,7 +7634,7 @@
             
             showToast('Préparation des données...', 'info');
             
-            db.collection('users').doc(currentUser.uid).get()
+            apiRead('users', currentUser.uid)
             .then(doc => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -7528,15 +7689,8 @@
                     const user = auth.currentUser;
                     const uid = currentUser.uid;
                     
-                    db.collection('users').doc(uid).delete()
-                    .then(() => {
-                        return db.collection('favorites').where('userId', '==', uid).get()
-                        .then(snapshot => {
-                            const promises = [];
-                            snapshot.forEach(doc => promises.push(doc.ref.delete()));
-                            return Promise.all(promises);
-                        });
-                    })
+                    apiDelete('users', uid)
+                    .then(() => Promise.resolve())
                     .then(() => {
                         return user.delete();
                     })
@@ -7567,7 +7721,7 @@
         // PAGES LÉGALES
         // ============================================================
         function showLegalPopup(type) {
-            db.doc(LEGAL_DOC_PATH).get()
+            apiRead('settings', 'legal')
             .then(doc => {
                 let content = '';
                 let title = '';
@@ -7605,7 +7759,7 @@
                 }
             })
             .catch(err => {
-                console.error('[FIRESTORE] Erreur chargement legal:', err);
+                console.error('[API/TURSO] Erreur chargement legal:', err);
                 showToast('Erreur lors du chargement des textes', 'error');
             });
         }
@@ -7796,7 +7950,7 @@
         window.resolveReport = resolveReport;
         window.ignoreReport = ignoreReport;
 
-        loadContactsFromFirestore();
+        loadContactsFromApi();
         loadLegalPages();
         loadAndInjectGA();
         loadPlatformStats();
@@ -7806,17 +7960,17 @@
         console.log('[PHASE 4] Corrections finales appliquées avec succès :');
         console.log('   ✅ Bouton d\'envoi réparé');
         console.log('   ✅ Pipeline IA sécurisé (clés serveur)');
-        console.log('   ✅ Audit de sécurité complet (XSS, authentification, Firestore)');
+        console.log('   ✅ Audit de sécurité complet (XSS, authentification, API/Turso)');
         console.log('   ✅ Durcissement final (quota, fallback, erreurs)');
         console.log('   ✅ Suppression des fonctions inutiles (contributions, activité, historique)');
-        console.log('   ✅ Suppression du stockage Firestore de l\'assistant');
+        console.log('   ✅ Suppression du stockage API/Turso de l\'assistant');
     });
 
     // ============================================================
     // CHARGER ÉPREUVE POUR ÉDITION
     // ============================================================
     function loadExamForEdit(examId) {
-        db.collection('epreuves').doc(examId).get()
+        apiRead('epreuves', examId)
         .then(doc => {
             if (!doc.exists) {
                 showToast('Épreuve non trouvée', 'error');
@@ -7872,10 +8026,10 @@
             session,
             type,
             nom_epreuve,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            updatedAt: new Date().toISOString()
         };
         
-        db.collection('epreuves').doc(examId).update(updates)
+        apiUpdate('epreuves', examId, updates)
         .then(() => {
             showToast('Épreuve mise à jour avec succès', 'success');
             if (editExamPopup) editExamPopup.style.display = 'none';
@@ -7903,26 +8057,26 @@
     function approveExam(examId, authorId, points) {
         if (!isAdmin) return;
         try {
-            db.collection('epreuves').doc(examId).update({ 
+            apiUpdate('epreuves', examId, { 
                 status: 'approved',
-                approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                approvedAt: new Date().toISOString()
             })
             .then(() => {
             })
             .then(() => { examDocCache.delete(examId); return awardApprovalPoints(authorId, points); })
             .then(() => {
                 if (authorId) {
-                    db.collection('notifications').add({
+                    apiCreate('notifications', {
                         userId: authorId, type: 'approval',
                         message: `Épreuve approuvée ! +${points} points.`,
                         examId: examId, read: false,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: new Date().toISOString()
                     }).catch(err => console.warn('[NOTIFICATION] Approbation:', err.message));
                 }
             })
             .then(() => { showToast('Épreuve approuvée', 'success'); adminRawExamsCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminPanel(); })
-            .catch(error => { console.error('[FIRESTORE] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
+            .catch(error => { console.error('[API/TURSO] Erreur approbation:', error); showToast('Erreur lors de l\'approbation', 'error'); });
+        } catch (error) { console.error('[API/TURSO] Erreur approveExam:', error); showToast('Erreur lors de l\'approbation', 'error'); }
     }
 
     // ============================================================
@@ -7935,28 +8089,28 @@
             return;
         }
         
-        db.collection('epreuves').doc(examId).get()
+        apiRead('epreuves', examId)
         .then(doc => {
             if (!doc.exists) return;
             const exam = doc.data();
             const authorId = exam.auteurId;
             
-            return db.collection('epreuves').doc(examId).update({
+            return apiUpdate('epreuves', examId, {
                 status: 'rejected',
                 rejectionReason: reason.trim(),
-                rejectedAt: firebase.firestore.FieldValue.serverTimestamp()
+                rejectedAt: new Date().toISOString()
             })
             .then(() => {
             })
             .then(() => {
                 if (authorId) {
-                    db.collection('notifications').add({
+                    apiCreate('notifications', {
                         userId: authorId,
                         type: 'rejection',
                         message: `Votre épreuve "${exam.nom_epreuve || ''}" a été refusée. Raison : ${reason.trim()}`,
                         examId: examId,
                         read: false,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: new Date().toISOString()
                     }).catch(err => console.warn('[NOTIFICATION] Refus:', err.message));
                 }
             })
@@ -7969,14 +8123,14 @@
             });
         })
         .catch(error => {
-            console.error('[FIRESTORE] Erreur refus:', error);
+            console.error('[API/TURSO] Erreur refus:', error);
             showToast('Erreur lors du refus', 'error');
         });
     }
 
     function awardApprovalPoints(authorId, points) {
         if (!authorId || !points) return Promise.resolve();
-        return db.collection('users').doc(authorId).update({ points: firebase.firestore.FieldValue.increment(points) })
+        return apiUpdate('users', authorId, { pointsDelta: points })
             .catch(err => console.warn('[POINTS] Attribution non appliquée:', err.message));
     }
 
@@ -8033,10 +8187,10 @@
             status,
             downloadCount: 0,
             viewCount: 0,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date().toISOString()
         };
         
-        db.collection('epreuves').add(examData)
+        apiCreate('epreuves', examData)
         .then((docRef) => {
             if (addExamPopup) addExamPopup.style.display = 'none';
             if (addExamForm) addExamForm.reset();
@@ -8071,7 +8225,7 @@
             if (document.getElementById('exams-view')?.classList.contains('active')) applyFilters();
         })
         .catch(error => {
-            console.error('[FIRESTORE] Erreur soumission:', error);
+            console.error('[API/TURSO] Erreur soumission:', error);
             const code = error?.code || '';
             if (code === 'permission-denied') showToast('Soumission refusée par les règles de sécurité Firebase.', 'error');
             else if (code === 'resource-exhausted') showToast('Quota Firebase atteint. Réessayez plus tard.', 'error');
@@ -8084,19 +8238,19 @@
     // ============================================================
     function updateUserStats(action, examId) {
         if (!currentUser || !userData) return Promise.resolve();
-        const userRef = db.collection('users').doc(currentUser.uid);
+        const userRef = { update: (data) => apiUpdate('users', currentUser.uid, data) };
         const xpMap = { download: 10, upload: 20, correction: 15 };
         if (!xpMap[action]) return Promise.resolve();
         const xpEarned = xpMap[action];
         const today = new Date().toISOString().slice(0,10);
-        const updates = { totalXp: firebase.firestore.FieldValue.increment(xpEarned) };
-        if (action === 'view') updates.examsViewed = firebase.firestore.FieldValue.increment(1);
-        if (action === 'download') updates.examsDownloaded = firebase.firestore.FieldValue.increment(1);
-        if (action === 'upload') updates.examsUploaded = firebase.firestore.FieldValue.increment(1);
-        if (action === 'correction') updates.correctionsAdded = firebase.firestore.FieldValue.increment(1);
+        const updates = { totalXpDelta: xpEarned };
+        if (action === 'view') updates.examsViewed = 1;
+        if (action === 'download') updates.examsDownloaded = 1;
+        if (action === 'upload') updates.examsUploaded = 1;
+        if (action === 'correction') updates.correctionsAdded = 1;
         if (userData.lastActiveDate !== today) {
             updates.lastActiveDate = today;
-            updates.activeDays = firebase.firestore.FieldValue.increment(1);
+            updates.activeDays = 1;
         }
         const history = Array.isArray(userData.xpHistory) ? userData.xpHistory.slice(-29) : [];
         history.push({ date: new Date().toISOString(), xp: xpEarned, action });
@@ -8120,10 +8274,9 @@
         if (!similarList) return;
         similarList.innerHTML = '<p style="color:var(--text-light);">Chargement des épreuves similaires...</p>';
         
-        let query = db.collection('epreuves').where('status', '==', 'approved');
-        if (exam.matiere) query = query.where('matiere', '==', exam.matiere);
-        
-        query.limit(6).get()
+        const similarParams = { status: 'approved', limit: 6 };
+        if (exam.matiere) similarParams.subject = exam.matiere;
+        apiList('epreuves', similarParams)
         .then(snapshot => {
             similarList.innerHTML = '';
             let count = 0;
@@ -8163,7 +8316,7 @@
     }
 
     function startPendingExamsListener() {
-        // Désactivé volontairement : les listeners Firestore permanents consommaient le quota.
+        // Désactivé volontairement : les listeners API/Turso permanents consommaient le quota.
         pendingExamsListener = null;
     }
 
@@ -8175,10 +8328,10 @@
 
     function checkUserRole() {
         if (!currentUser) return Promise.resolve(null);
-        return db.collection('users').doc(currentUser.uid).get()
+        return apiRead('users', currentUser.uid)
             .catch(async error => {
                 if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
-                    try { await currentUser.getIdToken(true); return db.collection('users').doc(currentUser.uid).get(); } catch (_) {}
+                    try { await currentUser.getIdToken(true); return apiRead('users', currentUser.uid); } catch (_) {}
                 }
                 throw error;
             })
@@ -8204,13 +8357,13 @@
                 return userData;
             })
             .catch(error => {
-                console.error('[FIRESTORE] Erreur récupération profil utilisateur:', error);
+                console.error('[API/TURSO] Erreur récupération profil utilisateur:', error);
                 throw error;
             });
     }
 
     function updateExamCardsVisibility() {
-        // Utilise les données déjà présentes dans les cartes sans requêtes Firestore supplémentaires
+        // Utilise les données déjà présentes dans les cartes sans requêtes API/Turso supplémentaires
         document.querySelectorAll('.exam-card').forEach(card => {
             const deleteBtn = card.querySelector('.exam-btn.delete');
             if (deleteBtn) {
@@ -8220,7 +8373,7 @@
             if (editBtn) {
                 const examId = editBtn.dataset.examId;
                 if (examId && currentUser) {
-                    // On ne fait pas de requête Firestore ici, on utilise les données déjà chargées
+                    // On ne fait pas de requête API/Turso ici, on utilise les données déjà chargées
                     // On vérifie via la présence du statut dans l'élément
                     const badge = card.querySelector('.exam-badge.pending, .exam-badge.draft');
                     if (badge) {
@@ -8255,12 +8408,12 @@
         }
         container.innerHTML = '<p style="color:var(--text-light);">Chargement des annonces...</p>';
         try {
-            const snap = await db.collection('announcements').orderBy('createdAt','desc').limit(20).get();
+            const snap = await apiList('announcements', { sort:'createdAt', order:'desc', limit:20 });
             const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             announcementsCache = { data, timestamp: now };
             renderAnnouncements(data, container);
         } catch (error) {
-            console.error('[FIRESTORE] Erreur annonces:', error);
+            console.error('[API/TURSO] Erreur annonces:', error);
             container.innerHTML = '<p style="color:var(--text-light);">Impossible de charger les annonces.</p>';
         }
     }
@@ -8289,20 +8442,20 @@
             if (isCurrentlyLiked) {
                 newLiked = newLiked.filter(id => id !== announcementId);
                 button.classList.remove('liked');
-                db.collection('announcements').doc(announcementId).update({ likes: firebase.firestore.FieldValue.increment(-1) });
+                apiUpdate('announcements', announcementId, { likesDelta: -1 });
             } else {
                 newLiked.push(announcementId);
                 button.classList.add('liked');
-                db.collection('announcements').doc(announcementId).update({ likes: firebase.firestore.FieldValue.increment(1) });
+                apiUpdate('announcements', announcementId, { likesDelta: 1 });
             }
-            db.collection('users').doc(currentUser.uid).update({ likedAnnouncements: newLiked })
+            apiUpdate('users', currentUser.uid, { likedAnnouncements: newLiked })
             .then(() => {
                 userData.likedAnnouncements = newLiked;
                 const count = button.querySelector('.like-count');
                 if (count) count.textContent = parseInt(count.textContent) + (isCurrentlyLiked ? -1 : 1);
             })
-            .catch(error => console.error('[FIRESTORE] Erreur mise à jour likes:', error));
-        } catch (error) { console.error('[FIRESTORE] Erreur toggleAnnouncementLike:', error); }
+            .catch(error => console.error('[API/TURSO] Erreur mise à jour likes:', error));
+        } catch (error) { console.error('[API/TURSO] Erreur toggleAnnouncementLike:', error); }
     }
 
     function submitAnnouncement() {
@@ -8313,16 +8466,16 @@
         const title = document.getElementById('announcement-title')?.value || '';
         const content = document.getElementById('announcement-content')?.value || '';
         try {
-            db.collection('announcements').add({
+            apiCreate('announcements', {
                 title, content,
                 authorId: currentUser.uid,
                 authorName: `${userData?.prenom || ''} ${userData?.nom || ''}`,
                 likes: 0,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                createdAt: new Date().toISOString()
             })
             .then(() => { if (announcementForm) announcementForm.reset(); showToast('Annonce publiée avec succès', 'success'); })
-            .catch(error => { console.error('[FIRESTORE] Erreur publication annonce:', error); showToast('Erreur lors de la publication', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur submitAnnouncement:', error); showToast('Erreur lors de la publication', 'error'); }
+            .catch(error => { console.error('[API/TURSO] Erreur publication annonce:', error); showToast('Erreur lors de la publication', 'error'); });
+        } catch (error) { console.error('[API/TURSO] Erreur submitAnnouncement:', error); showToast('Erreur lors de la publication', 'error'); }
     }
 
     async function loadRecentExams(force=false) {
@@ -8332,12 +8485,12 @@
         if(!force && window._hosbacRecentCache.data.length && now-window._hosbacRecentCache.timestamp<HOSBAC_CACHE_TTL) return renderRecentExams(window._hosbacRecentCache.data,container);
         container.innerHTML='<p style="color:var(--text-light);">Chargement des épreuves récentes...</p>';
         try{
-            const snap=await db.collection('epreuves').where('status','==','approved').orderBy('createdAt','desc').limit(6).get();
+            const snap=await apiList('epreuves', { status:'approved', sort:'createdAt', order:'desc', limit:6 });
             const data=snap.docs.map(d=>({id:d.id,...d.data()}));
             data.forEach(e=>examDocCache.set(e.id,{data:e,timestamp:now}));
             window._hosbacRecentCache={data,timestamp:now};
             renderRecentExams(data,container);
-        }catch(error){console.error('[FIRESTORE] Erreur épreuves récentes:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves.</p>'; }
+        }catch(error){console.error('[API/TURSO] Erreur épreuves récentes:',error);container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des épreuves.</p>'; }
     }
 
     function renderRecentExams(data,container){
@@ -8358,15 +8511,15 @@
         const filters = getFilterParams();
         const sheetFilters = getFilterParamsFromSheet();
         
-        let query = db.collection('epreuves');
+        let query = { resource:'epreuves', params:{} };
         
         if (filters.search && filters.search.toLowerCase() === 'draft' && currentUser) {
-            query = query.where('auteurId', '==', currentUser.uid).where('status', '==', 'draft');
+            query.params.auteurId = currentUser.uid; query.params.status = 'draft';
         } else {
-            query = query.where('status', '==', 'approved');
-            if (filters.classe) query = query.where('classe', '==', filters.classe);
-            if (filters.matiere) query = query.where('matiere', '==', filters.matiere);
-            if (filters.serie) query = query.where('serie', '==', filters.serie);
+            query.params.status = 'approved';
+            if (filters.classe) query.params.classe = filters.classe;
+            if (filters.matiere) query.params.subject = filters.matiere;
+            if (filters.serie) query.params.serie = filters.serie;
         }
         
         try {
@@ -8453,11 +8606,11 @@
                 renderPagination(totalPages);
             })
             .catch(error => { 
-                console.error('[FIRESTORE] Erreur filtrage:', error); 
+                console.error('[API/TURSO] Erreur filtrage:', error); 
                 container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du filtrage.</p>';
             });
         } catch (error) { 
-            console.error('[FIRESTORE] Erreur applyFilters:', error); 
+            console.error('[API/TURSO] Erreur applyFilters:', error); 
             container.innerHTML = '<p style="color:var(--text-light);">Erreur lors du filtrage.</p>';
         }
     }
@@ -8660,13 +8813,13 @@
                     detailFavoriteBtn.classList.add('active');
                 }
             }
-            db.collection('users').doc(currentUser.uid).update({ favorites: newFavs })
+            apiUpdate('users', currentUser.uid, { favorites: newFavs })
             .then(() => {
                 userData.favorites = newFavs;
                 if (document.getElementById('profile-view')?.classList.contains('active')) loadFavorites();
             })
-            .catch(error => { console.error('[FIRESTORE] Erreur favoris:', error); showToast('Erreur lors de la mise à jour des favoris', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur handleAddToFavorites:', error); showToast('Erreur lors de la mise à jour des favoris', 'error'); }
+            .catch(error => { console.error('[API/TURSO] Erreur favoris:', error); showToast('Erreur lors de la mise à jour des favoris', 'error'); });
+        } catch (error) { console.error('[API/TURSO] Erreur handleAddToFavorites:', error); showToast('Erreur lors de la mise à jour des favoris', 'error'); }
     }
 
     // ============================================================
@@ -8675,7 +8828,7 @@
     async function downloadExam(examId, type) {
         try {
             const cached=examDocCache.get(examId);
-            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await db.collection('epreuves').doc(examId).get();
+            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await apiRead('epreuves', examId);
             if(!doc.exists){showToast('Épreuve introuvable','error');return;}
             const exam=doc.data(); examDocCache.set(examId,{data:exam,timestamp:Date.now()});
             if(exam.status!=='approved'){showToast("Cette épreuve n'est pas encore approuvée",'warning');return;}
@@ -8683,7 +8836,7 @@
                 const fileUrl=exam.fichier_sujet;
                 if(!fileUrl || !fileUrl.includes('cloudinary.com')){showToast('Fichier non disponible','error');return;}
                 const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve||'epreuve'}_sujet.pdf`; link.target='_blank'; document.body.appendChild(link); link.click(); link.remove();
-                db.collection('epreuves').doc(examId).update({downloadCount:firebase.firestore.FieldValue.increment(1)}).catch(()=>{});
+                apiUpdate('epreuves', examId, {downloadCount:1}).catch(()=>{});
                 exam.downloadCount=Number(exam.downloadCount||0)+1; examDocCache.set(examId,{data:exam,timestamp:Date.now()});
                 showToast('Téléchargement lancé','success'); updateUserStats('download',examId);
             } else if(type==='corrige') handleCorrigeAccess(examId,exam,'download');
@@ -8692,7 +8845,7 @@
                 navigateTo('assistant');
                 setTimeout(()=>{if(chatInput){chatInput.value=`Peux-tu m'aider à résoudre "${exam.nom_epreuve||'cette épreuve'}" ?`;chatInput.focus();}},500);
             }
-        }catch(error){console.error('[FIRESTORE] Erreur téléchargement:',error);showToast('Erreur lors du téléchargement','error');}
+        }catch(error){console.error('[API/TURSO] Erreur téléchargement:',error);showToast('Erreur lors du téléchargement','error');}
     }
 
     function handleCorrigeAccess(examId, exam, action) {
@@ -8701,22 +8854,22 @@
         if (!userData || (userData.points || 0) < 2) { showToast('Points insuffisants. 2 points requis.', 'error'); return; }
         const fileUrl = exam.fichier_corrige;
         if (!fileUrl || !fileUrl.includes('cloudinary.com')) { showToast('Fichier corrigé non disponible', 'error'); return; }
-        db.collection('users').doc(currentUser.uid).update({
-            points: firebase.firestore.FieldValue.increment(-2),
-            examsDownloaded: firebase.firestore.FieldValue.increment(1)
+        apiUpdate('users', currentUser.uid, {
+            pointsDelta: -2,
+            examsDownloadedDelta: 1
         }).then(() => {
             userData.points = Math.max(0, (userData.points || 0) - 2);
             userData.examsDownloaded = (userData.examsDownloaded || 0) + 1;
             if (exam.auteurId && exam.auteurId !== currentUser.uid) {
-                return db.collection('users').doc(exam.auteurId).update({ points: firebase.firestore.FieldValue.increment(2) })
-                    .then(() => db.collection('notifications').add({
+                return apiUpdate('users', exam.auteurId, { pointsDelta: 2 })
+                    .then(() => apiCreate('notifications', {
                         userId: exam.auteurId, type:'points_received',
                         message:`+2 points de ${userData.prenom || ''} ${userData.nom || ''} pour le corrigé`,
-                        examId, read:false, createdAt:firebase.firestore.FieldValue.serverTimestamp()
+                        examId, read:false, createdAt:new Date().toISOString()
                     }));
             }
         }).then(() => {
-            db.collection('epreuves').doc(examId).update({ downloadCount: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
+            apiUpdate('epreuves', examId, { downloadCountDelta: 1 }).catch(()=>{});
             if (action === 'view') window.open(fileUrl, '_blank');
             else {
                 const link=document.createElement('a'); link.href=fileUrl; link.download=`${exam.nom_epreuve || 'epreuve'}_corrige.pdf`; link.target='_blank';
@@ -8725,7 +8878,7 @@
             showToast('Corrigé accessible (2 points déduits)', 'success');
             updateUserStats('correction', examId);
         }).catch(error => {
-            console.error('[FIRESTORE] Erreur accès corrigé:', error);
+            console.error('[API/TURSO] Erreur accès corrigé:', error);
             showToast(error?.code === 'permission-denied' ? 'Accès refusé par les règles Firebase.' : "Erreur lors de l’accès au corrigé", 'error');
         });
     }
@@ -8737,7 +8890,7 @@
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         if (confirm('Supprimer cette épreuve ?')) {
             try {
-                db.collection('epreuves').doc(examId).delete()
+                apiDelete('epreuves', examId)
                 .then(() => {
                     showToast('Épreuve supprimée', 'success');
                     approvedExamsCache = { data: [], timestamp: 0 };
@@ -8756,8 +8909,8 @@
                         navigateTo('exams');
                     }
                 })
-                .catch(error => { console.error('[FIRESTORE] Erreur suppression:', error); showToast('Erreur lors de la suppression', 'error'); });
-            } catch (error) { console.error('[FIRESTORE] Erreur deleteExam:', error); showToast('Erreur lors de la suppression', 'error'); }
+                .catch(error => { console.error('[API/TURSO] Erreur suppression:', error); showToast('Erreur lors de la suppression', 'error'); });
+            } catch (error) { console.error('[API/TURSO] Erreur deleteExam:', error); showToast('Erreur lors de la suppression', 'error'); }
         }
     }
 
@@ -8774,7 +8927,7 @@
     function loadUserProfile(userId) {
         if (userId === currentUser?.uid) { loadProfileData(); return; }
         try {
-            db.collection('users').doc(userId).get()
+            apiRead('users', userId)
             .then(doc => {
                 if (doc.exists) {
                     const user = doc.data();
@@ -8805,8 +8958,8 @@
                     if (logoutBtnEl) logoutBtnEl.style.display = 'none';
                 }
             })
-            .catch(error => { console.error('[FIRESTORE] Erreur chargement profil:', error); showToast('Erreur lors du chargement du profil', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur loadUserProfile:', error); showToast('Erreur lors du chargement du profil', 'error'); }
+            .catch(error => { console.error('[API/TURSO] Erreur chargement profil:', error); showToast('Erreur lors du chargement du profil', 'error'); });
+        } catch (error) { console.error('[API/TURSO] Erreur loadUserProfile:', error); showToast('Erreur lors du chargement du profil', 'error'); }
     }
 
 
@@ -8859,7 +9012,7 @@
             if(!response.ok||data.success!==true)throw new Error(data.error||data.code||`HTTP ${response.status}`);
             userData={...(userData||{}),inspe_points:Number(data.remainingInspe??0),quiz_subscription:{active:true,startedAt:new Date().toISOString(),expiresAt:data.expiresAt}};
             showToast('Abonnement HosBac AI activé.', 'success');
-            await db.collection('users').doc(currentUser.uid).get().then(doc=>{if(doc.exists)userData={...userData,...doc.data()};});
+            await apiRead('users', currentUser.uid).then(doc=>{if(doc.exists)userData={...userData,...doc.data()};});
             loadProfileData();
         }catch(e){console.error('[SUBSCRIPTION]',e);showToast(e.message||'Activation impossible.','error');}
         finally{if(btn)btn.disabled=false;loadInspeSubscription();}
@@ -8924,7 +9077,7 @@
         if(secondary && !serie){ showToast('Veuillez sélectionner une série pour cette classe.','warning'); return; }
         const cleanSerie=secondary?serie:'';
         try {
-            db.collection('users').doc(currentUser.uid).update({ nom, prenom, ecole, region, classe, serie:cleanSerie })
+            apiUpdate('users', currentUser.uid, { nom, prenom, ecole, region, classe, serie:cleanSerie })
             .then(() => {
                 userData = { ...(userData || {}), nom, prenom, ecole, region, classe, serie:cleanSerie };
                 if (profileName) profileName.textContent = `${prenom} ${nom}`.trim();
@@ -8932,8 +9085,8 @@
                 if (profileAvatar) profileAvatar.textContent = prenom ? prenom.charAt(0).toUpperCase() : 'U';
                 showToast('Profil mis à jour', 'success');
             })
-            .catch(error => { console.error('[FIRESTORE] Erreur mise à jour profil:', error); showToast('Erreur lors de la mise à jour', 'error'); });
-        } catch (error) { console.error('[FIRESTORE] Erreur updateProfile:', error); showToast('Erreur lors de la mise à jour', 'error'); }
+            .catch(error => { console.error('[API/TURSO] Erreur mise à jour profil:', error); showToast('Erreur lors de la mise à jour', 'error'); });
+        } catch (error) { console.error('[API/TURSO] Erreur updateProfile:', error); showToast('Erreur lors de la mise à jour', 'error'); }
     }
 
     async function loadFavorites() {
@@ -8946,7 +9099,7 @@
             const docs=await Promise.all(userData.favorites.slice(0,8).map(async id=>{
                 const cached=examDocCache.get(id);
                 if(cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL) return {id,exists:true,data:()=>cached.data};
-                const doc=await db.collection('epreuves').doc(id).get();
+                const doc=await apiRead('epreuves', id);
                 if(doc.exists) examDocCache.set(id,{data:doc.data(),timestamp:Date.now()});
                 return doc;
             }));
@@ -8954,7 +9107,7 @@
             docs.forEach(doc=>{ if(doc.exists){ const exam=doc.data(); const card=createExamCard(exam,doc.id); card.addEventListener('click',()=>showExamDetail(doc.id)); container.appendChild(card); has=true; }});
             if(!has) container.innerHTML='<p style="color:var(--text-light);">Aucun favori disponible.</p>';
             updateExamCardsVisibility();
-        }catch(error){ console.error('[FIRESTORE] Erreur favoris:',error); container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des favoris.</p>'; }
+        }catch(error){ console.error('[API/TURSO] Erreur favoris:',error); container.innerHTML='<p style="color:var(--text-light);">Erreur lors du chargement des favoris.</p>'; }
     }
 
     function performDynamicSearch(query) {
@@ -8964,10 +9117,9 @@
             return;
         }
         if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-light);">Recherche en cours...</p>';
-        const examsPromise = db.collection('epreuves').where('status', '==', 'approved')
-        .where('nom_epreuve', '>=', query).where('nom_epreuve', '<=', query + '\uf8ff').limit(8).get()
+        const examsPromise = apiList('epreuves', { status: 'approved', search: query, limit: 8 })
         .catch(() => { return { empty: true }; });
-        const usersPromise = Promise.resolve({ empty: true, forEach: () => {} });
+        const usersPromise = apiList('users', { search: query, limit: 8 });
         Promise.all([examsPromise, usersPromise])
         .then(([examsSnapshot, usersSnapshot]) => {
             if (searchSuggestions) {
@@ -9066,7 +9218,7 @@
                 if (!hasResults) searchResults.innerHTML = '<p style="color:var(--text-light);">Aucun résultat trouvé.</p>';
             }
         })
-        .catch(error => { console.error('[FIRESTORE] Erreur recherche:', error); if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-light);">Erreur lors de la recherche.</p>'; });
+        .catch(error => { console.error('[API/TURSO] Erreur recherche:', error); if (searchResults) searchResults.innerHTML = '<p style="color:var(--text-light);">Erreur lors de la recherche.</p>'; });
     }
 
     // ============================================================
@@ -9089,9 +9241,7 @@
         if (!select || !currentUser) return;
         select.innerHTML = '<option value="">Chargement...</option>';
         try {
-            let query = db.collection('epreuves').where('status','==','approved').orderBy('createdAt','desc').limit(100);
-            if (!isAdmin) query = db.collection('epreuves').where('status','==','approved').where('auteurId','==',currentUser.uid).limit(100);
-            const snap = await query.get();
+            const snap = await apiList('epreuves', isAdmin ? { status: 'approved', sort: 'createdAt', order: 'desc', limit: 100 } : { status: 'approved', auteurId: currentUser.uid, limit: 100 });
             select.innerHTML = '<option value="">Sélectionner une épreuve</option>';
             snap.forEach(doc => {
                 const e=doc.data();
@@ -9114,11 +9264,11 @@
         if(!examId || !url){ showToast('Sélectionnez une épreuve et téléversez le corrigé.', 'warning'); return; }
         try {
             const cached=examDocCache.get(examId);
-            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await db.collection('epreuves').doc(examId).get();
+            const doc=cached && Date.now()-cached.timestamp<HOSBAC_CACHE_TTL ? {exists:true,data:()=>cached.data} : await apiRead('epreuves', examId);
             if(!doc.exists){showToast('Épreuve introuvable.', 'error');return;}
             const exam=doc.data();
             if(!isAdmin && exam.auteurId!==currentUser.uid){showToast('Vous ne pouvez ajouter un corrigé qu’à vos propres épreuves.', 'error');return;}
-            await db.collection('epreuves').doc(examId).update({fichier_corrige:url,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+            await apiUpdate('epreuves', examId, {fichier_corrige:url,updatedAt:new Date().toISOString()});
             if(addCorrigeOnlyForm) addCorrigeOnlyForm.reset();
             if(addCorrigeOnlyPopup) addCorrigeOnlyPopup.style.display='none';
             approvedExamsCache={data:[],timestamp:0}; platformStatsCache={data:null,timestamp:0};
@@ -9210,7 +9360,7 @@
         };
 
         try {
-            // Le dashboard ne lit plus directement Firestore. Il consomme uniquement
+            // Le dashboard ne lit plus directement API/Turso. Il consomme uniquement
             // l'agrégat préparé par Vercel + Firebase Admin SDK.
             let result = await requestStats('GET');
 
@@ -9310,13 +9460,12 @@
         const subject=adminExamSubject?.value||'';
         adminExamsBody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-light);">Chargement...</td></tr>';
         try {
-            let query=db.collection('epreuves').orderBy('createdAt','desc');
-            if(status) query=query.where('status','==',status);
-            if(subject) query=query.where('matiere','==',subject);
-            query=query.limit(ADMIN_ITEMS_PER_PAGE);
-            const cursor=adminExamPageCursors[page-1];
-            if(cursor) query=query.startAfter(cursor);
-            const snap=await query.get();
+            let query = { resource: 'epreuves', params: { sort: 'createdAt', order: 'desc' } };
+            if(status) query.params.status=status;
+            if(subject) query.params.subject=subject;
+            query.params.limit=ADMIN_ITEMS_PER_PAGE;
+            query.params.page = page;
+            const snap=await apiList(query.resource, query.params);
             adminExamHasNext=snap.size===ADMIN_ITEMS_PER_PAGE;
             if(adminExamHasNext) adminExamPageCursors[page]=snap.docs[snap.docs.length-1];
             adminExamPage=page;
@@ -9421,11 +9570,11 @@
         const search=(adminUserSearch?.value||'').trim().toLowerCase();
         const role=adminUserRole?.value||'';
         try{
-            let query=db.collection('users').orderBy('createdAt','desc');
-            if(role) query=query.where('role','==',role);
-            query=query.limit(ADMIN_ITEMS_PER_PAGE);
-            const cursor=adminUserPageCursors[page-1]; if(cursor) query=query.startAfter(cursor);
-            const snap=await query.get();
+            let query = { resource: 'users', params: { sort: 'createdAt', order: 'desc' } };
+            if(role) query.params.role=role;
+            query.params.limit=ADMIN_ITEMS_PER_PAGE;
+            query.params.page = page;
+            const snap=await apiList(query.resource, query.params);
             adminUserHasNext=snap.size===ADMIN_ITEMS_PER_PAGE;
             if(adminUserHasNext) adminUserPageCursors[page]=snap.docs[snap.docs.length-1];
             adminUserPage=page;
@@ -9496,7 +9645,7 @@
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         const newRole = prompt('Entrez le nouveau rôle (admin, moderator, contributor, student) :', 'student');
         if (newRole && ['admin', 'moderator', 'contributor', 'student'].includes(newRole)) {
-            db.collection('users').doc(userId).update({ role: newRole })
+            apiUpdate('users', userId, { role: newRole })
             .then(() => { showToast('Rôle mis à jour', 'success'); adminRawUsersCache.timestamp=0; adminDashboardCache.timestamp=0; loadAdminUsers(true); })
             .catch(err => { console.error('Erreur mise à jour rôle:', err); showToast('Erreur lors de la mise à jour', 'error'); });
         }
@@ -9505,7 +9654,7 @@
     function suspendUser(userId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
         if (!confirm('Suspendre cet utilisateur ?')) return;
-        db.collection('users').doc(userId).update({ status:'suspended' })
+        apiUpdate('users', userId, { status:'suspended' })
             .then(()=>{
                 const u=adminRawUsersCache.data.find(x=>x.id===userId); if(u) u.status='suspended';
                 filterAndRenderAdminUsers();
@@ -9516,7 +9665,7 @@
 
     function activateUser(userId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        db.collection('users').doc(userId).update({ status:'active' })
+        apiUpdate('users', userId, { status:'active' })
             .then(()=>{
                 const u=adminRawUsersCache.data.find(x=>x.id===userId); if(u) u.status='active';
                 filterAndRenderAdminUsers();
@@ -9550,14 +9699,14 @@
         if (!adminReportsList) return;
         adminReportsList.innerHTML = '<p style="color:var(--text-light);">Chargement des signalements...</p>';
         const status = adminReportStatus?.value || '';
-        let query = db.collection('reports').orderBy('createdAt', 'desc');
+        let query = { resource: 'reports', params: { sort: 'createdAt', order: 'desc' } };
         if (status) {
-            query = db.collection('reports').where('status', '==', status);
+            query = { resource: 'reports', params: { status } };
         }
         const timeout = setTimeout(() => {
             adminReportsList.innerHTML = '<p style="color:var(--text-light);">Aucune donnée disponible (timeout).</p>';
         }, 5000);
-        query.get()
+        apiList(query.resource, query.params)
         .then(snapshot => {
             clearTimeout(timeout);
             adminReportsList.innerHTML = '';
@@ -9611,14 +9760,14 @@
 
     function resolveReport(reportId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        db.collection('reports').doc(reportId).update({ status: 'resolved' })
+        apiUpdate('reports', reportId, { status: 'resolved' })
         .then(() => { showToast('Signalement résolu', 'success'); loadAdminReports(); })
         .catch(err => { console.error('Erreur résolution signalement:', err); showToast('Erreur lors de la résolution', 'error'); });
     }
 
     function ignoreReport(reportId) {
         if (!isAdmin) { showToast('Action non autorisée', 'error'); return; }
-        db.collection('reports').doc(reportId).update({ status: 'ignored' })
+        apiUpdate('reports', reportId, { status: 'ignored' })
         .then(() => { showToast('Signalement ignoré', 'success'); loadAdminReports(); })
         .catch(err => { console.error('Erreur ignorance signalement:', err); showToast('Erreur lors de l\'ignorance', 'error'); });
     }
@@ -9698,14 +9847,14 @@
         const facebook = contactFacebook?.value || '';
         const email = contactEmail?.value || '';
         const gaId = gaMeasurementId?.value || '';
-        saveContactsToFirestore(whatsapp, facebook, email, gaId)
+        saveContactsToApi(whatsapp, facebook, email, gaId)
         .then(() => {
             showToast('Paramètres mis à jour avec succès', 'success');
             updateFooterContacts({ whatsapp, facebook, email });
             if (gaId && gaId.trim().length > 0) { injectGAScript(gaId.trim()); }
             else { const script = document.querySelector('script[src*="googletagmanager.com/gtag/js?id="]'); if (script) script.remove(); const inline = document.getElementById('ga-inline-script'); if (inline) inline.remove(); }
         })
-        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde paramètres:', err); showToast('Erreur lors de la mise à jour', 'error'); });
+        .catch(err => { console.error('[API/TURSO] Erreur sauvegarde paramètres API:', err); showToast('Erreur lors de la mise à jour', 'error'); });
     });
 
     // ============================================================
@@ -9722,7 +9871,7 @@
     document.getElementById('faq-add-item')?.addEventListener('click',()=>{const box=document.getElementById('faq-admin-items');if(!box)return;const items=collectAdminFaqItems();items.push({question:'',answer:''});renderAdminFaqItems(items);});
 
     function loadLegalPages() {
-        db.doc(LEGAL_DOC_PATH).get()
+        apiRead('settings', 'legal')
         .then(doc => {
             if (doc.exists) {
                 const data = doc.data();
@@ -9732,16 +9881,16 @@
                 if (document.getElementById('legal-faq')) document.getElementById('legal-faq').value = data.faq || ''; renderAdminFaqItems(Array.isArray(data.faqItems)?data.faqItems:[]);
             } else {
                 const defaults = { cgu: "Conditions Générales d'Utilisation par défaut. En cours de rédaction...", confidentialite: "Politique de Confidentialité par défaut. En cours de rédaction...", about: "Présentation de HosBac en cours de rédaction...", faq: "FAQ HosBac en cours de rédaction..." };
-                db.doc(LEGAL_DOC_PATH).set(defaults)
+                apiWrite('settings', 'legal', defaults)
                 .then(() => { if (legalCgu) legalCgu.value = defaults.cgu; if (legalPrivacy) legalPrivacy.value = defaults.confidentialite; renderAdminFaqItems([]); })
-                .catch(err => console.error('[FIRESTORE] Erreur création legal:', err));
+                .catch(err => console.error('[API/TURSO] Erreur création legal:', err));
             }
         })
-        .catch(err => console.error('[FIRESTORE] Erreur chargement legal:', err));
+        .catch(err => console.error('[API/TURSO] Erreur chargement legal:', err));
     }
 
     function saveLegalPages(cgu, confidentialite, about='', faq='', faqItems=[]) {
-        return db.doc(LEGAL_DOC_PATH).set({ cgu, confidentialite, about, faq, faqItems }, { merge: true });
+        return apiWrite('settings', 'legal', { cgu, confidentialite, about, faq, faqItems });
     }
 
     legalForm?.addEventListener('submit', function(e) {
@@ -9753,11 +9902,11 @@
         const about=document.getElementById('legal-about')?.value||''; const faqItems=collectAdminFaqItems(); const faq=faqItems.map(x=>`Q: ${x.question}\nR: ${x.answer}`).join('\n\n');
         saveLegalPages(cgu, confidentialite, about, faq, faqItems)
         .then(() => showToast('Textes légaux enregistrés avec succès', 'success'))
-        .catch(err => { console.error('[FIRESTORE] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
+        .catch(err => { console.error('[API/TURSO] Erreur sauvegarde legal:', err); showToast('Erreur lors de l\'enregistrement', 'error'); });
     });
 
     function showLegalPopup(type) {
-        db.doc(LEGAL_DOC_PATH).get()
+        apiRead('settings', 'legal')
         .then(doc => {
             let content = '';
             if (doc.exists) {
@@ -9770,7 +9919,7 @@
                 else { if (privacyContent) privacyContent.innerHTML = defaultMsg; if (privacyPopup) privacyPopup.style.display = 'flex'; }
             }
         })
-        .catch(err => { console.error('[FIRESTORE] Erreur chargement legal:', err); showToast('Erreur lors du chargement des textes', 'error'); });
+        .catch(err => { console.error('[API/TURSO] Erreur chargement legal:', err); showToast('Erreur lors du chargement des textes', 'error'); });
     }
 
     // ============================================================
@@ -9840,7 +9989,7 @@
     console.log('[PHASE 4] HosBac chargé avec succès');
     console.log('   ✅ Bouton d\'envoi : corrigé');
     console.log('   ✅ Pipeline IA : sécurisé (clés serveur)');
-    console.log('   ✅ Sécurité : audit XSS, auth, Firestore');
+    console.log('   ✅ Sécurité : audit XSS, auth, API/Turso');
     console.log('   ✅ Performance : listeners uniques, pas de boucle infinie');
     console.log('   ✅ Toutes les fonctionnalités sont conservées');
 </script>
