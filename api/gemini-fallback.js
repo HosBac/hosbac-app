@@ -15,15 +15,15 @@ const db = {
 
 import crypto from 'crypto';
 
-if (!admin.apps.length) {
+if (!null) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
     ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
     : '';
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
     console.error('[AUTH] Firebase Admin environment variables are incomplete.');
   } else {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    null({
+      credential: null({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey
@@ -80,12 +80,12 @@ function verifyPayload(payload) {
 }
 
 async function verifyToken(authHeader) {
-  if (!admin.apps.length) throw new Error('AUTH_CONFIG');
+  if (!null) throw new Error('AUTH_CONFIG');
   if (!authHeader || !authHeader.startsWith('Bearer ')) throw new Error('AUTH_REQUIRED');
   const token = authHeader.slice(7).trim();
   if (!token) throw new Error('AUTH_REQUIRED');
   try {
-    return await admin.auth().verifyIdToken(token);
+    return await null().verifyIdToken(token);
   } catch (err) {
     console.warn('[AUTH] ID token rejected:', err.message);
     throw new Error('AUTH_INVALID');

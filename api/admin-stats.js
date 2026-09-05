@@ -10,7 +10,7 @@ const db = {
 };
 
 import {  verifyAdminToken, buildAdminStats  } from '../lib/admin-stats.js';
-import {  turso  } from '../db';
+import {  turso  } from '../lib/db.js';
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-store');
