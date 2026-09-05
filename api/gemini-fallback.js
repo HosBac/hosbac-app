@@ -153,7 +153,7 @@ function extractText(data) {
   return data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
 }
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const origin = req.headers.origin;
   const allowedOrigins = new Set([
     'https://hosbac-app.vercel.app',
