@@ -1,4 +1,4 @@
-import { execute } from '../../lib/db.js';
+import { execute } from '../_db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
