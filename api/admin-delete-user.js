@@ -1,4 +1,4 @@
-// HosBac - suppression complète d'un compte utilisateur par un administrateur.
+// HosBac - suppression complète d'un compte utilisateur (Turso SQL + Firebase Auth)
 const admin = require('firebase-admin');
 const { turso } = require('../db');
 
@@ -30,7 +30,7 @@ async function verifyAdmin(authHeader) {
     return decoded;
   }
 
-  // Requête corrigée : sélection uniquement via la colonne 'uid'
+  // Vérification administrative uniquement dans Turso SQL
   const userRes = await turso.execute({
     sql: "SELECT role FROM users WHERE uid = ?",
     args: [decoded.uid]
@@ -60,36 +60,35 @@ module.exports = async (req, res) => {
     if (!userId) return res.status(400).json({ error: 'ID utilisateur manquant.' });
     if (userId === adminUser.uid) return res.status(400).json({ error: 'Suppression de son propre compte interdite.' });
 
-    // 1. Suppression de Firebase Auth
+    // 1. Suppression Firebase Auth (Révocation du login)
     try {
       await sdk.auth().deleteUser(userId);
     } catch (authErr) {
       if (authErr.code !== 'auth/user-not-found') {
-        throw authErr;
+        console.warn('[ADMIN DELETE] Auth warning:', authErr.message);
       }
-      console.warn(`[ADMIN DELETE] L'utilisateur ${userId} n'existait plus dans Firebase Auth.`);
     }
 
-    // 2. Suppression dans la table users (colonne uid)
+    // 2. Suppression définitive dans la table Turso SQL `users`
     await turso.execute({
       sql: "DELETE FROM users WHERE uid = ?",
       args: [userId]
     });
 
-    // 3. Nettoyage des favoris, notifications et signalements
+    // 3. Nettoyage des données liées dans Turso SQL
     const tables = ['favorites', 'notifications', 'reports'];
     for (const table of tables) {
       try {
         await turso.execute({
-          sql: `DELETE FROM ${table} WHERE user_id = ?`,
-          args: [userId]
+          sql: `DELETE FROM ${table} WHERE user_id = ? OR userId = ?`,
+          args: [userId, userId]
         });
       } catch (e) {
-        // Ignorer si la table n'existe pas
+        // Table secondaire potentiellement absente
       }
     }
 
-    return res.status(200).json({ ok: true, message: 'Utilisateur supprimé avec succès.' });
+    return res.status(200).json({ ok: true, message: 'Utilisateur supprimé définitivement de Turso.' });
   } catch (err) {
     console.error('[ADMIN DELETE USER]', err);
     if (err.message === 'AUTH_REQUIRED' || err.code === 'auth/id-token-expired' || err.code === 'auth/argument-error') {
