@@ -14,7 +14,15 @@ export default async function handler(req, res) {
 
   try {
     const result = await db.execute('SELECT * FROM users ORDER BY created_at DESC');
-    return res.status(200).json(result.rows || []);
+    
+    const formattedRows = (result.rows || []).map(row => ({
+      ...row,
+      classe: row.classe || row.class || '-',
+      ecole: row.ecole || row.school || '-',
+      createdAt: row.created_at || row.createdAt || '-'
+    }));
+
+    return res.status(200).json(formattedRows);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
