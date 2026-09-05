@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const result = await db.execute({
+      const result = await execute({
         sql: 'SELECT * FROM users WHERE uid = ? LIMIT 1',
         args: [uid],
       });

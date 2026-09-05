@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     for (const doc of rawEpreuves) {
       const id = doc.name.split('/').pop();
       const d = parseFields(doc.fields);
-      await db.execute({
+      await execute({
         sql: `INSERT INTO epreuves (id, matiere, classe, serie, nom_epreuve, annee, status, auteur_nom, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(id) DO UPDATE SET
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     for (const doc of rawUsers) {
       const uid = doc.name.split('/').pop();
       const d = parseFields(doc.fields);
-      await db.execute({
+      await execute({
         sql: `INSERT INTO users (uid, email, nom, prenom, ecole, classe, role, status)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
               ON CONFLICT(uid) DO UPDATE SET

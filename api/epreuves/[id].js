@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -18,19 +18,19 @@ export default async function handler(req, res) {
     if (req.method === 'PATCH' || req.method === 'PUT') {
       const body = req.body || {};
       if (body.status) {
-        await db.execute({ sql: 'UPDATE epreuves SET status = ? WHERE id = ?', args: [body.status, id] });
+        await execute({ sql: 'UPDATE epreuves SET status = ? WHERE id = ?', args: [body.status, id] });
       } else {
-        await db.execute({ sql: 'UPDATE epreuves SET view_count = view_count + 1 WHERE id = ?', args: [id] });
+        await execute({ sql: 'UPDATE epreuves SET view_count = view_count + 1 WHERE id = ?', args: [id] });
       }
       return res.status(200).json({ success: true });
     }
 
     if (req.method === 'DELETE') {
-      await db.execute({ sql: 'DELETE FROM epreuves WHERE id = ?', args: [id] });
+      await execute({ sql: 'DELETE FROM epreuves WHERE id = ?', args: [id] });
       return res.status(200).json({ success: true });
     }
 
-    const result = await db.execute({ sql: 'SELECT * FROM epreuves WHERE id = ? LIMIT 1', args: [id] });
+    const result = await execute({ sql: 'SELECT * FROM epreuves WHERE id = ? LIMIT 1', args: [id] });
     if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({ error: 'Épreuve non trouvée' });
     }

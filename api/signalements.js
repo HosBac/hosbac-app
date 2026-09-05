@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const result = await db.execute('SELECT * FROM signalements ORDER BY created_at DESC');
+    const result = await execute('SELECT * FROM signalements ORDER BY created_at DESC');
     return res.status(200).json(result.rows || []);
   } catch (error) {
     return res.status(500).json({ error: error.message });

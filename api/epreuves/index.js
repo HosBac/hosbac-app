@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       args.push(parseInt(limit, 10));
     }
 
-    const result = await db.execute({ sql, args });
+    const result = await execute({ sql, args });
 
     const formattedRows = (result.rows || []).map(row => ({
       ...row,

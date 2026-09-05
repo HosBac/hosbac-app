@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -16,13 +16,13 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const result = await db.execute('SELECT * FROM analytics_settings ORDER BY id DESC LIMIT 1');
+      const result = await execute('SELECT * FROM analytics_settings ORDER BY id DESC LIMIT 1');
       return res.status(200).json(result.rows[0] || {});
     }
 
     if (req.method === 'POST') {
       const { tracking_id, enabled } = req.body || {};
-      const result = await db.execute({
+      const result = await execute({
         sql: 'INSERT INTO analytics_settings (tracking_id, enabled) VALUES (?, ?)',
         args: [tracking_id || '', enabled ? 1 : 0],
       });

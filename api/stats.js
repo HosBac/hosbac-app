@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client/web';
+import { execute } from '../../lib/db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
@@ -19,9 +19,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const epreuvesRes = await db.execute('SELECT COUNT(*) as count FROM epreuves');
-    const usersRes = await db.execute('SELECT COUNT(*) as count FROM users');
-    const downloadsRes = await db.execute('SELECT SUM(download_count) as total FROM epreuves');
+    const epreuvesRes = await execute('SELECT COUNT(*) as count FROM epreuves');
+    const usersRes = await execute('SELECT COUNT(*) as count FROM users');
+    const downloadsRes = await execute('SELECT SUM(download_count) as total FROM epreuves');
 
     return res.status(200).json({
       totalEpreuves: Number(epreuvesRes.rows[0]?.count || 0),
