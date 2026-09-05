@@ -11,6 +11,16 @@ const createClient = () => ({
 
 const db = createClient();
 
+const createClient = () => ({
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+});
+
+
   url: process.env.TURSO_DATABASE_URL,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
