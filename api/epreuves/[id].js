@@ -1,0 +1,38 @@
+import { createClient } from '@libsql/client';
+
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const { id } = req.query;
+
+  try {
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      const body = req.body || {};
+      if (body.status) {
+        await db.execute({ sql: 'UPDATE epreuves SET status = ? WHERE id = ?', args: [body.status, id] });
+      } else {
+        await db.execute({ sql: 'UPDATE epreuves SET view_count = view_count + 1 WHERE id = ?', args: [id] });
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    if (req.method === 'DELETE') {
+      await db.execute({ sql: 'DELETE FROM epreuves WHERE id = ?', args: [id] });
+      return res.status(200).json({ success: true });
+    }
+
+    const result = await db.execute({ sql: 'SELECT * FROM epreuves WHERE id = ? LIMIT 1', args: [id] });
+    return res.status(200).json(result.rows[0] || null);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
