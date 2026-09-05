@@ -9,7 +9,7 @@ const db = {
   }
 };
 
-import {  verifyAdminToken, buildAdminStats  } from '../lib/admin-stats';
+import {  verifyAdminToken, buildAdminStats  } from '../lib/admin-stats.js';
 import {  turso  } from '../db';
 
 module.exports = async (req, res) => {

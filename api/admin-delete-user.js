@@ -10,7 +10,7 @@ const db = {
 };
 
 // HosBac - suppression complète d'un compte utilisateur (Turso SQL + Firebase Auth)
-import admin from 'firebase-admin';
+
 import {  turso  } from '../db';
 
 function getFirebaseAdmin() {

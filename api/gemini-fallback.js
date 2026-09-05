@@ -12,7 +12,7 @@ const db = {
 // HosBac - AI fallback API
 // IMPORTANT: This route does NOT read/write Firestore for quota or cache.
 // Firebase Admin is used only to verify the Firebase Auth ID token.
-import admin from 'firebase-admin';
+
 import crypto from 'crypto';
 
 if (!admin.apps.length) {

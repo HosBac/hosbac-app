@@ -9,7 +9,7 @@ const db = {
   }
 };
 
-import {  buildAdminStats  } from '../lib/admin-stats';
+import {  buildAdminStats  } from '../lib/admin-stats.js';
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
