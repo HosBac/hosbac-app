@@ -5,5 +5,8 @@
   "description": "HosBac Backend API",
   "dependencies": {
     "firebase-admin": "^12.0.0"
+  },
+  "scripts": {
+    "build": "vite build"
   }
 }
