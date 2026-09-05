@@ -1,4 +1,5 @@
-const { getFirebaseAdmin, verifyAdminToken, buildAdminStats } = require('../lib/admin-stats');
+const { verifyAdminToken, buildAdminStats } = require('../lib/admin-stats');
+const { turso } = require('../db');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-store');
@@ -10,8 +11,6 @@ module.exports = async (req, res) => {
 
   try {
     await verifyAdminToken(req.headers.authorization);
-    const sdk = getFirebaseAdmin();
-    const db = sdk.firestore();
 
     if (req.method === 'POST') {
       const result = await buildAdminStats();
@@ -20,11 +19,20 @@ module.exports = async (req, res) => {
 
     if (req.method !== 'GET') return res.status(405).json({ error: 'Méthode non autorisée.' });
 
-    const snap = await db.collection('admin_stats').doc('overview').get();
-    if (!snap.exists) {
+    // Lecture des statistiques stockées dans Turso
+    const result = await turso.execute({
+      sql: "SELECT data FROM admin_stats WHERE id = ?",
+      args: ['overview']
+    });
+
+    if (result.rows.length === 0) {
       return res.status(200).json({ ok: true, configured: false, data: null });
     }
-    return res.status(200).json({ ok: true, configured: true, data: snap.data() });
+
+    const row = result.rows[0];
+    const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+
+    return res.status(200).json({ ok: true, configured: true, data });
   } catch (err) {
     console.error('[ADMIN STATS]', err);
     if (err.message === 'AUTH_REQUIRED' || err.code === 'auth/id-token-expired' || err.code === 'auth/argument-error') {
