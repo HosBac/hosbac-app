@@ -8,5 +8,8 @@
   },
   "scripts": {
     "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
   }
 }
