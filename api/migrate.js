@@ -8,10 +8,14 @@ const db = createClient({
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'hosbac-app';
 
 async function fetchFirestoreCollection(collectionName) {
-  const response = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionName}?pageSize=300`);
-  if (!response.ok) return [];
-  const data = await response.json();
-  return data.documents || [];
+  try {
+    const response = await fetch(`https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${collectionName}?pageSize=300`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.documents || [];
+  } catch (e) {
+    return [];
+  }
 }
 
 function parseFields(fields) {
