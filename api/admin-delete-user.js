@@ -11,7 +11,6 @@ const db = {
 
 // HosBac - suppression complète d'un compte utilisateur (Turso SQL + Firebase Auth)
 
-import {  turso  } from '../lib/db.js';
 
 function getFirebaseAdmin() {
   if (!admin.apps.length) {
@@ -42,7 +41,7 @@ async function verifyAdmin(authHeader) {
   }
 
   // Vérification administrative uniquement dans Turso SQL
-  const userRes = await turso.execute({
+  const userRes = await execute({
     sql: "SELECT role FROM users WHERE uid = ?",
     args: [decoded.uid]
   });
@@ -81,7 +80,7 @@ module.exports = async (req, res) => {
     }
 
     // 2. Suppression définitive dans la table Turso SQL `users`
-    await turso.execute({
+    await execute({
       sql: "DELETE FROM users WHERE uid = ?",
       args: [userId]
     });
@@ -90,7 +89,7 @@ module.exports = async (req, res) => {
     const tables = ['favorites', 'notifications', 'reports'];
     for (const table of tables) {
       try {
-        await turso.execute({
+        await execute({
           sql: `DELETE FROM ${table} WHERE user_id = ? OR userId = ?`,
           args: [userId, userId]
         });
