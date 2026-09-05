@@ -19,20 +19,26 @@ module.exports = async (req, res) => {
 
     if (req.method !== 'GET') return res.status(405).json({ error: 'Méthode non autorisée.' });
 
-    // Lecture des statistiques stockées dans Turso
-    const result = await turso.execute({
-      sql: "SELECT data FROM admin_stats WHERE id = ?",
-      args: ['overview']
-    });
+    // Lecture sécurisée des statistiques dans Turso
+    try {
+      const result = await turso.execute({
+        sql: "SELECT data FROM admin_stats WHERE id = ?",
+        args: ['overview']
+      });
 
-    if (result.rows.length === 0) {
+      if (result.rows.length === 0) {
+        return res.status(200).json({ ok: true, configured: false, data: null });
+      }
+
+      const row = result.rows[0];
+      const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+
+      return res.status(200).json({ ok: true, configured: true, data });
+    } catch (tableErr) {
+      // Si la table admin_stats n'existe pas encore dans Turso
+      console.warn('[ADMIN STATS] Table admin_stats non initialisée:', tableErr.message);
       return res.status(200).json({ ok: true, configured: false, data: null });
     }
-
-    const row = result.rows[0];
-    const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-
-    return res.status(200).json({ ok: true, configured: true, data });
   } catch (err) {
     console.error('[ADMIN STATS]', err);
     if (err.message === 'AUTH_REQUIRED' || err.code === 'auth/id-token-expired' || err.code === 'auth/argument-error') {
