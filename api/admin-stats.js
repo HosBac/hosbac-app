@@ -1,5 +1,16 @@
-const { verifyAdminToken, buildAdminStats } = require('../lib/admin-stats');
-const { turso } = require('../db');
+import { execute } from '../lib/db.js';
+
+const db = {
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+};
+
+import {  verifyAdminToken, buildAdminStats  } from '../lib/admin-stats';
+import {  turso  } from '../db';
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'private, no-store');

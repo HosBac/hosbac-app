@@ -1,4 +1,15 @@
-const { buildAdminStats } = require('../lib/admin-stats');
+import { execute } from '../lib/db.js';
+
+const db = {
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+};
+
+import {  buildAdminStats  } from '../lib/admin-stats';
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

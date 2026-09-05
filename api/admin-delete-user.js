@@ -1,6 +1,17 @@
+import { execute } from '../lib/db.js';
+
+const db = {
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+};
+
 // HosBac - suppression complète d'un compte utilisateur (Turso SQL + Firebase Auth)
-const admin = require('firebase-admin');
-const { turso } = require('../db');
+import admin from 'firebase-admin';
+import {  turso  } from '../db';
 
 function getFirebaseAdmin() {
   if (!admin.apps.length) {

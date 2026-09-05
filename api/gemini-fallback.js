@@ -1,8 +1,19 @@
+import { execute } from '../lib/db.js';
+
+const db = {
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+};
+
 // HosBac - AI fallback API
 // IMPORTANT: This route does NOT read/write Firestore for quota or cache.
 // Firebase Admin is used only to verify the Firebase Auth ID token.
-const admin = require('firebase-admin');
-const crypto = require('crypto');
+import admin from 'firebase-admin';
+import crypto from 'crypto';
 
 if (!admin.apps.length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
