@@ -1,5 +1,4 @@
 import { execute } from '../lib/db.js';
-
 const createClient = () => ({
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
   batch: async (stmts) => {
@@ -8,10 +7,8 @@ const createClient = () => ({
     }
   }
 });
-
 const db = createClient();
 
-const createClient = () => ({
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
   batch: async (stmts) => {
     for (const stmt of stmts) {
@@ -21,7 +18,6 @@ const createClient = () => ({
 });
 
 
-const createClient = () => ({
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
   batch: async (stmts) => {
     for (const stmt of stmts) {
@@ -31,7 +27,15 @@ const createClient = () => ({
 });
 
 
-const createClient = () => ({
+  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
+  batch: async (stmts) => {
+    for (const stmt of stmts) {
+      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
+    }
+  }
+});
+
+
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
   batch: async (stmts) => {
     for (const stmt of stmts) {
