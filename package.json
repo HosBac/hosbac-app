@@ -2,6 +2,7 @@
   "name": "hosbac-app",
   "version": "1.0.0",
   "description": "HosBac Backend API",
+  "type": "module",
   "dependencies": {
     "@libsql/client": "^0.14.0",
     "firebase-admin": "^12.0.0"
