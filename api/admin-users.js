@@ -25,10 +25,11 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const uid = req.query.uid || req.body.uid;
-      if (!uid) return res.status(400).json({ error: 'UID requis' });
+      // Récupération universelle de l'identifiant (query ou body)
+      const uid = req.query.uid || req.body?.uid || req.query.id || req.body?.id;
+      if (!uid) return res.status(400).json({ error: 'UID requis pour la suppression' });
 
-      await executeQuery('DELETE FROM users WHERE uid = ?', [uid]);
+      await executeQuery('DELETE FROM users WHERE uid = ? OR id = ?', [uid, uid]);
       return res.status(200).json({ success: true });
     }
 
