@@ -9179,7 +9179,7 @@
             // établissement et région correspondent aux données serveur.
             try {
                 const freshDoc = await apiRead('users', uid);
-                if (freshDoc.exists) userData = { ...(userData || {}), ...(freshDoc.data() || {}) };
+                let serverDataRes = freshDoc; if (serverDataRes) userData = { ...(userData || {}), ...serverDataRes };
             } catch (profileFetchError) {
                 console.warn('[PROFILE] Lecture serveur indisponible, utilisation du cache local:', profileFetchError);
             }
