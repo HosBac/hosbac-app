@@ -12,14 +12,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { userId, uid } = req.body || {};
-    const targetId = userId || uid;
+    const { userId, uid, email } = req.body || {};
+    const targetId = userId || uid || email;
 
     if (!targetId) {
-      return res.status(400).json({ error: 'ID utilisateur requis' });
+      return res.status(400).json({ error: 'ID ou email utilisateur requis' });
     }
 
-    await executeQuery('DELETE FROM users WHERE uid = ? OR id = ?', [targetId, targetId]);
+    await executeQuery(
+      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ?',
+      [targetId, targetId, targetId]
+    );
+
     return res.status(200).json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: err.message });
