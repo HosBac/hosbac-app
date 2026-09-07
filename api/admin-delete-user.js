@@ -16,15 +16,16 @@ export default async function handler(req, res) {
     const targetId = userId || uid || email;
 
     if (!targetId) {
-      return res.status(400).json({ error: 'ID ou email utilisateur requis' });
+      return res.status(400).json({ error: 'Identifiant requis pour la suppression' });
     }
 
-    await executeQuery(
-      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ?',
-      [targetId, targetId, targetId]
+    // On essaie de supprimer par uid, id, email ou même en cherchant dans les champs texte
+    const result = await executeQuery(
+      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ? OR name = ?',
+      [targetId, targetId, targetId, targetId]
     );
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, deleted: targetId });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
