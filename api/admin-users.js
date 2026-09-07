@@ -1,33 +1,26 @@
 import { executeQuery } from './_db.js';
 
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    if (req.method === 'GET') {
-      const result = await db.execute('SELECT * FROM users ORDER BY rowid DESC');
-      return res.status(200).json(result.rows || []);
-    }
+    if (req.method === 'DELETE') {
+      const { uid, email } = req.query;
 
-    if (req.method === 'PATCH') {
-      const { uid, email, status, role, suspended } = req.body || {};
-      const targetStatus = status || (suspended ? 'SUSPENDED' : 'ACTIF');
-      
-      await db.execute({
-        sql: 'UPDATE users SET status = ?, role = COALESCE(?, role) WHERE uid = ? OR email = ?',
-        args: [targetStatus, role || null, uid || '', email || '']
-      });
+      if (!uid && !email) {
+        return res.status(400).json({ error: 'UID ou Email requis' });
+      }
 
-      return res.status(200).json({ success: true, message: 'Utilisateur mis à jour' });
+      await executeQuery(
+        'DELETE FROM users WHERE (uid = ? AND uid != "") OR (lower(email) = lower(?) AND email != "")',
+        [uid || '', email || '']
+      );
+
+      return res.status(200).json({ success: true, message: 'Utilisateur supprimé définitivement' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
