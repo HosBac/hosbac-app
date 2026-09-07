@@ -12,25 +12,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log("Corps de la requête de suppression reçu :", JSON.stringify(req.body));
     const { userId, uid, email } = req.body || {};
-    const targetId = userId || uid || email;
+    // On récupère n'importe quel identifiant valide transmis par le front
+    const target = userId || uid || email;
 
-    if (!targetId) {
-      return res.status(400).json({ error: 'Identifiant requis pour la suppression' });
+    if (!target) {
+      return res.status(400).json({ error: 'Aucun identifiant fourni pour la suppression' });
     }
 
-    // On exécute la suppression et on regarde si des lignes ont été touchées
-    const resDel = await executeQuery(
-      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ?',
-      [targetId, targetId, targetId]
+    console.log("Suppression demandée pour la cible :", target);
+
+    // Suppression stricte dans la table users de Turso
+    const result = await executeQuery(
+      'DELETE FROM users WHERE uid = ? OR email = ?',
+      [target, target]
     );
 
-    console.log("Résultat de la suppression Turso pour :", targetId);
+    console.log("Lignes supprimées dans Turso :", result);
 
-    return res.status(200).json({ success: true, targetId });
+    return res.status(200).json({ success: true, message: 'Utilisateur supprimé de la base de données' });
   } catch (err) {
-    console.error("Erreur API delete-user:", err);
+    console.error("Erreur lors de la suppression:", err);
     return res.status(500).json({ error: err.message });
   }
 }
