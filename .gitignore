@@ -9,4 +9,3 @@ dist/
 .vercel
 .output
 dist
-.env*
