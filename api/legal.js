@@ -14,44 +14,41 @@ export default async function handler(req, res) {
 
   try {
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS settings_legal (
-        id TEXT PRIMARY KEY DEFAULT 'default',
-        cgu TEXT DEFAULT '',
-        privacy TEXT DEFAULT '',
-        about TEXT DEFAULT '',
-        faq TEXT DEFAULT '',
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS legal_texts (
+        key TEXT PRIMARY KEY,
+        content TEXT
       )
     `);
 
     if (req.method === 'GET') {
-      const result = await db.execute("SELECT * FROM settings_legal WHERE id = 'default'");
-      const data = result.rows[0] || { cgu: '', privacy: '', about: '', faq: '[]' };
+      const result = await db.execute('SELECT * FROM legal_texts');
+      const data = {};
+      (result.rows || []).forEach(row => { data[row.key] = row.content; });
       return res.status(200).json(data);
     }
 
     if (req.method === 'POST') {
       const { cgu, privacy, about, faq } = req.body || {};
-      const faqStr = typeof faq === 'string' ? faq : JSON.stringify(faq || []);
+      const updates = [
+        { key: 'cgu', val: cgu },
+        { key: 'privacy', val: privacy },
+        { key: 'about', val: about },
+        { key: 'faq', val: JSON.stringify(faq || []) }
+      ];
 
-      await db.execute({
-        sql: `INSERT INTO settings_legal (id, cgu, privacy, about, faq, updatedAt)
-              VALUES ('default', ?, ?, ?, ?, CURRENT_TIMESTAMP)
-              ON CONFLICT(id) DO UPDATE SET
-                cgu = excluded.cgu,
-                privacy = excluded.privacy,
-                about = excluded.about,
-                faq = excluded.faq,
-                updatedAt = CURRENT_TIMESTAMP`,
-        args: [cgu || '', privacy || '', about || '', faqStr]
-      });
-
-      return res.status(200).json({ success: true, message: 'Pages légales enregistrées' });
+      for (const item of updates) {
+        if (item.val !== undefined) {
+          await db.execute({
+            sql: 'INSERT INTO legal_texts (key, content) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET content = excluded.content',
+            args: [item.key, typeof item.val === 'string' ? item.val : JSON.stringify(item.val)]
+          });
+        }
+      }
+      return res.status(200).json({ success: true, message: 'Textes enregistrés' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
   } catch (err) {
-    console.error('[API Legal Error]', err);
     return res.status(500).json({ error: err.message });
   }
 }

@@ -14,33 +14,28 @@ export default async function handler(req, res) {
 
   try {
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS settings_contacts (
-        id TEXT PRIMARY KEY DEFAULT 'default',
-        whatsapp TEXT DEFAULT '',
-        facebook TEXT DEFAULT '',
-        email TEXT DEFAULT '',
-        updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
       )
     `);
 
     if (req.method === 'GET') {
-      const result = await db.execute("SELECT * FROM settings_contacts WHERE id = 'default'");
-      return res.status(200).json(result.rows[0] || {});
+      const result = await db.execute('SELECT * FROM site_settings');
+      const settings = {};
+      (result.rows || []).forEach(row => { settings[row.key] = row.value; });
+      return res.status(200).json(settings);
     }
 
     if (req.method === 'POST') {
-      const { whatsapp, facebook, email } = req.body || {};
-      await db.execute({
-        sql: `INSERT INTO settings_contacts (id, whatsapp, facebook, email, updatedAt)
-              VALUES ('default', ?, ?, ?, CURRENT_TIMESTAMP)
-              ON CONFLICT(id) DO UPDATE SET
-                whatsapp = excluded.whatsapp,
-                facebook = excluded.facebook,
-                email = excluded.email,
-                updatedAt = CURRENT_TIMESTAMP`,
-        args: [whatsapp || '', facebook || '', email || '']
-      });
-      return res.status(200).json({ success: true });
+      const body = req.body || {};
+      for (const [key, value] of Object.entries(body)) {
+        await db.execute({
+          sql: 'INSERT INTO site_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+          args: [key, String(value)]
+        });
+      }
+      return res.status(200).json({ success: true, message: 'Configuration enregistrée' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
