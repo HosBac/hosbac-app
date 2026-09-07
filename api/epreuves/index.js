@@ -1,14 +1,5 @@
 import { execute } from '../../lib/db.js';
 
-const db = {
-  execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
-  batch: async (stmts) => {
-    for (const stmt of stmts) {
-      await (typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }));
-    }
-  }
-};
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGIN || '*');
   res.setHeader('Vary', 'Origin');
@@ -17,16 +8,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { status, limit } = req.query || {};
+    const { limit } = req.query || {};
     let sql = 'SELECT * FROM epreuves';
     const args = [];
 
-    if (status) {
-      sql += ' WHERE status = ?';
-      args.push(status);
-    }
-
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY id DESC';
 
     if (limit) {
       sql += ' LIMIT ?';
