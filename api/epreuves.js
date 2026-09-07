@@ -28,9 +28,19 @@ export default async function handler(req, res) {
       )
     `);
 
-    if (req.method === 'GET') {
-      const { status, limit, sort, search, classe, matiere, serie } = req.query;
+    const { id, status, limit, sort, search, classe, matiere, serie } = req.query;
 
+    if (req.method === 'GET') {
+      // Si un ID spécifique est demandé (ex: /api/epreuves/0FKg1X...)
+      if (id) {
+        const result = await executeQuery('SELECT * FROM epreuves WHERE id = ?', [id]);
+        if (result.rows && result.rows.length > 0) {
+          return res.status(200).json(result.rows[0]);
+        }
+        return res.status(404).json({ error: 'Épreuve introuvable' });
+      }
+
+      // Requête de liste avec filtres
       let sql = 'SELECT * FROM epreuves WHERE 1=1';
       const args = [];
 
@@ -71,15 +81,30 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { id, title, description, matiere, classe, serie, annee, type, fileUrl, correctionUrl, userId } = req.body || {};
-      const examId = id || 'exam_' + Date.now();
+      const { id: bodyId, title, description, matiere, classe: c, serie: s, annee, type, fileUrl, correctionUrl, userId } = req.body || {};
+      const examId = bodyId || 'exam_' + Date.now();
 
       await executeQuery(`
         INSERT INTO epreuves (id, title, description, matiere, classe, serie, annee, type, fileUrl, correctionUrl, userId, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
-      `, [examId, title || '', description || '', matiere || '', classe || '', serie || '', annee || 2026, type || 'Epreuve', fileUrl || '', correctionUrl || '', userId || '']);
+        ON CONFLICT(id) DO UPDATE SET
+          title = excluded.title,
+          description = excluded.description,
+          matiere = excluded.matiere,
+          classe = excluded.classe,
+          serie = excluded.serie,
+          annee = excluded.annee,
+          fileUrl = excluded.fileUrl,
+          correctionUrl = excluded.correctionUrl
+      `, [examId, title || '', description || '', matiere || '', c || '', s || '', annee || 2026, type || 'Epreuve', fileUrl || '', correctionUrl || '', userId || '']);
 
       return res.status(200).json({ success: true, id: examId });
+    }
+
+    if (req.method === 'DELETE') {
+      if (!id) return res.status(400).json({ error: 'ID requis' });
+      await executeQuery('DELETE FROM epreuves WHERE id = ?', [id]);
+      return res.status(200).json({ success: true, message: 'Épreuve supprimée' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
