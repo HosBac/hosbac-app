@@ -1,5 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/api/user", "destination": "/api/users.js" }
+  "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/static-build" },
+    { "src": "api/*.js", "use": "@vercel/node" }
   ]
 }
