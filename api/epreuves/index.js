@@ -8,18 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { limit } = req.query || {};
-    let sql = 'SELECT * FROM epreuves';
-    const args = [];
-
-    sql += ' ORDER BY id DESC';
-
-    if (limit) {
-      sql += ' LIMIT ?';
-      args.push(parseInt(limit, 10));
-    }
-
-    const result = await execute({ sql, args });
+    const result = await execute({ sql: 'SELECT * FROM epreuves', args: [] });
 
     const formattedRows = (result.rows || []).map(row => ({
       ...row,
@@ -29,8 +18,8 @@ export default async function handler(req, res) {
       authorName: row.auteur_nom || row.authorName || 'Anonyme',
       auteur: row.auteur_nom || row.authorName || 'Anonyme',
       status: row.status || 'approved',
-      downloadCount: row.download_count || 0,
-      viewCount: row.view_count || 0,
+      downloadCount: row.download_count || row.downloads || 0,
+      viewCount: row.view_count || row.views || 0,
       date: row.created_at || row.createdAt || '-',
       createdAt: row.created_at || row.createdAt || '-'
     }));
