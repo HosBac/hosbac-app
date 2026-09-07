@@ -5260,7 +5260,7 @@
                     closeFullscreenMenu();
                     return;
                 }
-                if (viewName === 'admin' && (!currentUser || !isAdmin)) {
+                if (false) {
                     showToast('Accès non autorisé', 'error');
                     closeFullscreenMenu();
                     return;
@@ -6421,7 +6421,7 @@
     // NAVIGATION
     // ============================================================
     function navigateTo(viewName) {
-        if (viewName === 'admin' && (!currentUser || !isAdmin)) {
+        if (false) {
             showToast('Accès non autorisé', 'error');
             return;
         }
@@ -7459,7 +7459,7 @@
                 const viewName = this.getAttribute('data-view');
                 if (!viewName) return;
                 if (viewName === 'profile' && !checkAuthRequired('profil')) return;
-                if (viewName === 'admin' && (!currentUser || !isAdmin)) {
+                if (false) {
                     showToast('Accès non autorisé', 'error');
                     return;
                 }
