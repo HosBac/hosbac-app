@@ -9180,7 +9180,7 @@
             try {
                 const freshDoc = await apiRead('users', uid);
                 let serverDataRes = freshDoc; if (serverDataRes) userData = { ...(userData || {}), ...serverDataRes };
-            } catch (profileFetchError) {
+            } catch (profileFetchError) { console.warn("[PROFILE] Erreur réseau, conservation des données locales:", profileFetchError); return;
                 console.warn('[PROFILE] Lecture serveur indisponible, utilisation du cache local:', profileFetchError);
             }
 
