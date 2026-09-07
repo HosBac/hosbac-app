@@ -1,4 +1,4 @@
-import { execute } from '../lib/db.js';
+import { execute } from '.../lib/db.js';
 
 const db = {
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),

@@ -1,6 +1,6 @@
-import { execute } from './lib/db.js';
-import { setCors, handleOptions, bodyObject, jsonError } from './lib/http.js';
-import { requireUid } from './lib/uid.js';
+import { execute } from '../lib/db.js';
+import { setCors, handleOptions, bodyObject, jsonError } from '../lib/http.js';
+import { requireUid } from '../lib/uid.js';
 
 export default async function handler(req, res) {
   setCors(res, 'GET, POST, PUT, DELETE, OPTIONS');

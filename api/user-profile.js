@@ -1,7 +1,7 @@
-import { execute, batch } from './lib/db.js';
-import { setCors, handleOptions, bodyObject, jsonError } from './lib/http.js';
-import { getUid, requireUid } from './lib/uid.js';
-import { getBearerToken, getFirebaseAdmin } from './lib/firebase-admin.js';
+import { execute, batch } from '../lib/db.js';
+import { setCors, handleOptions, bodyObject, jsonError } from '../lib/http.js';
+import { getUid, requireUid } from '../lib/uid.js';
+import { getBearerToken, getFirebaseAdmin } from '../lib/firebase-admin.js';
 
 const USER_COLUMNS = ['uid','nom','prenom','email','classe','serie','region','role','totalXp','quiz_xp','examsUploaded','examsDownloaded','badges','status','created_at'];
 const WRITE_COLUMNS = ['nom','prenom','email','classe','serie','region','role','totalXp','quiz_xp','examsUploaded','examsDownloaded','badges','status'];

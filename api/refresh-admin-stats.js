@@ -1,4 +1,4 @@
-import { execute } from '../lib/db.js';
+import { execute } from '.../lib/db.js';
 
 const db = {
   execute: (stmt) => typeof stmt === 'string' ? execute({ sql: stmt }) : execute({ sql: stmt.sql || stmt, args: stmt.args || [] }),
@@ -9,7 +9,7 @@ const db = {
   }
 };
 
-import {  buildAdminStats  } from './lib/admin-stats.js';
+import {  buildAdminStats  } from '../lib/admin-stats.js';
 
 export default async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

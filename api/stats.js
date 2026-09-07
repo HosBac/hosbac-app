@@ -1,5 +1,5 @@
-import { execute } from './lib/db.js';
-import { setCors, handleOptions } from './lib/http.js';
+import { execute } from '../lib/db.js';
+import { setCors, handleOptions } from '../lib/http.js';
 
 export default async function handler(req, res) {
   setCors(res, 'GET, OPTIONS');

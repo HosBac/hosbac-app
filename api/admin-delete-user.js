@@ -1,7 +1,7 @@
-import { execute } from './lib/db.js';
-import { setCors, handleOptions, bodyObject, jsonError } from './lib/http.js';
-import { getFirebaseAdmin } from './lib/firebase-admin.js';
-import { verifyAdmin } from './lib/admin-auth.js';
+import { execute } from '../lib/db.js';
+import { setCors, handleOptions, bodyObject, jsonError } from '../lib/http.js';
+import { getFirebaseAdmin } from '../lib/firebase-admin.js';
+import { verifyAdmin } from '../lib/admin-auth.js';
 
 export default async function handler(req, res) {
   setCors(res, 'DELETE, POST, OPTIONS');

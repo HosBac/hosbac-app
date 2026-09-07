@@ -1,7 +1,7 @@
 import userProfile from './user-profile.js';
-import { execute } from './lib/db.js';
-import { setCors, handleOptions, jsonError } from './lib/http.js';
-import { verifyAdmin } from './lib/admin-auth.js';
+import { execute } from '../lib/db.js';
+import { setCors, handleOptions, jsonError } from '../lib/http.js';
+import { verifyAdmin } from '../lib/admin-auth.js';
 
 export default async function handler(req, res) {
   setCors(res, 'GET, POST, PATCH, PUT, OPTIONS');
