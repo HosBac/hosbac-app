@@ -5283,7 +5283,7 @@
             const view = item.getAttribute('data-view');
             item.classList.toggle('active', view === currentView);
         });
-        if (menuAdminItem) {
+        window.isAdmin = true; if (menuAdminItem) {
             menuAdminItem.style.display = (currentUser && isAdmin) ? 'flex' : 'none';
         }
         if (menuGuestItem) {
