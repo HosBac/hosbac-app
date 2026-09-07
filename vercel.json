@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/api/epreuves/:id",
-      "destination": "/api/epreuves?id=:id"
-    }
+    { "source": "/api/epreuves/:id", "destination": "/api/epreuves?id=:id" }
   ]
 }

@@ -2,7 +2,7 @@ import { executeQuery } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -28,60 +28,34 @@ export default async function handler(req, res) {
       )
     `);
 
-    const { id, status, limit, sort, search, classe, matiere, serie } = req.query;
+    const { id, action } = req.query;
 
     if (req.method === 'GET') {
-      // Si un ID spécifique est demandé (ex: /api/epreuves/0FKg1X...)
       if (id) {
         const result = await executeQuery('SELECT * FROM epreuves WHERE id = ?', [id]);
-        if (result.rows && result.rows.length > 0) {
-          return res.status(200).json(result.rows[0]);
-        }
+        if (result.rows && result.rows.length > 0) return res.status(200).json(result.rows[0]);
         return res.status(404).json({ error: 'Épreuve introuvable' });
       }
 
-      // Requête de liste avec filtres
-      let sql = 'SELECT * FROM epreuves WHERE 1=1';
-      const args = [];
-
-      if (status) {
-        sql += ' AND status = ?';
-        args.push(status);
-      }
-      if (classe) {
-        sql += ' AND classe = ?';
-        args.push(classe);
-      }
-      if (matiere) {
-        sql += ' AND matiere = ?';
-        args.push(matiere);
-      }
-      if (serie) {
-        sql += ' AND serie = ?';
-        args.push(serie);
-      }
-      if (search) {
-        sql += ' AND (title LIKE ? OR description LIKE ?)';
-        args.push(`%${search}%`, `%${search}%`);
-      }
-
-      if (sort === 'downloadCount') {
-        sql += ' ORDER BY downloadCount DESC';
-      } else {
-        sql += ' ORDER BY createdAt DESC';
-      }
-
-      if (limit) {
-        sql += ' LIMIT ?';
-        args.push(parseInt(limit, 10));
-      }
-
-      const result = await executeQuery(sql, args);
+      const result = await executeQuery('SELECT * FROM epreuves ORDER BY createdAt DESC');
       return res.status(200).json(result.rows || []);
     }
 
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      const examId = id || req.body?.id;
+      if (!examId) return res.status(400).json({ error: 'ID épreuve requis' });
+
+      const type = action || req.body?.action;
+      if (type === 'incrementDownload' || type === 'download') {
+        await executeQuery('UPDATE epreuves SET downloadCount = downloadCount + 1 WHERE id = ?', [examId]);
+      } else {
+        await executeQuery('UPDATE epreuves SET viewsCount = viewsCount + 1 WHERE id = ?', [examId]);
+      }
+      return res.status(200).json({ success: true });
+    }
+
     if (req.method === 'POST') {
-      const { id: bodyId, title, description, matiere, classe: c, serie: s, annee, type, fileUrl, correctionUrl, userId } = req.body || {};
+      const { id: bodyId, title, description, matiere, classe, serie, annee, type, fileUrl, correctionUrl, userId } = req.body || {};
       const examId = bodyId || 'exam_' + Date.now();
 
       await executeQuery(`
@@ -96,7 +70,7 @@ export default async function handler(req, res) {
           annee = excluded.annee,
           fileUrl = excluded.fileUrl,
           correctionUrl = excluded.correctionUrl
-      `, [examId, title || '', description || '', matiere || '', c || '', s || '', annee || 2026, type || 'Epreuve', fileUrl || '', correctionUrl || '', userId || '']);
+      `, [examId, title || '', description || '', matiere || '', classe || '', serie || '', annee || 2026, type || 'Epreuve', fileUrl || '', correctionUrl || '', userId || '']);
 
       return res.status(200).json({ success: true, id: examId });
     }
@@ -104,7 +78,7 @@ export default async function handler(req, res) {
     if (req.method === 'DELETE') {
       if (!id) return res.status(400).json({ error: 'ID requis' });
       await executeQuery('DELETE FROM epreuves WHERE id = ?', [id]);
-      return res.status(200).json({ success: true, message: 'Épreuve supprimée' });
+      return res.status(200).json({ success: true });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
