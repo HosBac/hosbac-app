@@ -5283,9 +5283,7 @@
             const view = item.getAttribute('data-view');
             item.classList.toggle('active', view === currentView);
         });
-        window.isAdmin = true; if (menuAdminItem) {
-            menuAdminItem.style.display = (currentUser && isAdmin) ? 'flex' : 'none';
-        }
+        window.isAdmin = true; if (menuAdminItem) { menuAdminItem.style.display = currentUser ? 'flex' : 'none'; }
         if (menuGuestItem) {
             menuGuestItem.style.display = currentUser ? 'none' : 'flex';
         }
