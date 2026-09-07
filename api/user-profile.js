@@ -24,7 +24,6 @@ export default async function handler(req, res) {
     `);
 
     if (req.method === 'POST' || req.method === 'PATCH') {
-      console.log("BODY REÇU :", JSON.stringify(req.body));
       const bodyData = req.body || {};
       const source = bodyData.data || bodyData.updates || bodyData;
       
@@ -37,11 +36,12 @@ export default async function handler(req, res) {
       const classe = bodyData.classe || source.classe || '';
       const serie = bodyData.serie || source.serie || '';
 
-      console.log("VALORISATION -> uid:", uid, "serie:", serie, "classe:", classe);
-
-      if (!uid) {
-        return res.status(400).json({ error: 'UID ou Email requis pour l enregistrement' });
+      if (!uid && !email) {
+        return res.status(400).json({ error: 'UID ou Email requis' });
       }
+
+      // Utiliser l'email comme clé principale si l'uid pose problème, ou l'uid
+      const primaryKey = uid || email;
 
       await executeQuery(`
         INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, role, status)
@@ -54,20 +54,23 @@ export default async function handler(req, res) {
           region = COALESCED(?, region),
           classe = COALESCED(?, classe),
           serie = COALESCED(?, serie)
-      `, [uid, email, nom, prenom, ecole, region, classe, serie, email, nom, prenom, ecole, region, classe, serie]);
+      `, [primaryKey, email, nom, prenom, ecole, region, classe, serie, email, nom, prenom, ecole, region, classe, serie]);
 
       return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
     }
 
     if (req.method === 'GET') {
       const email = req.query.email || '';
-      const uid = req.query.uid || req.query.userId || '';
+      const uid = req.query.uid || req.query.userId || req.query.id || '';
+
+      console.log("GET - Recherche utilisateur par uid:", uid, "ou email:", email);
 
       if (!email && !uid) return res.status(400).json({ error: 'Email ou UID requis' });
 
+      // Recherche large : par uid exact, ou par email exact
       const result = await executeQuery(
-        'SELECT * FROM users WHERE uid = ? OR email = ?',
-        [uid, email]
+        'SELECT * FROM users WHERE uid = ? OR email = ? OR uid = ?',
+        [uid, email, email]
       );
 
       let user = result.rows && result.rows.length > 0 ? result.rows[0] : null;
