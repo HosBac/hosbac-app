@@ -1,9 +1,4 @@
-import { createClient } from '@libsql/client';
-
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
+import { executeQuery } from './db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,34 +12,50 @@ export default async function handler(req, res) {
       const email = req.query.email;
       const uid = req.query.uid || req.query.userId;
 
-      let result;
-      if (email) {
-        result = await db.execute({ sql: 'SELECT * FROM users WHERE email = ?', args: [email] });
-      } else if (uid) {
-        result = await db.execute({ sql: 'SELECT * FROM users WHERE uid = ?', args: [uid] });
-      } else {
-        return res.status(400).json({ error: 'Email ou UID requis' });
-      }
+      if (!email && !uid) return res.status(400).json({ error: 'Email ou UID requis' });
 
-      const user = result.rows && result.rows.length > 0 ? result.rows[0] : {};
-      return res.status(200).json(user);
+      const result = await executeQuery(
+        'SELECT * FROM users WHERE (uid = ? AND uid != "") OR (lower(email) = lower(?) AND email != "")',
+        [uid || '', email || '']
+      );
+
+      const user = result.rows && result.rows.length > 0 ? result.rows[0] : null;
+      return res.status(200).json(user || {});
     }
 
     if (req.method === 'POST') {
-      const { email, uid, nom, classe, serie, role } = req.body || {};
-      if (!email && !uid) return res.status(400).json({ error: 'Email ou UID requis' });
+      const { uid, email, nom, prenom, ecole, region, classe, serie, role } = req.body || {};
 
-      await db.execute({
-        sql: `UPDATE users SET 
-                nom = COALESCE(?, nom), 
-                classe = COALESCE(?, classe), 
-                serie = COALESCE(?, serie),
-                role = COALESCE(?, role)
-              WHERE (email = ? AND email != '') OR (uid = ? AND uid != '')`,
-        args: [nom || null, classe || null, serie || null, role || null, email || '', uid || '']
-      });
+      await executeQuery(`
+        CREATE TABLE IF NOT EXISTS users (
+          uid TEXT PRIMARY KEY,
+          email TEXT,
+          nom TEXT,
+          prenom TEXT,
+          ecole TEXT,
+          region TEXT,
+          classe TEXT,
+          serie TEXT,
+          role TEXT,
+          status TEXT
+        )
+      `);
 
-      return res.status(200).json({ success: true, message: 'Profil mis à jour' });
+      await executeQuery(
+        `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, role, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+         ON CONFLICT(uid) DO UPDATE SET
+           nom = excluded.nom,
+           prenom = excluded.prenom,
+           ecole = excluded.ecole,
+           region = excluded.region,
+           classe = excluded.classe,
+           serie = excluded.serie,
+           role = excluded.role`,
+        [uid || '', email || '', nom || '', prenom || '', ecole || '', region || '', classe || '', serie || '', role || 'student']
+      );
+
+      return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
