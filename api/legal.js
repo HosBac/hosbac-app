@@ -1,4 +1,4 @@
-import { createClient } from '@libsql/client';
+import { executeQuery } from './_db.js';
 
 const db = createClient({
   url: process.env.TURSO_DATABASE_URL,
