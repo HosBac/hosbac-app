@@ -2,7 +2,7 @@ import { executeQuery } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       return res.status(200).json(result.rows || []);
     }
 
-    if (req.method === 'PUT' || req.method === 'POST') {
+    if (req.method === 'PUT' || req.method === 'POST' || req.method === 'PATCH') {
       const { uid, role, status } = req.body || {};
       if (!uid) return res.status(400).json({ error: 'UID requis' });
 
@@ -25,8 +25,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const { uid } = req.query;
+      const uid = req.query.uid || req.body.uid;
       if (!uid) return res.status(400).json({ error: 'UID requis' });
+
       await executeQuery('DELETE FROM users WHERE uid = ?', [uid]);
       return res.status(200).json({ success: true });
     }
