@@ -23,13 +23,12 @@ export default async function handler(req, res) {
       )
     `);
 
-    // Gérer la sauvegarde (POST ou PATCH)
     if (req.method === 'POST' || req.method === 'PATCH') {
+      console.log("BODY REÇU :", JSON.stringify(req.body));
       const bodyData = req.body || {};
-      // Extraire les données peu importe comment le front-end les encapsule (direct, data, ou updates)
       const source = bodyData.data || bodyData.updates || bodyData;
       
-      const uid = bodyData.uid || bodyData.userId || bodyData.user_id || bodyData.id || source.uid || source.userId || source.user_id || source.id;
+      const uid = bodyData.uid || bodyData.userId || bodyData.user_id || bodyData.id || source.uid || source.userId || source.user_id || source.id || bodyData.email || source.email;
       const email = bodyData.email || source.email || '';
       const nom = bodyData.nom || source.nom || '';
       const prenom = bodyData.prenom || source.prenom || '';
@@ -38,8 +37,10 @@ export default async function handler(req, res) {
       const classe = bodyData.classe || source.classe || '';
       const serie = bodyData.serie || source.serie || '';
 
+      console.log("VALORISATION -> uid:", uid, "serie:", serie, "classe:", classe);
+
       if (!uid) {
-        return res.status(400).json({ error: 'UID requis pour l enregistrement' });
+        return res.status(400).json({ error: 'UID ou Email requis pour l enregistrement' });
       }
 
       await executeQuery(`
@@ -58,7 +59,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
     }
 
-    // Gérer la lecture (GET)
     if (req.method === 'GET') {
       const email = req.query.email || '';
       const uid = req.query.uid || req.query.userId || '';
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
 
       if (!user) {
         user = {
-          uid: uid || 'user_' + Date.now(),
+          uid: uid || email || 'user_' + Date.now(),
           email: email || '',
           nom: '',
           prenom: '',
