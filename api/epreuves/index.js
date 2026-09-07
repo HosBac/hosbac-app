@@ -1,4 +1,4 @@
-import { execute } from '../../lib/db.js';
+import { db } from '../../lib/db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGIN || '*');
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const result = await execute({ sql: 'SELECT * FROM epreuves', args: [] });
+    const result = await db.execute({ sql: 'SELECT * FROM epreuves', args: [] });
 
     const formattedRows = (result.rows || []).map(row => ({
       ...row,
