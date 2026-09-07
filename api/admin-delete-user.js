@@ -12,6 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log("Corps de la requête de suppression reçu :", JSON.stringify(req.body));
     const { userId, uid, email } = req.body || {};
     const targetId = userId || uid || email;
 
@@ -19,14 +20,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Identifiant requis pour la suppression' });
     }
 
-    // On essaie de supprimer par uid, id, email ou même en cherchant dans les champs texte
-    const result = await executeQuery(
-      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ? OR name = ?',
-      [targetId, targetId, targetId, targetId]
+    // On exécute la suppression et on regarde si des lignes ont été touchées
+    const resDel = await executeQuery(
+      'DELETE FROM users WHERE uid = ? OR id = ? OR email = ?',
+      [targetId, targetId, targetId]
     );
 
-    return res.status(200).json({ success: true, deleted: targetId });
+    console.log("Résultat de la suppression Turso pour :", targetId);
+
+    return res.status(200).json({ success: true, targetId });
   } catch (err) {
+    console.error("Erreur API delete-user:", err);
     return res.status(500).json({ error: err.message });
   }
 }
