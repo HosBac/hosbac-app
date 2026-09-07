@@ -8,6 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
+    // S'assurer que la table contient toutes les colonnes, y compris favorites
     await executeQuery(`
       CREATE TABLE IF NOT EXISTS users (
         uid TEXT PRIMARY KEY,
@@ -18,6 +19,7 @@ export default async function handler(req, res) {
         region TEXT,
         classe TEXT,
         serie TEXT,
+        favorites TEXT,
         role TEXT,
         status TEXT
       )
@@ -35,17 +37,24 @@ export default async function handler(req, res) {
       const region = bodyData.region || source.region || '';
       const classe = bodyData.classe || source.classe || '';
       const serie = bodyData.serie || source.serie || '';
+      
+      const rawFavs = bodyData.favorites || source.favorites;
+      let favoritesStr = '[]';
+      if (Array.isArray(rawFavs)) {
+        favoritesStr = JSON.stringify(rawFavs);
+      } else if (typeof rawFavs === 'string') {
+        favoritesStr = rawFavs;
+      }
 
       if (!uid && !email) {
         return res.status(400).json({ error: 'UID ou Email requis' });
       }
 
-      // Utiliser l'email comme clé principale si l'uid pose problème, ou l'uid
       const primaryKey = uid || email;
 
       await executeQuery(`
-        INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, role, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'user', 'active')
+        INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'active')
         ON CONFLICT(uid) DO UPDATE SET
           email = COALESCED(?, email),
           nom = COALESCED(?, nom),
@@ -53,21 +62,19 @@ export default async function handler(req, res) {
           ecole = COALESCED(?, ecole),
           region = COALESCED(?, region),
           classe = COALESCED(?, classe),
-          serie = COALESCED(?, serie)
-      `, [primaryKey, email, nom, prenom, ecole, region, classe, serie, email, nom, prenom, ecole, region, classe, serie]);
+          serie = COALESCED(?, serie),
+          favorites = COALESCED(?, favorites)
+      `, [primaryKey, email, nom, prenom, ecole, region, classe, serie, favoritesStr, email, nom, prenom, ecole, region, classe, serie, favoritesStr]);
 
-      return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
+      return res.status(200).json({ success: true, message: 'Profil et favoris enregistrés avec succès' });
     }
 
     if (req.method === 'GET') {
       const email = req.query.email || '';
       const uid = req.query.uid || req.query.userId || req.query.id || '';
 
-      console.log("GET - Recherche utilisateur par uid:", uid, "ou email:", email);
-
       if (!email && !uid) return res.status(400).json({ error: 'Email ou UID requis' });
 
-      // Recherche large : par uid exact, ou par email exact
       const result = await executeQuery(
         'SELECT * FROM users WHERE uid = ? OR email = ? OR uid = ?',
         [uid, email, email]
@@ -75,7 +82,14 @@ export default async function handler(req, res) {
 
       let user = result.rows && result.rows.length > 0 ? result.rows[0] : null;
 
-      if (!user) {
+      if (user) {
+        // Convertir la chaîne JSON des favoris en tableau pour le front-end
+        try {
+          user.favorites = JSON.parse(user.favorites || '[]');
+        } catch (e) {
+          user.favorites = [];
+        }
+      } else {
         user = {
           uid: uid || email || 'user_' + Date.now(),
           email: email || '',
@@ -85,6 +99,7 @@ export default async function handler(req, res) {
           region: '',
           classe: '',
           serie: '',
+          favorites: [],
           role: 'user',
           status: 'active'
         };
