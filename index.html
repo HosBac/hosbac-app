@@ -8535,92 +8535,27 @@
         if (badge) { badge.textContent = count; badge.style.display = count ? 'inline-flex' : 'none'; }
     }
 
-    function checkUserRole() {
-        if (!currentUser) return Promise.resolve(null);
-        return apiRead('users', currentUser.uid)
-            .catch(async error => {
-                if (error?.code === 'permission-denied' || error?.code === 'unauthenticated') {
-                    try { await currentUser.getIdToken(true); return apiRead('users', currentUser.uid); } catch (_) {}
-                }
-                throw error;
-            })
-            .then(async doc => {
-                if (!doc.exists) {
-                    // Un compte Firebase peut exister sans document utilisateur.
-                    // On crée alors un profil minimal immédiatement afin que le
-                    // tableau Profil/Admin ne reste jamais vide.
-                    const display = String(currentUser.displayName || '').trim().split(/\s+/).filter(Boolean);
-                    const prenom = display.shift() || 'Utilisateur';
-                    const profilInitial = {
-                        nom: display.join(' '),
-                        prenom,
-                        ecole: '',
-                        region: '',
-                        email: currentUser.email || '',
-                        classe: '',
-                        serie: '',
-                        points: 0,
-                        examsUploaded: 0,
-                        examsDownloaded: 0,
-                        examsViewed: 0,
-                        correctionsAdded: 0,
-                        activeDays: 0,
-                        totalXp: 0,
-                        quiz_xp: 0,
-                        xpHistory: [],
-                        avatarColor: '#1a2a4a',
-                        aiConversations: 0,
-                        quizTotal: 0,
-                        quizPerfect: 0,
-                        revisionPlanCreated: 0,
-                        favorites: [],
-                        likedAnnouncements: [],
-                        role: 'student',
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    };
-                    try {
-                        await apiWrite('users', currentUser.uid, profilInitial);
-                        userData = profilInitial;
-                    } catch (createError) {
-                        // Le profil Firebase existe peut-être mais l'API de profil
-                        // est temporairement indisponible. L'interface reste utilisable.
-                        console.warn('[PROFILE] Création du profil différée:', createError);
-                        userData = profilInitial;
-                    }
-                    isAdmin = false;
-                    return userData;
-                }
-                userData = { ...(doc.data() || {}) };
-                // Tolérance aux anciens documents incomplets.
-                userData = {
-                    nom: '', prenom: 'Utilisateur', ecole: '', region: '',
-                    email: currentUser.email || '', classe: '', serie: '',
-                    points: 0, examsUploaded: 0, examsDownloaded: 0,
-                    examsViewed: 0, correctionsAdded: 0, activeDays: 0,
-                    totalXp: 0, quiz_xp: 0, xpHistory: [], favorites: [],
-                    likedAnnouncements: [], role: 'student', status: 'active',
-                    ...userData
-                };
-                isAdmin = userData.role === 'admin';
-                if (userData.status === 'suspended') {
-                    showToast('Votre compte est suspendu.', 'error');
-                    return auth.signOut().then(() => null);
-                }
-                if (menuAdminItem) menuAdminItem.style.display = isAdmin ? 'flex' : 'none';
-                if (userData.avatarColor) {
-                    avatarColor = userData.avatarColor;
-                    if (profileAvatar) profileAvatar.style.background = avatarColor;
-                    window.updateAvatarColorPicker(avatarColor);
-                }
-                updateMenuItems();
-                return userData;
-            })
-            .catch(error => {
-                console.error('[API/TURSO] Erreur récupération profil utilisateur:', error);
-                throw error;
-            });
+    async function checkUserRole() {
+  if (!currentUser || !currentUser.email) return null;
+  try {
+    const res = await fetch("/api/user-profile?email=" + encodeURIComponent(currentUser.email));
+    if (res.ok) {
+      const data = await res.json();
+      userData = data;
+      isAdmin = userData.role === "admin";
+      if (typeof menuAdminItem !== "undefined" && menuAdminItem) {
+        menuAdminItem.style.display = isAdmin ? "flex" : "none";
+      }
+      if (typeof updateMenuItems === "function") {
+        updateMenuItems();
+      }
+      return userData;
     }
+  } catch (error) {
+    console.error("[TURSO] Erreur récupération profil :", error);
+  }
+  return null;
+}
 
     function updateExamCardsVisibility() {
         // Utilise les données déjà présentes dans les cartes sans requêtes API/Turso supplémentaires
