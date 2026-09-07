@@ -1,1 +1,2 @@
-export { default } from './users.js';
+import handler from './users.js';
+export default handler;
