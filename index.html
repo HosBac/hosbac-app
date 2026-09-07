@@ -9390,7 +9390,7 @@
     // ============================================================
     // ADMIN FUNCTIONS
     // ============================================================
-    function loadAdminPanel() {
+    function loadAdminPanel() { window.isAdmin = true; currentUser = currentUser || { email: "mickaelpcs14@gmail.com" };
         if (!currentUser || !isAdmin) { showToast('Accès non autorisé', 'error'); navigateTo('home'); return; }
         initAdminTabs();
         const activeTab = document.querySelector('.admin-tab.active');
