@@ -9,30 +9,10 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const result = await executeQuery('SELECT * FROM users ORDER BY rowid DESC');
+      const result = await executeQuery('SELECT * FROM users');
+      console.log("Contenu brut de la table users dans Turso :", JSON.stringify(result.rows));
       return res.status(200).json(result.rows || []);
     }
-
-    if (req.method === 'PUT' || req.method === 'POST' || req.method === 'PATCH') {
-      const { uid, role, status } = req.body || {};
-      if (!uid) return res.status(400).json({ error: 'UID requis' });
-
-      await executeQuery(
-        'UPDATE users SET role = COALESCE(?, role), status = COALESCE(?, status) WHERE uid = ?',
-        [role || null, status || null, uid]
-      );
-      return res.status(200).json({ success: true });
-    }
-
-    if (req.method === 'DELETE') {
-      // Récupération universelle de l'identifiant (query ou body)
-      const uid = req.query.uid || req.body?.uid || req.query.id || req.body?.id;
-      if (!uid) return res.status(400).json({ error: 'UID requis pour la suppression' });
-
-      await executeQuery('DELETE FROM users WHERE uid = ? OR id = ?', [uid, uid]);
-      return res.status(200).json({ success: true });
-    }
-
     return res.status(405).json({ error: 'Méthode non autorisée' });
   } catch (err) {
     return res.status(500).json({ error: err.message });
