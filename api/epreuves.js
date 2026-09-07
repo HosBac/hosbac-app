@@ -1,11 +1,13 @@
-import { db } from '../../lib/db.js';
+import { db } from '../lib/db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   try {
     const result = await db.execute({ sql: 'SELECT * FROM epreuves', args: [] });
@@ -16,12 +18,10 @@ export default async function handler(req, res) {
       nom: row.nom_epreuve || row.title || row.nom || 'Épreuve sans titre',
       nom_epreuve: row.nom_epreuve || row.title || row.nom || 'Épreuve sans titre',
       authorName: row.auteur_nom || row.authorName || 'Anonyme',
-      auteur: row.auteur_nom || row.authorName || 'Anonyme',
       status: row.status || 'approved',
       downloadCount: row.download_count || row.downloads || 0,
       viewCount: row.view_count || row.views || 0,
-      date: row.created_at || row.createdAt || '-',
-      createdAt: row.created_at || row.createdAt || '-'
+      date: row.created_at || row.createdAt || '-'
     }));
 
     return res.status(200).json(formattedRows);
