@@ -10,9 +10,7 @@ export default async function handler(req, res) {
   const email = req.query.email || req.body?.email;
 
   try {
-    if (!email) {
-      return res.status(400).json({ error: "Email requis" });
-    }
+    if (!email) return res.status(400).json({ error: "Email requis" });
 
     const result = await db.execute({
       sql: "SELECT * FROM users WHERE email = ?",
