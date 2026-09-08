@@ -8,87 +8,152 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
-        // Sécurité : On s'assure que la table existe avec les bonnes colonnes
+        // Nettoyage automatique systématique des comptes fantômes
         await executeQuery(`
-            CREATE TABLE IF NOT EXISTS users (
-                uid TEXT PRIMARY KEY,
-                email TEXT,
-                nom TEXT,
-                prenom TEXT,
-                ecole TEXT,
-                region TEXT,
-                classe TEXT,
-                serie TEXT,
-                favorites TEXT,
-                role TEXT,
-                status TEXT
-            )
+            DELETE FROM users 
+            WHERE uid IS NULL 
+               OR uid = '' 
+               OR uid = 'undefined' 
+               OR uid = 'null'
+               OR email IS NULL 
+               OR email = '' 
+               OR email = 'undefined'
         `);
+
+        // Fonction pour nettoyer et valider les chaînes de texte
+        const cleanStr = (val) => {
+            if (val === null || val === undefined) return '';
+            const str = String(val).trim();
+            if (str === 'undefined' || str === 'null' || str === '[object Object]') return '';
+            return str;
+        };
 
         if (req.method === 'POST' || req.method === 'PATCH') {
             const bodyData = req.body || {};
             const source = bodyData.data || bodyData.updates || bodyData;
 
-            const uid = bodyData.uid || bodyData.userId || bodyData.id || source.uid || source.userId || source.id || bodyData.email || source.email;
-            const email = bodyData.email || source.email || '';
-            const nom = bodyData.nom || source.nom || '';
-            const prenom = bodyData.prenom || source.prenom || '';
-            const ecole = bodyData.ecole || source.ecole || '';
-            const region = bodyData.region || source.region || '';
-            const classe = bodyData.classe || source.classe || '';
-            const serie = bodyData.serie || source.serie || '';
+            const rawEmail = cleanStr(bodyData.email || source.email);
+            const rawUid = cleanStr(bodyData.uid || bodyData.userId || bodyData.id || source.uid || source.userId || source.id) || rawEmail;
+
+            // SÉCURITÉ STRICTE : Si ni UID ni Email valide n'est fourni, on rejette la requête !
+            if (!rawUid && !rawEmail) {
+                return res.status(400).json({ error: 'UID ou Email valide requis' });
+            }
+
+            const email = rawEmail.toLowerCase();
+            const uid = rawUid;
+
+            const nom = cleanStr(bodyData.nom || source.nom);
+            const prenom = cleanStr(bodyData.prenom || source.prenom);
+            const ecole = cleanStr(bodyData.ecole || source.ecole);
+            const region = cleanStr(bodyData.region || source.region);
+            const classe = cleanStr(bodyData.classe || source.classe);
+            const serie = cleanStr(bodyData.serie || source.serie);
 
             const rawFavs = bodyData.favorites || source.favorites;
-            let favoritesStr = '[]';
+            let favoritesStr = '';
             if (Array.isArray(rawFavs)) {
                 favoritesStr = JSON.stringify(rawFavs);
-            } else if (typeof rawFavs === 'string') {
+            } else if (typeof rawFavs === 'string' && cleanStr(rawFavs) !== '') {
                 favoritesStr = rawFavs;
             }
 
-            if (!uid && !email) {
-                return res.status(400).json({ error: 'UID ou Email requis' });
+            // Vérifier si un compte existe déjà pour cet utilisateur
+            const check = await executeQuery(
+                'SELECT * FROM users WHERE (uid != "" AND uid = ?) OR (email != "" AND email = ?)',
+                [uid, email]
+            );
+            const existing = check.rows && check.rows.length > 0 ? check.rows[0] : null;
+
+            if (existing) {
+                // PROTECTION ANTI-ÉCRASEMENT : Ne jamais remplacer une information existante par du vide !
+                const updatedNom = nom !== '' ? nom : (existing.nom || '');
+                const updatedPrenom = prenom !== '' ? prenom : (existing.prenom || '');
+                const updatedEcole = ecole !== '' ? ecole : (existing.ecole || '');
+                const updatedRegion = region !== '' ? region : (existing.region || '');
+                const updatedClasse = classe !== '' ? classe : (existing.classe || '');
+                const updatedSerie = serie !== '' ? serie : (existing.serie || '');
+                const updatedFavs = (favoritesStr !== '' && favoritesStr !== '[]') ? favoritesStr : (existing.favorites || '[]');
+
+                await executeQuery(`
+                    UPDATE users 
+                    SET email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?
+                    WHERE uid = ? OR email = ?
+                `, [
+                    email || existing.email,
+                    updatedNom,
+                    updatedPrenom,
+                    updatedEcole,
+                    updatedRegion,
+                    updatedClasse,
+                    updatedSerie,
+                    updatedFavs,
+                    existing.uid,
+                    email
+                ]);
+            } else {
+                await executeQuery(`
+                    INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'active')
+                `, [uid, email, nom, prenom, ecole, region, classe, serie, favoritesStr || '[]']);
             }
-
-            const primaryKey = uid || email;
-
-            // La requête SQL Ultime avec sécurité anti-écrasement
-            await executeQuery(`
-                INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'active')
-                ON CONFLICT(uid) DO UPDATE SET
-                    email = CASE WHEN EXCLUDED.email != '' THEN EXCLUDED.email ELSE users.email END,
-                    nom = CASE WHEN EXCLUDED.nom != '' THEN EXCLUDED.nom ELSE users.nom END,
-                    prenom = CASE WHEN EXCLUDED.prenom != '' THEN EXCLUDED.prenom ELSE users.prenom END,
-                    ecole = CASE WHEN EXCLUDED.ecole != '' THEN EXCLUDED.ecole ELSE users.ecole END,
-                    region = CASE WHEN EXCLUDED.region != '' THEN EXCLUDED.region ELSE users.region END,
-                    classe = CASE WHEN EXCLUDED.classe != '' THEN EXCLUDED.classe ELSE users.classe END,
-                    serie = CASE WHEN EXCLUDED.serie != '' THEN EXCLUDED.serie ELSE users.serie END,
-                    favorites = CASE WHEN EXCLUDED.favorites != '[]' THEN EXCLUDED.favorites ELSE users.favorites END
-            `, [primaryKey, email, nom, prenom, ecole, region, classe, serie, favoritesStr]);
 
             return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
         }
 
         if (req.method === 'GET') {
-            const email = req.query.email || '';
-            const uid = req.query.uid || req.query.userId || req.query.id || '';
+            const rawEmail = cleanStr(req.query.email);
+            const rawUid = cleanStr(req.query.uid || req.query.userId || req.query.id);
 
-            if (!email && !uid) return res.status(400).json({ error: 'Email ou UID requis' });
+            if (!rawEmail && !rawUid) {
+                return res.status(400).json({ error: 'Email ou UID valide requis' });
+            }
 
-            const result = await executeQuery('SELECT * FROM users WHERE uid = ? OR email = ? OR uid = ?', [uid, email, email]);
-            let user = result.rows && result.rows.length > 0 ? result.rows[0] : null;
+            const email = rawEmail.toLowerCase();
+            const uid = rawUid;
+
+            const result = await executeQuery(
+                'SELECT * FROM users WHERE (uid != "" AND uid = ?) OR (email != "" AND email = ?)',
+                [uid, email]
+            );
+
+            let user = null;
+            if (result.rows && result.rows.length > 0) {
+                // Sélectionner la ligne la plus remplie en cas de doublons
+                user = result.rows.sort((a, b) => {
+                    const lenA = (a.nom || '').length + (a.prenom || '').length + (a.classe || '').length;
+                    const lenB = (b.nom || '').length + (b.prenom || '').length + (b.classe || '').length;
+                    return lenB - lenA;
+                })[0];
+            }
 
             if (user) {
-                try { user.favorites = JSON.parse(user.favorites || '[]'); } catch (e) { user.favorites = []; }
+                try {
+                    user.favorites = JSON.parse(user.favorites || '[]');
+                } catch (e) {
+                    user.favorites = [];
+                }
             } else {
-                user = { uid: uid || email, email: email, nom: '', prenom: '', ecole: '', region: '', classe: '', serie: '', favorites: [], role: 'user', status: 'active' };
+                user = {
+                    uid: uid || email,
+                    email: email,
+                    nom: '',
+                    prenom: '',
+                    ecole: '',
+                    region: '',
+                    classe: '',
+                    serie: '',
+                    favorites: [],
+                    role: 'user',
+                    status: 'active'
+                };
             }
             return res.status(200).json(user);
         }
+
         return res.status(405).json({ error: 'Méthode non autorisée' });
     } catch (err) {
-        console.error("Erreur API:", err);
+        console.error("Erreur API user-profile:", err);
         return res.status(500).json({ error: err.message });
     }
 }
