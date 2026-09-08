@@ -8,11 +8,28 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     try {
+        // Sécurité : On s'assure que la table existe avec les bonnes colonnes
+        await executeQuery(`
+            CREATE TABLE IF NOT EXISTS users (
+                uid TEXT PRIMARY KEY,
+                email TEXT,
+                nom TEXT,
+                prenom TEXT,
+                ecole TEXT,
+                region TEXT,
+                classe TEXT,
+                serie TEXT,
+                favorites TEXT,
+                role TEXT,
+                status TEXT
+            )
+        `);
+
         if (req.method === 'POST' || req.method === 'PATCH') {
             const bodyData = req.body || {};
             const source = bodyData.data || bodyData.updates || bodyData;
 
-            const uid = bodyData.uid || bodyData.userId || source.uid || source.userId || bodyData.email || source.email;
+            const uid = bodyData.uid || bodyData.userId || bodyData.id || source.uid || source.userId || source.id || bodyData.email || source.email;
             const email = bodyData.email || source.email || '';
             const nom = bodyData.nom || source.nom || '';
             const prenom = bodyData.prenom || source.prenom || '';
@@ -21,24 +38,34 @@ export default async function handler(req, res) {
             const classe = bodyData.classe || source.classe || '';
             const serie = bodyData.serie || source.serie || '';
 
+            const rawFavs = bodyData.favorites || source.favorites;
+            let favoritesStr = '[]';
+            if (Array.isArray(rawFavs)) {
+                favoritesStr = JSON.stringify(rawFavs);
+            } else if (typeof rawFavs === 'string') {
+                favoritesStr = rawFavs;
+            }
+
             if (!uid && !email) {
                 return res.status(400).json({ error: 'UID ou Email requis' });
             }
 
             const primaryKey = uid || email;
 
+            // La requête SQL Ultime avec sécurité anti-écrasement
             await executeQuery(`
-                INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, role, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'student', 'active')
+                INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'active')
                 ON CONFLICT(uid) DO UPDATE SET
-                    email = EXCLUDED.email,
-                    nom = EXCLUDED.nom,
-                    prenom = EXCLUDED.prenom,
-                    ecole = EXCLUDED.ecole,
-                    region = EXCLUDED.region,
-                    classe = EXCLUDED.classe,
-                    serie = EXCLUDED.serie
-            `, [primaryKey, email, nom, prenom, ecole, region, classe, serie]);
+                    email = CASE WHEN EXCLUDED.email != '' THEN EXCLUDED.email ELSE users.email END,
+                    nom = CASE WHEN EXCLUDED.nom != '' THEN EXCLUDED.nom ELSE users.nom END,
+                    prenom = CASE WHEN EXCLUDED.prenom != '' THEN EXCLUDED.prenom ELSE users.prenom END,
+                    ecole = CASE WHEN EXCLUDED.ecole != '' THEN EXCLUDED.ecole ELSE users.ecole END,
+                    region = CASE WHEN EXCLUDED.region != '' THEN EXCLUDED.region ELSE users.region END,
+                    classe = CASE WHEN EXCLUDED.classe != '' THEN EXCLUDED.classe ELSE users.classe END,
+                    serie = CASE WHEN EXCLUDED.serie != '' THEN EXCLUDED.serie ELSE users.serie END,
+                    favorites = CASE WHEN EXCLUDED.favorites != '[]' THEN EXCLUDED.favorites ELSE users.favorites END
+            `, [primaryKey, email, nom, prenom, ecole, region, classe, serie, favoritesStr]);
 
             return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
         }
@@ -53,9 +80,9 @@ export default async function handler(req, res) {
             let user = result.rows && result.rows.length > 0 ? result.rows[0] : null;
 
             if (user) {
-                try { user.favorites = JSON.parse(user.favorites_json || '[]'); } catch (e) { user.favorites = []; }
+                try { user.favorites = JSON.parse(user.favorites || '[]'); } catch (e) { user.favorites = []; }
             } else {
-                user = { uid: uid || email, email: email, nom: '', prenom: '', ecole: '', region: '', classe: '', serie: '', favorites: [], role: 'student', status: 'active' };
+                user = { uid: uid || email, email: email, nom: '', prenom: '', ecole: '', region: '', classe: '', serie: '', favorites: [], role: 'user', status: 'active' };
             }
             return res.status(200).json(user);
         }
