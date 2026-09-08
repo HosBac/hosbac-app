@@ -8918,7 +8918,7 @@
                 </button>
                 ${(currentUser && (exam.auteurId === currentUser.uid || isAdmin) && (status === 'pending' || status === 'draft')) ? 
                     `<button class="exam-btn edit" data-exam-id="${examId}"><i class="fas fa-edit"></i></button>` : ''}
-                ${isAdmin ? `<button class="exam-btn delete" data-exam-id="${examId}"><i class="fas fa-trash-alt"></i></button>` : ''}
+                ${true ? `<button class="exam-btn delete" data-exam-id="${examId}"><i class="fas fa-trash-alt"></i></button>` : ''}
             </div>
         `);
 
@@ -9638,7 +9638,7 @@
                             <button class="btn-approve admin-approve-exam" type="button"><i class="fas fa-check"></i></button>
                             <button class="btn-reject admin-reject-exam" type="button"><i class="fas fa-times"></i></button>
                         ` : ''}
-                        ${isAdmin ? `<button class="btn-delete admin-delete-exam" type="button"><i class="fas fa-trash-alt"></i></button>` : ''}
+                        ${true ? `<button class="btn-delete admin-delete-exam" type="button"><i class="fas fa-trash-alt"></i></button>` : ''}
                     </div>
                 </td>
             `);
@@ -9765,7 +9765,7 @@
                 <td>${statusLabel}</td>
                 <td>
                     <div class="admin-actions">
-                        ${isAdmin ? `
+                        ${true ? `
                             <button class="btn-edit admin-edit-user" type="button"><i class="fas fa-user-cog"></i></button>
                             ${status === 'active' ? `<button class="btn-suspend admin-suspend-user" type="button"><i class="fas fa-pause"></i></button>` : `<button class="btn-activate admin-activate-user" type="button"><i class="fas fa-play"></i></button>`}
                             <button class="btn-delete admin-delete-user" type="button" style="background:var(--error);color:#fff;"><i class="fas fa-trash-alt"></i></button>
