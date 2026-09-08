@@ -7,6 +7,8 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
+    const ADMIN_EMAIL = 'mickaelpcs14@gmail.com';
+
     try {
         let bodyData = req.body || {};
         if (typeof bodyData === 'string') {
@@ -21,7 +23,7 @@ export default async function handler(req, res) {
             const email = (rawEmail === 'undefined' || rawEmail === 'null') ? '' : rawEmail;
             const uid = (rawUid === 'undefined' || rawUid === 'null') ? '' : rawUid;
 
-            if (!email && !uid) return res.status(200).json({ success: false, message: 'Aucun identifiant valide' });
+            if (!email && !uid) return res.status(400).json({ success: false, message: 'Identifiant manquant' });
 
             const nom = String(bodyData.nom || source.nom || '').trim();
             const prenom = String(bodyData.prenom || source.prenom || '').trim();
@@ -31,32 +33,53 @@ export default async function handler(req, res) {
             const serie = String(bodyData.serie || source.serie || '').trim();
 
             const rawFavs = bodyData.favorites || source.favorites;
-            let favoritesStr = '';
+            let favoritesStr = '[]';
             if (Array.isArray(rawFavs)) {
                 favoritesStr = JSON.stringify(rawFavs);
-            } else if (typeof rawFavs === 'string' && rawFavs !== 'undefined') {
+            } else if (typeof rawFavs === 'string' && rawFavs !== 'undefined' && rawFavs !== '') {
                 favoritesStr = rawFavs;
             }
 
-            // FORCER LE ROLE ADMIN POUR TON COMPTE
-            let roleToSet = email === 'mickaelpos4@gmail.com' ? 'admin' : 'user';
+            const roleToSet = (email === ADMIN_EMAIL) ? 'admin' : 'user';
 
-            const check = await executeQuery('SELECT * FROM users WHERE (email != "" AND email = ?) OR (uid != "" AND uid = ?)', [email, uid]);
+            const check = await executeQuery('SELECT rowid, * FROM users WHERE (email != "" AND email = ?) OR (uid != "" AND uid = ?)', [email, uid]);
             const existing = check.rows && check.rows.length > 0 ? check.rows[0] : null;
 
             if (existing) {
-                if (existing.role === 'admin') roleToSet = 'admin';
-
                 await executeQuery(`
                     UPDATE users 
                     SET email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?, role = ?
-                    WHERE uid = ? OR email = ?
-                `, [email || existing.email, nom !== '' ? nom : (existing.nom || ''), prenom !== '' ? prenom : (existing.prenom || ''), ecole !== '' ? ecole : (existing.ecole || ''), region !== '' ? region : (existing.region || ''), classe !== '' ? classe : (existing.classe || ''), serie !== '' ? serie : (existing.serie || ''), favoritesStr !== '' ? favoritesStr : (existing.favorites || '[]'), roleToSet, existing.uid, existing.email]);
+                    WHERE rowid = ? OR (uid != "" AND uid = ?) OR (email != "" AND email = ?)
+                `, [
+                    email || existing.email, 
+                    nom || existing.nom || '', 
+                    prenom || existing.prenom || '', 
+                    ecole || existing.ecole || '', 
+                    region || existing.region || '', 
+                    classe || existing.classe || '', 
+                    serie || existing.serie || '', 
+                    favoritesStr !== '[]' ? favoritesStr : (existing.favorites || '[]'), 
+                    (email === ADMIN_EMAIL || existing.email === ADMIN_EMAIL) ? 'admin' : (existing.role || 'user'), 
+                    existing.rowid,
+                    existing.uid || '', 
+                    existing.email || ''
+                ]);
             } else {
                 await executeQuery(`
-                    INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
-                `, [uid || email, email, nom, prenom, ecole, region, classe, serie, favoritesStr || '[]', roleToSet]);
+                    INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    uid || email, 
+                    email, 
+                    nom, 
+                    prenom, 
+                    ecole, 
+                    region, 
+                    classe, 
+                    serie, 
+                    favoritesStr, 
+                    roleToSet
+                ]);
             }
 
             return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
@@ -69,20 +92,31 @@ export default async function handler(req, res) {
             const email = (rawEmail === 'undefined' || rawEmail === 'null') ? '' : rawEmail;
             const uid = (rawUid === 'undefined' || rawUid === 'null') ? '' : rawUid;
 
-            if (!email && !uid) return res.status(200).json(null);
+            if (!email && !uid) return res.status(400).json({ error: 'Identifiant manquant' });
 
             const result = await executeQuery('SELECT * FROM users WHERE (email != "" AND email = ?) OR (uid != "" AND uid = ?)', [email, uid]);
 
             let user = null;
             if (result.rows && result.rows.length > 0) {
-                user = result.rows.sort((a, b) => ((b.nom || '').length + (b.prenom || '').length) - ((a.nom || '').length + (a.prenom || '').length))[0];
+                user = result.rows[0];
             }
 
             if (user) {
                 try { user.favorites = JSON.parse(user.favorites || '[]'); } catch (e) { user.favorites = []; }
-                if (user.email === 'mickaelpos4@gmail.com') user.role = 'admin'; 
+                if (user.email === ADMIN_EMAIL) user.role = 'admin'; 
             } else {
-                user = { uid: uid || email, email: email, nom: '', prenom: '', ecole: '', region: '', classe: '', serie: '', favorites: [], role: email === 'mickaelpos4@gmail.com' ? 'admin' : 'user', status: 'active' };
+                user = { 
+                    uid: uid || email, 
+                    email: email, 
+                    nom: '', 
+                    prenom: '', 
+                    ecole: '', 
+                    region: '', 
+                    classe: '', 
+                    serie: '', 
+                    favorites: [], 
+                    role: email === ADMIN_EMAIL ? 'admin' : 'user'
+                };
             }
             return res.status(200).json(user);
         }
@@ -90,6 +124,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Méthode non autorisée' });
     } catch (err) {
         console.error("Erreur API user-profile:", err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ success: false, error: err.message });
     }
 }
