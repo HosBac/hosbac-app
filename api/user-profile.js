@@ -10,120 +10,103 @@ export default async function handler(req, res) {
     const ADMIN_EMAIL = 'mickaelpcs14@gmail.com';
 
     try {
-        let bodyData = req.body || {};
-        if (typeof bodyData === 'string') {
-            try { bodyData = JSON.parse(bodyData); } catch(e) { bodyData = {}; }
+        let body = req.body || {};
+        if (typeof body === 'string') {
+            try { body = JSON.parse(body); } catch(e) { body = {}; }
         }
-        const source = bodyData.data || bodyData.updates || bodyData;
+        const data = body.data || body.updates || body;
+
+        const email = String(body.email || data.email || '').trim().toLowerCase();
+        const uid = String(body.uid || body.userId || data.uid || data.userId || '').trim();
 
         if (req.method === 'POST' || req.method === 'PATCH') {
-            const rawEmail = String(bodyData.email || source.email || '').trim().toLowerCase();
-            const rawUid = String(bodyData.uid || bodyData.userId || bodyData.id || source.uid || source.userId || source.id || '').trim();
-            
-            const email = (rawEmail === 'undefined' || rawEmail === 'null') ? '' : rawEmail;
-            const uid = (rawUid === 'undefined' || rawUid === 'null') ? '' : rawUid;
-
-            if (!email && !uid) return res.status(400).json({ success: false, message: 'Identifiant manquant' });
-
-            const nom = String(bodyData.nom || source.nom || '').trim();
-            const prenom = String(bodyData.prenom || source.prenom || '').trim();
-            const ecole = String(bodyData.ecole || source.ecole || '').trim();
-            const region = String(bodyData.region || source.region || '').trim();
-            const classe = String(bodyData.classe || source.classe || '').trim();
-            const serie = String(bodyData.serie || source.serie || '').trim();
-
-            const rawFavs = bodyData.favorites || source.favorites;
-            let favoritesStr = '[]';
-            if (Array.isArray(rawFavs)) {
-                favoritesStr = JSON.stringify(rawFavs);
-            } else if (typeof rawFavs === 'string' && rawFavs !== 'undefined' && rawFavs !== '') {
-                favoritesStr = rawFavs;
+            if (!email && !uid) {
+                return res.status(400).json({ success: false, error: 'Email ou UID requis' });
             }
 
-            const roleToSet = (email === ADMIN_EMAIL) ? 'admin' : 'user';
+            const nom = String(data.nom || body.nom || '').trim();
+            const prenom = String(data.prenom || body.prenom || '').trim();
+            const ecole = String(data.ecole || body.ecole || '').trim();
+            const region = String(data.region || body.region || '').trim();
+            const classe = String(data.classe || body.classe || '').trim();
+            const serie = String(data.serie || body.serie || '').trim();
 
-            const check = await executeQuery('SELECT rowid, * FROM users WHERE (email != "" AND email = ?) OR (uid != "" AND uid = ?)', [email, uid]);
-            const existing = check.rows && check.rows.length > 0 ? check.rows[0] : null;
+            let favoritesStr = '[]';
+            const favs = data.favorites || body.favorites;
+            if (Array.isArray(favs)) favoritesStr = JSON.stringify(favs);
+            else if (typeof favs === 'string' && favs) favoritesStr = favs;
 
-            if (existing) {
-                await executeQuery(`
-                    UPDATE users 
-                    SET email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?, role = ?
-                    WHERE rowid = ? OR (uid != "" AND uid = ?) OR (email != "" AND email = ?)
-                `, [
-                    email || existing.email, 
-                    nom || existing.nom || '', 
-                    prenom || existing.prenom || '', 
-                    ecole || existing.ecole || '', 
-                    region || existing.region || '', 
-                    classe || existing.classe || '', 
-                    serie || existing.serie || '', 
-                    favoritesStr !== '[]' ? favoritesStr : (existing.favorites || '[]'), 
-                    (email === ADMIN_EMAIL || existing.email === ADMIN_EMAIL) ? 'admin' : (existing.role || 'user'), 
-                    existing.rowid,
-                    existing.uid || '', 
-                    existing.email || ''
-                ]);
+            const role = (email === ADMIN_EMAIL) ? 'admin' : 'user';
+
+            const check = await executeQuery(
+                `SELECT rowid, * FROM users WHERE (email IS NOT NULL AND email != "" AND lower(email) = ?) OR (uid IS NOT NULL AND uid != "" AND uid = ?)`,
+                [email, uid]
+            );
+
+            if (check.rows && check.rows.length > 0) {
+                const targetRowid = check.rows[0].rowid;
+                await executeQuery(
+                    `UPDATE users SET email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?, role = ? WHERE rowid = ?`,
+                    [
+                        email || check.rows[0].email, 
+                        nom || check.rows[0].nom || '', 
+                        prenom || check.rows[0].prenom || '', 
+                        ecole || check.rows[0].ecole || '', 
+                        region || check.rows[0].region || '', 
+                        classe || check.rows[0].classe || '', 
+                        serie || check.rows[0].serie || '', 
+                        favoritesStr, 
+                        (email === ADMIN_EMAIL || check.rows[0].email === ADMIN_EMAIL) ? 'admin' : (check.rows[0].role || 'user'), 
+                        targetRowid
+                    ]
+                );
             } else {
-                await executeQuery(`
-                    INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                    uid || email, 
-                    email, 
-                    nom, 
-                    prenom, 
-                    ecole, 
-                    region, 
-                    classe, 
-                    serie, 
-                    favoritesStr, 
-                    roleToSet
-                ]);
+                await executeQuery(
+                    `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [uid || email, email, nom, prenom, ecole, region, classe, serie, favoritesStr, role]
+                );
             }
 
             return res.status(200).json({ success: true, message: 'Profil enregistré avec succès' });
         }
 
         if (req.method === 'GET') {
-            const rawEmail = String(req.query.email || '').trim().toLowerCase();
-            const rawUid = String(req.query.uid || req.query.userId || req.query.id || '').trim();
-            
-            const email = (rawEmail === 'undefined' || rawEmail === 'null') ? '' : rawEmail;
-            const uid = (rawUid === 'undefined' || rawUid === 'null') ? '' : rawUid;
+            const qEmail = String(req.query.email || '').trim().toLowerCase();
+            const qUid = String(req.query.uid || req.query.userId || '').trim();
 
-            if (!email && !uid) return res.status(400).json({ error: 'Identifiant manquant' });
+            if (!qEmail && !qUid) {
+                return res.status(400).json({ error: 'Email ou UID requis' });
+            }
 
-            const result = await executeQuery('SELECT * FROM users WHERE (email != "" AND email = ?) OR (uid != "" AND uid = ?)', [email, uid]);
+            const result = await executeQuery(
+                `SELECT * FROM users WHERE (email IS NOT NULL AND email != "" AND lower(email) = ?) OR (uid IS NOT NULL AND uid != "" AND uid = ?)`,
+                [qEmail, qUid]
+            );
 
-            let user = null;
             if (result.rows && result.rows.length > 0) {
-                user = result.rows[0];
+                const user = result.rows[0];
+                try { user.favorites = JSON.parse(user.favorites || '[]'); } catch (e) { user.favorites = []; }
+                if (user.email === ADMIN_EMAIL) user.role = 'admin';
+                return res.status(200).json(user);
             }
 
-            if (user) {
-                try { user.favorites = JSON.parse(user.favorites || '[]'); } catch (e) { user.favorites = []; }
-                if (user.email === ADMIN_EMAIL) user.role = 'admin'; 
-            } else {
-                user = { 
-                    uid: uid || email, 
-                    email: email, 
-                    nom: '', 
-                    prenom: '', 
-                    ecole: '', 
-                    region: '', 
-                    classe: '', 
-                    serie: '', 
-                    favorites: [], 
-                    role: email === ADMIN_EMAIL ? 'admin' : 'user'
-                };
-            }
-            return res.status(200).json(user);
+            return res.status(200).json({
+                uid: qUid || qEmail,
+                email: qEmail,
+                nom: '',
+                prenom: '',
+                ecole: '',
+                region: '',
+                classe: '',
+                serie: '',
+                favorites: [],
+                role: qEmail === ADMIN_EMAIL ? 'admin' : 'user'
+            });
         }
 
         return res.status(405).json({ error: 'Méthode non autorisée' });
     } catch (err) {
-        console.error("Erreur API user-profile:", err);
+        console.error('Erreur API user-profile:', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 }
