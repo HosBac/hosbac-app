@@ -1,7 +1,10 @@
 import { executeQuery } from './_db.js';
 
-// Nettoyage strict pour éviter tout bug "undefined" sur Turso
-const clean = (v) => (v === undefined || v === null) ? '' : String(v).trim();
+const cleanStr = (val) => {
+    if (val === undefined || val === null) return '';
+    const s = String(val).trim();
+    return (s === 'undefined' || s === 'null') ? '' : s;
+};
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,7 +13,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const ADMIN_EMAIL = 'mickaelpcs14@gmail.com';
+    const SOLE_ADMIN_EMAIL = 'mickaelpcs14@gmail.com';
 
     try {
         let body = req.body || {};
@@ -19,73 +22,88 @@ export default async function handler(req, res) {
         }
         const data = body.data || body.updates || body;
 
-        let email = clean(data.email || body.email || req.query.email || req.query.userEmail).toLowerCase();
-        let uid = clean(data.uid || data.userId || body.uid || req.query.uid || req.query.userId);
+        const email = cleanStr(data.email || body.email || req.query.email || req.query.userEmail).toLowerCase();
+        const uid = cleanStr(data.uid || data.userId || body.uid || body.userId || req.query.uid || req.query.userId);
 
-        // --- SAUVEGARDE DU PROFIL (POST / PATCH) ---
+        // --- ENREGISTREMENT / MISE À JOUR (POST / PATCH) ---
         if (req.method === 'POST' || req.method === 'PATCH') {
             if (!email && !uid) {
-                return res.status(400).json({ success: false, error: 'Email ou UID manquant' });
+                return res.status(400).json({ success: false, error: 'Identifiant requis.' });
             }
 
-            const nom = clean(data.nom || data.lastName || data.name || body.nom);
-            const prenom = clean(data.prenom || data.firstName || body.prenom);
-            const ecole = clean(data.ecole || data.etablissement || body.ecole);
-            const region = clean(data.region || body.region);
-            const classe = clean(data.classe || body.classe);
-            const serie = clean(data.serie || body.serie);
+            const nom = cleanStr(data.nom || data.lastName || data.name || body.nom);
+            const prenom = cleanStr(data.prenom || data.firstName || body.prenom);
+            const ecole = cleanStr(data.ecole || data.etablissement || body.ecole);
+            const region = cleanStr(data.region || body.region);
+            const classe = cleanStr(data.classe || body.classe);
+            const serie = cleanStr(data.serie || body.serie);
 
             let favoritesStr = '[]';
             const favs = data.favorites || body.favorites;
             if (Array.isArray(favs)) favoritesStr = JSON.stringify(favs);
             else if (typeof favs === 'string' && favs) favoritesStr = favs;
 
-            const role = (email === ADMIN_EMAIL) ? 'admin' : 'user';
+            // Rôle : STRICTEMENT réservé à mickaelpcs14@gmail.com
+            const role = (email === SOLE_ADMIN_EMAIL) ? 'admin' : 'user';
 
-            let existing = null;
+            let existingUser = null;
             try {
-                const check = await executeQuery(
-                    `SELECT * FROM users WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`,
-                    [email, uid]
-                );
-                if (check && check.rows && check.rows.length > 0) {
-                    existing = check.rows[0];
+                let sqlSelect = '';
+                let params = [];
+                if (email && uid) {
+                    sqlSelect = `SELECT * FROM users WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`;
+                    params = [email, uid];
+                } else if (email) {
+                    sqlSelect = `SELECT * FROM users WHERE email != "" AND lower(email) = ?`;
+                    params = [email];
+                } else {
+                    sqlSelect = `SELECT * FROM users WHERE uid != "" AND uid = ?`;
+                    params = [uid];
                 }
-            } catch(e) {
-                console.error("Erreur vérification utilisateur:", e);
+
+                const check = await executeQuery(sqlSelect, params);
+                if (check && check.rows && check.rows.length > 0) {
+                    existingUser = check.rows[0];
+                }
+            } catch (err) {
+                console.error("Erreur recherche utilisateur:", err);
             }
 
-            if (existing) {
-                const updatedNom = nom || clean(existing.nom);
-                const updatedPrenom = prenom || clean(existing.prenom);
-                const updatedEcole = ecole || clean(existing.ecole);
-                const updatedRegion = region || clean(existing.region);
-                const updatedClasse = classe || clean(existing.classe);
-                const updatedSerie = serie || clean(existing.serie);
-                const updatedFavs = (favoritesStr !== '[]') ? favoritesStr : clean(existing.favorites || '[]');
-                const updatedRole = (email === ADMIN_EMAIL || clean(existing.email).toLowerCase() === ADMIN_EMAIL) ? 'admin' : (clean(existing.role) || 'user');
-                const targetEmail = clean(existing.email) || email;
-                const targetUid = clean(existing.uid) || uid;
+            if (existingUser) {
+                const finalEmail = email || cleanStr(existingUser.email);
+                const finalUid = uid || cleanStr(existingUser.uid);
+                const finalNom = nom || cleanStr(existingUser.nom);
+                const finalPrenom = prenom || cleanStr(existingUser.prenom);
+                const finalEcole = ecole || cleanStr(existingUser.ecole);
+                const finalRegion = region || cleanStr(existingUser.region);
+                const finalClasse = classe || cleanStr(existingUser.classe);
+                const finalSerie = serie || cleanStr(existingUser.serie);
+                const finalFavs = (favoritesStr !== '[]') ? favoritesStr : cleanStr(existingUser.favorites || '[]');
+                const finalRole = (finalEmail.toLowerCase() === SOLE_ADMIN_EMAIL) ? 'admin' : 'user';
 
                 await executeQuery(
-                    `UPDATE users SET email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?, role = ? WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`,
+                    `UPDATE users 
+                     SET uid = ?, email = ?, nom = ?, prenom = ?, ecole = ?, region = ?, classe = ?, serie = ?, favorites = ?, role = ?
+                     WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`,
                     [
-                        email || targetEmail,
-                        updatedNom,
-                        updatedPrenom,
-                        updatedEcole,
-                        updatedRegion,
-                        updatedClasse,
-                        updatedSerie,
-                        updatedFavs,
-                        updatedRole,
-                        targetEmail.toLowerCase(),
-                        targetUid
+                        finalUid,
+                        finalEmail,
+                        finalNom,
+                        finalPrenom,
+                        finalEcole,
+                        finalRegion,
+                        finalClasse,
+                        finalSerie,
+                        finalFavs,
+                        finalRole,
+                        finalEmail.toLowerCase(),
+                        finalUid
                     ]
                 );
             } else {
                 await executeQuery(
-                    `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         uid || email,
                         email,
@@ -107,59 +125,74 @@ export default async function handler(req, res) {
         // --- LECTURE DU PROFIL (GET) ---
         if (req.method === 'GET') {
             if (!email && !uid) {
-                return res.status(400).json({ error: 'Email ou UID manquant' });
+                return res.status(400).json({ error: 'Identifiant requis.' });
             }
 
             let user = null;
             try {
-                const result = await executeQuery(
-                    `SELECT * FROM users WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`,
-                    [email, uid]
-                );
+                let sqlSelect = '';
+                let params = [];
+                if (email && uid) {
+                    sqlSelect = `SELECT * FROM users WHERE (email != "" AND lower(email) = ?) OR (uid != "" AND uid = ?)`;
+                    params = [email, uid];
+                } else if (email) {
+                    sqlSelect = `SELECT * FROM users WHERE email != "" AND lower(email) = ?`;
+                    params = [email];
+                } else {
+                    sqlSelect = `SELECT * FROM users WHERE uid != "" AND uid = ?`;
+                    params = [uid];
+                }
+
+                const result = await executeQuery(sqlSelect, params);
                 if (result && result.rows && result.rows.length > 0) {
                     user = result.rows[0];
                 }
-            } catch(e) {
-                console.error("Erreur GET utilisateur:", e);
+            } catch (err) {
+                console.error("Erreur GET utilisateur:", err);
             }
 
             if (user) {
                 let favsArr = [];
                 try { favsArr = JSON.parse(user.favorites || '[]'); } catch(e) { favsArr = []; }
                 
+                const userEmail = cleanStr(user.email).toLowerCase();
+                const isAdmin = (userEmail === SOLE_ADMIN_EMAIL || email === SOLE_ADMIN_EMAIL);
+
                 return res.status(200).json({
-                    uid: clean(user.uid) || uid || email,
-                    email: clean(user.email) || email,
-                    nom: clean(user.nom),
-                    prenom: clean(user.prenom),
-                    ecole: clean(user.ecole),
-                    region: clean(user.region),
-                    classe: clean(user.classe),
-                    serie: clean(user.serie),
+                    uid: cleanStr(user.uid) || uid || email,
+                    email: cleanStr(user.email) || email,
+                    nom: cleanStr(user.nom),
+                    prenom: cleanStr(user.prenom),
+                    ecole: cleanStr(user.ecole),
+                    region: cleanStr(user.region),
+                    classe: cleanStr(user.classe),
+                    serie: cleanStr(user.serie),
                     favorites: favsArr,
-                    role: (clean(user.email).toLowerCase() === ADMIN_EMAIL || email === ADMIN_EMAIL) ? 'admin' : (clean(user.role) || 'user')
+                    role: isAdmin ? 'admin' : 'user'
                 });
             }
 
-            // AUTO-INJECTION D'ADMIN : Si c'est ton email et qu'il n'existe pas encore en BDD
-            if (email === ADMIN_EMAIL) {
+            // Auto-insertion de l'admin principal s'il n'existe pas encore
+            if (email === SOLE_ADMIN_EMAIL) {
                 try {
                     await executeQuery(
-                        `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [uid || ADMIN_EMAIL, ADMIN_EMAIL, 'Admin', 'Mickael', 'HosBac', 'Cotonou', 'Terminale', 'CD', '[]', 'admin']
+                        `INSERT INTO users (uid, email, nom, prenom, ecole, region, classe, serie, favorites, role)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [uid || SOLE_ADMIN_EMAIL, SOLE_ADMIN_EMAIL, '', '', '', '', '', '', '[]', 'admin']
                     );
                 } catch(e) {
-                    console.error("Erreur auto-insert admin:", e);
+                    console.error("Auto-creation admin error:", e);
                 }
+
                 return res.status(200).json({
-                    uid: uid || ADMIN_EMAIL,
-                    email: ADMIN_EMAIL,
-                    nom: 'Admin',
-                    prenom: 'Mickael',
-                    ecole: 'HosBac',
-                    region: 'Cotonou',
-                    classe: 'Terminale',
-                    serie: 'CD',
+                    uid: uid || SOLE_ADMIN_EMAIL,
+                    email: SOLE_ADMIN_EMAIL,
+                    nom: '',
+                    prenom: '',
+                    ecole: '',
+                    region: '',
+                    classe: '',
+                    serie: '',
                     favorites: [],
                     role: 'admin'
                 });
